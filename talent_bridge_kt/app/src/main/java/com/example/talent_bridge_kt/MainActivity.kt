@@ -11,6 +11,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.tooling.preview.Preview
+import com.example.talent_bridge_kt.login.presentation.ui.screens.LoginScreen
 import com.example.talent_bridge_kt.ui.theme.Talent_bridge_ktTheme
 
 class MainActivity : ComponentActivity() {
@@ -20,11 +21,11 @@ class MainActivity : ComponentActivity() {
         setContent {
             Talent_bridge_ktTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Grupo chevere del grupo chevere que hace kotlin",
+                    LoginScreen(
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
+
             }
         }
     }
