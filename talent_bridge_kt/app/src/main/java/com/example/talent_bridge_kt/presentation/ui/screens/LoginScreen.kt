@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -42,7 +43,8 @@ import androidx.compose.ui.text.style.TextAlign
 import com.example.talent_bridge_kt.R
 
 @Composable
-fun LoginScreen(modifier: Modifier = Modifier) {
+fun LoginScreen(modifier: Modifier = Modifier,  onCreateAccount: () -> Unit = {},
+                onStudentFeed: () -> Unit = {}) {
     //States
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
@@ -124,7 +126,10 @@ fun LoginScreen(modifier: Modifier = Modifier) {
                         contentColor = Color.White
                     ),
                 ) {
-                    Text("Ingresar")
+                    Text(text = "Ingresar",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onStudentFeed() })
                 }
                 Spacer(Modifier.height(32.dp))
 
@@ -140,6 +145,9 @@ fun LoginScreen(modifier: Modifier = Modifier) {
                 Text(text = "¿No tienes una cuenta? Crear cuenta",
                     color = TitleGreen,
                     fontSize = 16.sp,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { onCreateAccount() }
 
                 )
 
