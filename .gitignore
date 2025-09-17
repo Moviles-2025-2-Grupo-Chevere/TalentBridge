@@ -2,3 +2,15 @@
 # macOS
 .DS_Store
 
+
+.DS_Store
+.idea/
+.gradle/
+*.iml
+build/
+*/build/
+.cxx/
+.externalNativeBuild/
+local.properties
+.kotlinc/
+.kotlin/
