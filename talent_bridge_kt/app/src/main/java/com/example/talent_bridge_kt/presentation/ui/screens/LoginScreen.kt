@@ -1,4 +1,4 @@
-package com.example.talent_bridge_kt.login.presentation.ui.screens
+package com.example.talent_bridge_kt.presentation.ui.screens
 
 import android.R.attr.onClick
 import androidx.compose.foundation.Image
@@ -62,7 +62,7 @@ fun LoginScreen(modifier: Modifier = Modifier) {
                     modifier = Modifier.size(250.dp),
                     contentScale = ContentScale.Fit
                 )
-                Spacer(Modifier.height(40.dp))
+                Spacer(Modifier.height(60.dp))
 
                 Text(text = "Usuario",
                     color = AccentYellow,
@@ -126,6 +126,22 @@ fun LoginScreen(modifier: Modifier = Modifier) {
                 ) {
                     Text("Ingresar")
                 }
+                Spacer(Modifier.height(32.dp))
+
+                Image(
+                    painter = painterResource(id = R.drawable.gmail_logo),
+                    contentDescription = "Gmail Logo",
+                    modifier = Modifier.size(40.dp),
+                    contentScale = ContentScale.Fit
+                )
+
+                Spacer(Modifier.height(16.dp))
+
+                Text(text = "¿No tienes una cuenta? Crear cuenta",
+                    color = TitleGreen,
+                    fontSize = 16.sp,
+
+                )
 
             }
         }
