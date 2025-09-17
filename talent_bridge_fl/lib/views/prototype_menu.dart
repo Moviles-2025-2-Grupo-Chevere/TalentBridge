@@ -56,7 +56,10 @@ class _PrototypeMenuState extends State<PrototypeMenu> {
       ),
       bottomNavigationBar: BottomNavigationBar(
         items: [
-          BottomNavigationBarItem(icon: Icon(Icons.add_home), label: 'Home'),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.add_home),
+            label: 'Home',
+          ),
           BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
           BottomNavigationBarItem(
             icon: Icon(Icons.favorite_outline),
