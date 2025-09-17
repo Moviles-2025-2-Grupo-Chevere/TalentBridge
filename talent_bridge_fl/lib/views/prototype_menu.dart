@@ -30,13 +30,22 @@ class _PrototypeMenuState extends State<PrototypeMenu> {
     'Search': Search(),
     'Credits': Credits(),
   };
-  // var _currentView = PrototypeViewList(prototypeViews: _prototypeViews);
+
+  Widget? _currentView;
+
+  void updateWidget(Widget w) {
+    setState(() {
+      _currentView = w;
+    });
+  }
 
   @override
   void initState() {
-    // TODO: implement initState
-
     super.initState();
+    _currentView = PrototypeViewList(
+      prototypeViews: _prototypeViews,
+      updateWidget: updateWidget,
+    );
   }
 
   @override
@@ -56,7 +65,7 @@ class _PrototypeMenuState extends State<PrototypeMenu> {
           // BottomNavigationBarItem(icon: Icon(Icons.code), label: 'Prototype'),
         ],
       ),
-      body: PrototypeViewList(prototypeViews: _prototypeViews),
+      body: _currentView,
     );
   }
 }
@@ -65,9 +74,12 @@ class PrototypeViewList extends StatelessWidget {
   const PrototypeViewList({
     super.key,
     required this.prototypeViews,
+    required this.updateWidget,
   });
 
   final Map<String, StatelessWidget> prototypeViews;
+
+  final void Function(Widget w) updateWidget;
 
   @override
   Widget build(BuildContext context) {
@@ -78,7 +90,12 @@ class PrototypeViewList extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           ...prototypeViews.entries.map(
-            (entry) => ElevatedButton(onPressed: () {}, child: Text(entry.key)),
+            (entry) => ElevatedButton(
+              onPressed: () {
+                updateWidget(entry.value);
+              },
+              child: Text(entry.key),
+            ),
           ),
         ],
       ),
