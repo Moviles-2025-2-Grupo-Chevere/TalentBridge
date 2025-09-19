@@ -120,17 +120,19 @@ fun LoginScreen(modifier: Modifier = Modifier,  onCreateAccount: () -> Unit = {}
                 Spacer(Modifier.height(28.dp))
 
                 OutlinedButton(
-                    onClick = { "" },
+                    onClick = onStudentFeed,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(48.dp),
+                    shape = RoundedCornerShape(28.dp),
                     colors = ButtonDefaults.outlinedButtonColors(
                         containerColor = AccentYellow,
                         contentColor = Color.White
                     ),
                 ) {
-                    Text(text = "Ingresar",
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { onStudentFeed() })
+                    Text("Ingresar")
                 }
+
                 Spacer(Modifier.height(32.dp))
 
                 Image(
@@ -147,7 +149,9 @@ fun LoginScreen(modifier: Modifier = Modifier,  onCreateAccount: () -> Unit = {}
                     fontSize = 16.sp,
                     modifier = Modifier
                         .fillMaxWidth()
-                        .clickable { onCreateAccount() }
+                        .clickable { onCreateAccount() },
+                    textAlign = TextAlign.Center
+
 
                 )
 
