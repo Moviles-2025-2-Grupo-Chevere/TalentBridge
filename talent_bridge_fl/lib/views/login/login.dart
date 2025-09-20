@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; 
+import 'package:flutter/services.dart'; // input formatters
 
+// ---------- UI TOKENS ----------
 const kBg        = Color(0xFFFEF7E6); // cream background
 const kAmber     = Color(0xFFFFC107); // field border & button
 const kBrandGreen= Color(0xFF568C73); // title
@@ -8,22 +9,39 @@ const kLinkGreen = Color(0xFF5E8F5A); // bottom link
 const kShadowCol = Color(0x33000000); // 20% black for soft shadows
 const kRadius    = 22.0;              // rounded corners
 
+// ---------- GMAIL LIMITS ----------
+const int kMaxGmailLocal = 30;  // max chars before @gmail.com
+const int kGmailSuffixLen = 10; // length of "@gmail.com"
+
+// ---------- VALIDATORS ----------
 String? _gmailOnly(String? v) {
   final value = (v ?? '').trim();
-  if (value.isEmpty) return 'Insert your email';
-  if (value.length > 254) return 'Maximum 254 characters';
-  if (!value.toLowerCase().endsWith('@gmail.com')) {
-    return 'must be a @gmail.com email';
+  if (value.isEmpty) return 'Enter your email';
+
+  // Hard cap total length (local + "@gmail.com")
+  if (value.length > kMaxGmailLocal + kGmailSuffixLen) {
+    return 'Max $kMaxGmailLocal characters before @gmail.com';
   }
+
+  if (!value.toLowerCase().endsWith('@gmail.com')) {
+    return 'Must be a @gmail.com email';
+  }
+
   final local = value.substring(0, value.length - '@gmail.com'.length);
+  if (local.isEmpty) return 'Invalid email';
+
   final localOk = RegExp(r"^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+$").hasMatch(local);
-  if (!localOk || local.isEmpty) return 'Invalid email';
+  if (!localOk) return 'Invalid email';
+
+  if (local.length > kMaxGmailLocal) {
+    return 'Max $kMaxGmailLocal characters before @gmail.com';
+  }
   return null;
 }
 
 String? _password(String? v, {int min = 8, int max = 64}) {
   final value = v ?? '';
-  if (value.isEmpty) return 'Insert your password';
+  if (value.isEmpty) return 'Enter your password';
   if (value.length < min) return 'Minimum $min characters';
   if (value.length > max) return 'Maximum $max characters';
   return null;
@@ -52,16 +70,16 @@ InputDecoration _roundedInput({
     ),
     errorBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(kRadius),
-      borderSide: BorderSide(color: Colors.red.shade400, width: 2),
+      borderSide: BorderSide(color: Colors.redAccent, width: 2),
     ),
     focusedErrorBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(kRadius),
-      borderSide: BorderSide(color: Colors.red.shade400, width: 3),
+      borderSide: BorderSide(color: Colors.redAccent, width: 3),
     ),
   );
 }
 
-// Wraps a child with a soft drop shadow & rounded clip, to mimic your inputs’ shadow
+// Soft drop shadow wrapper
 Widget _shadowWrap(Widget child) {
   return Container(
     decoration: BoxDecoration(
@@ -88,18 +106,19 @@ class Login extends StatefulWidget {
 }
 
 class _LoginState extends State<Login> {
-  final _formKey  = GlobalKey<FormState>();
-  final _emailCtrl= TextEditingController();
-  final _passCtrl = TextEditingController();
+  final _formKey   = GlobalKey<FormState>();
+  final _emailCtrl = TextEditingController();
+  final _passCtrl  = TextEditingController();
 
-  final _isValid  = ValueNotifier<bool>(false);
-  final _obscure  = ValueNotifier<bool>(true);
+  final _isValid = ValueNotifier<bool>(false);
+  final _obscure = ValueNotifier<bool>(true);
 
   @override
   void initState() {
     super.initState();
     _emailCtrl.addListener(_revalidate);
     _passCtrl.addListener(_revalidate);
+    // Post-frame revalidation (covers autofill/paste)
     WidgetsBinding.instance.addPostFrameCallback((_) => _revalidate());
   }
 
@@ -122,9 +141,9 @@ class _LoginState extends State<Login> {
       final m = ScaffoldMessenger.of(context);
       m.hideCurrentSnackBar();
       m.showSnackBar(
-        const SnackBar(content: Text('Formulario válido — listo para autenticar')),
+        const SnackBar(content: Text('Valid form — ready to authenticate')),
       );
-      // Next: plug real auth here.
+      // Next: call your backend/Firebase here.
     }
   }
 
@@ -149,20 +168,21 @@ class _LoginState extends State<Login> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // ---------- LOGO ----------
                     Center(
-                        child: Image.asset(
-                          'assets/images/talent_bridge_logo.png',
-                          height: 240,
-                        ),
+                      child: Image.asset(
+                        'assets/images/talent_bridge_logo.png',
+                        height: 240,
                       ),
+                    ),
 
-                    
+                    const SizedBox(height: 12),
 
                     // ---------- EMAIL LABEL ----------
-                    Text('Usuario', style: labelStyle),
+                    Text('Email', style: labelStyle),
                     const SizedBox(height: 6),
 
-                    // ---------- EMAIL FIELD WITH SHADOW ----------
+                    // ---------- EMAIL FIELD (with hard length cap & shadow) ----------
                     _shadowWrap(
                       TextFormField(
                         controller: _emailCtrl,
@@ -170,7 +190,8 @@ class _LoginState extends State<Login> {
                         textInputAction: TextInputAction.next,
                         autofillHints: const [AutofillHints.email],
                         inputFormatters: [
-                          LengthLimitingTextInputFormatter(254),
+                          // TOTAL cap = local + "@gmail.com"
+                          LengthLimitingTextInputFormatter(kMaxGmailLocal + kGmailSuffixLen),
                           FilteringTextInputFormatter.deny(RegExp(r'\s')),
                         ],
                         decoration: _roundedInput(
@@ -186,7 +207,7 @@ class _LoginState extends State<Login> {
                     const SizedBox(height: 16),
 
                     // ---------- PASSWORD LABEL ----------
-                    Text('Contraseña', style: labelStyle),
+                    Text('Password', style: labelStyle),
                     const SizedBox(height: 6),
 
                     // ---------- PASSWORD FIELD WITH EYE + SHADOW ----------
@@ -220,7 +241,7 @@ class _LoginState extends State<Login> {
 
                     const SizedBox(height: 22),
 
-                    // ---------- SUBMIT BUTTON (AMBER, ROUNDED, SHADOW) ----------
+                    // ---------- SUBMIT BUTTON ----------
                     ValueListenableBuilder<bool>(
                       valueListenable: _isValid,
                       builder: (_, ok, __) => Center(
@@ -246,10 +267,10 @@ class _LoginState extends State<Login> {
                                 shape: RoundedRectangleBorder(
                                   borderRadius: BorderRadius.circular(24),
                                 ),
-                                elevation: 0, // we use custom shadow above
+                                elevation: 0,
                                 textStyle: const TextStyle(fontWeight: FontWeight.w600),
                               ),
-                              child: const Text('Ingresar'),
+                              child: const Text('Sign in'),
                             ),
                           ),
                         ),
@@ -264,16 +285,16 @@ class _LoginState extends State<Login> {
                         borderRadius: BorderRadius.circular(32),
                         onTap: () {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Google Sign-In (pendiente)')),
+                            const SnackBar(content: Text('Google Sign-In (pending)')),
                           );
                         },
                         child: Container(
                           width: 64,
                           height: 64,
-                          decoration: BoxDecoration(
+                          decoration: const BoxDecoration(
                             color: Colors.white,
                             shape: BoxShape.circle,
-                            boxShadow: const [
+                            boxShadow: [
                               BoxShadow(
                                 color: kShadowCol,
                                 offset: Offset(0, 6),
@@ -282,7 +303,7 @@ class _LoginState extends State<Login> {
                             ],
                           ),
                           alignment: Alignment.center,
-                          // Replace with your Gmail asset if you have one:
+                          // If you have a Gmail asset, swap it in here:
                           // child: Image.asset('assets/icons/gmail.png', width: 32, height: 32),
                           child: const Icon(Icons.mail, size: 32, color: Colors.redAccent),
                         ),
@@ -296,14 +317,14 @@ class _LoginState extends State<Login> {
                       child: TextButton(
                         onPressed: () {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Navegar a Crear cuenta (pendiente)')),
+                            const SnackBar(content: Text('Navigate to Create account (pending)')),
                           );
                         },
                         style: TextButton.styleFrom(
                           foregroundColor: kLinkGreen,
                           textStyle: const TextStyle(decoration: TextDecoration.underline),
                         ),
-                        child: const Text('¿No tienes una cuenta? Crear cuenta'),
+                        child: const Text("Don't have an account? Create account"),
                       ),
                     ),
                   ],
