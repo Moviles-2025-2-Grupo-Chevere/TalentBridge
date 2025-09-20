@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+
 
 // ---------- VALIDATORS (top-level; no UI yet) ----------
 
@@ -45,18 +47,116 @@ class Signup extends StatefulWidget {
 }
 
 class _SignupState extends State<Signup> {
+  final _formKey = GlobalKey<FormState>();
+
+  final _userCtrl = TextEditingController();
+  final _passCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
+
+  @override
+  void dispose() {
+    _userCtrl.dispose();
+    _passCtrl.dispose();
+    _emailCtrl.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final ok = _formKey.currentState?.validate() ?? false;
+    if (ok) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Formulario válido — listo para crear cuenta')),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Color(0xFFFEF7E6), 
+    return Scaffold(
+      backgroundColor: const Color(0xFFFEF7E6), // cream bg
       body: SafeArea(
         child: Center(
-          child: Text(
-            'Create your account',
-            style: TextStyle(
-              fontSize: 28,
-              fontWeight: FontWeight.w700,
-              color: Color(0xFFFFC107),
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
+            child: Form(
+              key: _formKey,
+              autovalidateMode: AutovalidateMode.onUserInteraction,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Title
+                  Text(
+                    'Crea Tu Cuenta',
+                    textAlign: TextAlign.center,
+                    style: Theme.of(context).textTheme.headlineMedium?.copyWith(
+                          color: const Color(0xFFFFC107), // amber
+                          fontWeight: FontWeight.w700,
+                        ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Usuario
+                  TextFormField(
+                    controller: _userCtrl,
+                    textInputAction: TextInputAction.next,
+                    inputFormatters: [
+                      LengthLimitingTextInputFormatter(30),
+                      FilteringTextInputFormatter.deny(RegExp(r'\s')), // no spaces
+                    ],
+                    decoration: const InputDecoration(
+                      hintText: 'Usuario',
+                      prefixIcon: Icon(Icons.person_outline),
+                      filled: true,
+                      fillColor: Colors.white,
+                    ),
+                    validator: _username, // from Step 2
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Contraseña
+                  TextFormField(
+                    controller: _passCtrl,
+                    textInputAction: TextInputAction.next,
+                    obscureText: true,
+                    inputFormatters: [LengthLimitingTextInputFormatter(64)],
+                    decoration: const InputDecoration(
+                      hintText: 'Contraseña',
+                      prefixIcon: Icon(Icons.lock_outline),
+                      filled: true,
+                      fillColor: Colors.white,
+                    ),
+                    validator: _password, // from Step 2
+                  ),
+                  const SizedBox(height: 12),
+
+                  // Email (gmail only)
+                  TextFormField(
+                    controller: _emailCtrl,
+                    textInputAction: TextInputAction.done,
+                    keyboardType: TextInputType.emailAddress,
+                    autofillHints: const [AutofillHints.email],
+                    inputFormatters: [
+                      LengthLimitingTextInputFormatter(254),
+                      FilteringTextInputFormatter.deny(RegExp(r'\s')),
+                    ],
+                    decoration: const InputDecoration(
+                      hintText: 'Email (solo @gmail.com)',
+                      prefixIcon: Icon(Icons.email_outlined),
+                      filled: true,
+                      fillColor: Colors.white,
+                    ),
+                    validator: _gmailOnly, // from Step 2
+                    onFieldSubmitted: (_) => _submit(),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Crear (always enabled in this step)
+                  ElevatedButton(
+                    onPressed: _submit,
+                    child: const Text('Crear'),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
