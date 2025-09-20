@@ -22,6 +22,7 @@ String? _password(String? v, {int min = 8, int max = 64}) {
   return null;
 }
 
+// ---------- LOGIN SCREEN ----------
 class Login extends StatefulWidget {
   const Login({ super.key });
 
@@ -30,89 +31,135 @@ class Login extends StatefulWidget {
 }
 
 class _LoginState extends State<Login> {
-
-  // Form key so can call validate() on all fields at once
   final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
 
+  // Button enable + password visibility
+  final _isValid = ValueNotifier<bool>(false);
+  final _obscure = ValueNotifier<bool>(true);
 
-   @override
+  @override
+  void initState() {
+    super.initState();
+
+    // Revalidate whenever text changes (covers typing AND most pastes)
+    _emailCtrl.addListener(_revalidate);
+    _passCtrl.addListener(_revalidate);
+
+    // Also revalidate right after the first frame.
+    // This catches cases where autofill sets values without firing listeners immediately.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _revalidate());
+  }
+
+  @override
   void dispose() {
-    // Always disposing controllers to free resources
     _emailCtrl.dispose();
     _passCtrl.dispose();
+    _isValid.dispose();
+    _obscure.dispose();
     super.dispose();
+  }
+
+  void _revalidate() {
+    final ok = _formKey.currentState?.validate() ?? false;
+    if (ok != _isValid.value) _isValid.value = ok;
+  }
+
+  void _submit() {
+    if (_formKey.currentState?.validate() ?? false) {
+      final m = ScaffoldMessenger.of(context);
+      m.hideCurrentSnackBar();
+      m.showSnackBar(
+        const SnackBar(content: Text('Valid Forms Ready to Authenticate')),
+      );
+      // Next: plug real auth here.
+    }
   }
 
   @override
   Widget build(BuildContext context){
     return Scaffold(
-      backgroundColor: const Color(0xFFFEF7E6), // bg
+      backgroundColor: const Color(0xFFFEF7E6),
       body: SafeArea(
-        // SafeArea keeps content away from notches/status bars
         child: Center(
           child: SingleChildScrollView(
-            // Allows scrolling when the keyboard opens on small screens
             padding: const EdgeInsets.symmetric(horizontal: 28, vertical: 16),
             child: Form(
               key: _formKey,
-              // Show validation errors as the user interacts
               autovalidateMode: AutovalidateMode.onUserInteraction,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch, // full-width button
-                children: [
-                  
+              // Group fields so platform autofill behaves correctly
+              child: AutofillGroup(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                   
 
-                  // ---------- EMAIL FIELD ----------
-                  TextFormField(
-                    controller: _emailCtrl,
-                    keyboardType: TextInputType.emailAddress,
-                    inputFormatters: [
-                      LengthLimitingTextInputFormatter(254),         // max 254 chars
-                      FilteringTextInputFormatter.deny(RegExp(r'\s')) // no spaces
-                    ],
-                    decoration: const InputDecoration(
-                      hintText: 'your_email@gmail.com',
-                      prefixIcon: Icon(Icons.email_outlined),
-                      filled: true,
-                      fillColor: Colors.white,
+                    // ---------- EMAIL ----------
+                    TextFormField(
+                      controller: _emailCtrl,
+                      keyboardType: TextInputType.emailAddress,
+                      textInputAction: TextInputAction.next,
+                      autofillHints: const [AutofillHints.email],
+                      inputFormatters: [
+                        LengthLimitingTextInputFormatter(254),
+                        FilteringTextInputFormatter.deny(RegExp(r'\s')),
+                      ],
+                      decoration: const InputDecoration(
+                        hintText: 'your_email@gmail.com',
+                        prefixIcon: Icon(Icons.email_outlined),
+                        filled: true,
+                        fillColor: Colors.white,
+                      ),
+                      validator: _gmailOnly,
+
+                      // NEW: make sure we revalidate on any edit/IME event
+                      onChanged: (_) => _revalidate(),
+                      onEditingComplete: _revalidate,
                     ),
-                    validator: _gmailOnly, // uses the validator above
-                  ),
-                  const SizedBox(height: 12),
+                    const SizedBox(height: 12),
 
-                  // ---------- PASSWORD FIELD ----------
-                  TextFormField(
-                    controller: _passCtrl,
-                    obscureText: true, // hidden; we'll add the eye toggle in Step 4
-                    inputFormatters: [LengthLimitingTextInputFormatter(64)], // max 64 chars
-                    decoration: const InputDecoration(
-                      hintText: '●●●●●●●●',
-                      prefixIcon: Icon(Icons.lock_outline),
-                      filled: true,
-                      fillColor: Colors.white,
+                    // ---------- PASSWORD (with eye toggle) ----------
+                    ValueListenableBuilder<bool>(
+                      valueListenable: _obscure,
+                      builder: (_, isObscure, __) => TextFormField(
+                        controller: _passCtrl,
+                        obscureText: isObscure,
+                        textInputAction: TextInputAction.done,
+                        autofillHints: const [AutofillHints.password],
+                        inputFormatters: [LengthLimitingTextInputFormatter(64)],
+                        decoration: InputDecoration(
+                          hintText: '●●●●●●●●',
+                          prefixIcon: const Icon(Icons.lock_outline),
+                          filled: true,
+                          fillColor: Colors.white,
+                          suffixIcon: IconButton(
+                            onPressed: () => _obscure.value = !isObscure,
+                            icon: Icon(isObscure ? Icons.visibility_off : Icons.visibility),
+                          ),
+                        ),
+                        validator: _password,
+
+                        // NEW: also revalidate on any edit/IME event
+                        onChanged: (_) => _revalidate(),
+                        onEditingComplete: _revalidate,
+
+                        // Pressing "done" triggers submit
+                        onFieldSubmitted: (_) => _submit(),
+                      ),
                     ),
-                    validator: _password, // uses the validator above
-                  ),
-                  const SizedBox(height: 24),
+                    const SizedBox(height: 24),
 
-                  // ---------- SUBMIT BUTTON ----------
-                  // In this step the button is always enabled; this lets you see error messages.
-                  ElevatedButton(
-                    onPressed: () {
-                      // Run all field validators
-                      final ok = _formKey.currentState?.validate() ?? false;
-                      if (ok) {
-                        // "Happy path" proof with no backend yet: show a SnackBar
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Valid Forms — Ready to authenticate')),
-                        );
-                      }
-                    },
-                    child: const Text('Log in'),
-                  ),
-                ],
+                    // ---------- SUBMIT (enabled only if form is valid) ----------
+                    ValueListenableBuilder<bool>(
+                      valueListenable: _isValid,
+                      builder: (_, ok, __) => ElevatedButton(
+                        onPressed: ok ? _submit : null,
+                        child: const Text('Log in'),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),
