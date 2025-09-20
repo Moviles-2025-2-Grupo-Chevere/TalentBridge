@@ -65,7 +65,6 @@ fun CreateAccountScreen(
 
                 Spacer(Modifier.height(36.dp))
 
-                // Usuario
                 FieldLabel("Usuario")
                 PillTextField(
                     value = user,
@@ -74,7 +73,6 @@ fun CreateAccountScreen(
 
                 Spacer(Modifier.height(18.dp))
 
-                // Password
                 FieldLabel("Contraseña")
                 PillTextField(
                     value = password,
@@ -84,7 +82,6 @@ fun CreateAccountScreen(
 
                 Spacer(Modifier.height(18.dp))
 
-                // Email
                 FieldLabel("Email")
                 PillTextField(
                     value = email,
@@ -115,9 +112,8 @@ fun CreateAccountScreen(
 
                 Spacer(Modifier.height(16.dp))
 
-                // Icono Gmail centrado
                 Image(
-                    painter = painterResource(R.drawable.gmail_logo), // usa tu recurso
+                    painter = painterResource(R.drawable.gmail_logo),
                     contentDescription = "Sign in with Gmail",
                     modifier = Modifier.size(64.dp),
                     contentScale = ContentScale.Fit
@@ -125,7 +121,6 @@ fun CreateAccountScreen(
 
                 Spacer(Modifier.height(28.dp))
 
-                // Link inferior
                 Text(
                     text = "Already have an account? Log In",
                     color = LinkGreen,
@@ -140,7 +135,6 @@ fun CreateAccountScreen(
     }
 }
 
-// Etiqueta encima de cada campo
 @Composable
 private fun FieldLabel(text: String) {
     Text(
