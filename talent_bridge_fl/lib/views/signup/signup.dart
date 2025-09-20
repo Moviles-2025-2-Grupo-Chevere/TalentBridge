@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+// ---------- LIMITS (tweak as needed) ----------
+const int kMaxGmailLocal = 30;                 // max chars BEFORE @gmail.com
+const int kGmailSuffixLen = 10;                // "@gmail.com".length
 
-// ---------- VALIDATORS (top-level; no UI yet) ----------
+// ---------- VALIDATORS (top-level) ----------
 
 // Username: 3–30 chars, letters/numbers/._- allowed
 String? _username(String? v, {int min = 3, int max = 30}) {
@@ -12,22 +15,37 @@ String? _username(String? v, {int min = 3, int max = 30}) {
   if (value.length > max) return 'Máximo $max caracteres';
   final ok = RegExp(r'^[A-Za-z0-9._-]+$').hasMatch(value);
   if (!ok) return 'Solo letras, números, ".", "_" o "-"';
-  return null; // valid
+  return null;
 }
 
-// Gmail-only email: <=254 chars and valid local part
+// Gmail-only email with strict length: total ≤ local+suffix, local ≤ kMaxGmailLocal
 String? _gmailOnly(String? v) {
   final value = (v ?? '').trim();
   if (value.isEmpty) return 'Ingresa tu correo';
-  if (value.length > 254) return 'Máximo 254 caracteres';
+
+  // Hard cap for TOTAL length: local + "@gmail.com"
+  if (value.length > kMaxGmailLocal + kGmailSuffixLen) {
+    return 'Máximo $kMaxGmailLocal caracteres antes de @gmail.com';
+  }
+
   if (!value.toLowerCase().endsWith('@gmail.com')) {
     return 'Debe ser un correo @gmail.com';
   }
+
   final local = value.substring(0, value.length - '@gmail.com'.length);
+  if (local.isEmpty) return 'Correo inválido';
+
+  // Allowed chars for local part
   final localOk =
       RegExp(r"^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+$").hasMatch(local);
-  if (!localOk || local.isEmpty) return 'Correo inválido';
-  return null; // valid
+  if (!localOk) return 'Correo inválido';
+
+  // Local part length check
+  if (local.length > kMaxGmailLocal) {
+    return 'Máximo $kMaxGmailLocal caracteres antes de @gmail.com';
+  }
+
+  return null;
 }
 
 // Password: 8–64 chars
@@ -36,9 +54,10 @@ String? _password(String? v, {int min = 8, int max = 64}) {
   if (value.isEmpty) return 'Ingresa tu contraseña';
   if (value.length < min) return 'Mínimo $min caracteres';
   if (value.length > max) return 'Máximo $max caracteres';
-  return null; // valid
+  return null;
 }
 
+// ---------- SIGNUP SCREEN ----------
 class Signup extends StatefulWidget {
   const Signup({super.key});
 
@@ -73,7 +92,7 @@ class _SignupState extends State<Signup> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFFEF7E6), // cream bg
+      backgroundColor: const Color(0xFFFEF7E6), // same cream bg as Login
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -109,7 +128,7 @@ class _SignupState extends State<Signup> {
                       filled: true,
                       fillColor: Colors.white,
                     ),
-                    validator: _username, // from Step 2
+                    validator: _username,
                   ),
                   const SizedBox(height: 12),
 
@@ -125,18 +144,19 @@ class _SignupState extends State<Signup> {
                       filled: true,
                       fillColor: Colors.white,
                     ),
-                    validator: _password, // from Step 2
+                    validator: _password,
                   ),
                   const SizedBox(height: 12),
 
-                  // Email (gmail only)
+                  // Email (gmail only, hard length cap)
                   TextFormField(
                     controller: _emailCtrl,
                     textInputAction: TextInputAction.done,
                     keyboardType: TextInputType.emailAddress,
                     autofillHints: const [AutofillHints.email],
                     inputFormatters: [
-                      LengthLimitingTextInputFormatter(254),
+                      // TOTAL length cap = local + "@gmail.com"
+                      LengthLimitingTextInputFormatter(kMaxGmailLocal + kGmailSuffixLen),
                       FilteringTextInputFormatter.deny(RegExp(r'\s')),
                     ],
                     decoration: const InputDecoration(
@@ -145,12 +165,12 @@ class _SignupState extends State<Signup> {
                       filled: true,
                       fillColor: Colors.white,
                     ),
-                    validator: _gmailOnly, // from Step 2
+                    validator: _gmailOnly,
                     onFieldSubmitted: (_) => _submit(),
                   ),
                   const SizedBox(height: 24),
 
-                  // Crear (always enabled in this step)
+                  // Crear (enabled in this step)
                   ElevatedButton(
                     onPressed: _submit,
                     child: const Text('Crear'),
