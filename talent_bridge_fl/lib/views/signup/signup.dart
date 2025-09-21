@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+// ---------- COLOR & SHAPE TOKENS ----------
+const kBg         = Color(0xFFFEF7E6); // cream background
+const kAmber      = Color(0xFFFFC107); // borders & CTA
+const kBrandGreen = Color(0xFF568C73); // titles
+const kLinkGreen  = Color(0xFF5E8F5A); // links / helper text
+const kShadowCol  = Color(0x33000000); // 20% black shadow
+const kPillRadius = 26.0;              // pill look (≈ height/2)
+
 // ---------- GMAIL LIMITS ----------
-const int kMaxGmailLocal = 30;   // max characters BEFORE @gmail.com
-const int kGmailSuffixLen = 10;  // "@gmail.com".length
+const int kMaxGmailLocal = 30;  // max chars before @gmail.com
+const int kGmailSuffixLen = 10; // length of "@gmail.com"
 
 // ---------- VALIDATORS ----------
-
-// Username: 3–30 chars, letters/numbers/._- allowed
 String? _username(String? v, {int min = 3, int max = 30}) {
   final value = (v ?? '').trim();
   if (value.isEmpty) return 'Enter your username';
@@ -18,7 +24,6 @@ String? _username(String? v, {int min = 3, int max = 30}) {
   return null;
 }
 
-// Gmail-only email with strict length caps
 String? _gmailOnly(String? v) {
   final value = (v ?? '').trim();
   if (value.isEmpty) return 'Enter your email';
@@ -27,25 +32,20 @@ String? _gmailOnly(String? v) {
   if (value.length > kMaxGmailLocal + kGmailSuffixLen) {
     return 'Max $kMaxGmailLocal characters before @gmail.com';
   }
-
   if (!value.toLowerCase().endsWith('@gmail.com')) {
     return 'Must be a @gmail.com email';
   }
 
   final local = value.substring(0, value.length - '@gmail.com'.length);
   if (local.isEmpty) return 'Invalid email';
-
-  final localOk =
-      RegExp(r"^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+$").hasMatch(local);
+  final localOk = RegExp(r"^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+$").hasMatch(local);
   if (!localOk) return 'Invalid email';
-
   if (local.length > kMaxGmailLocal) {
     return 'Max $kMaxGmailLocal characters before @gmail.com';
   }
   return null;
 }
 
-// Password: 8–64
 String? _password(String? v, {int min = 8, int max = 64}) {
   final value = v ?? '';
   if (value.isEmpty) return 'Enter your password';
@@ -54,10 +54,57 @@ String? _password(String? v, {int min = 8, int max = 64}) {
   return null;
 }
 
-// ---------- SIGNUP SCREEN ----------
+// ---------- UI HELPERS ----------
+InputDecoration _pillInput({
+  IconData? icon,
+  Widget? suffix,
+}) {
+  return InputDecoration(
+    // no floating label; we place a Text() label *above* the field
+    prefixIcon: icon != null ? Icon(icon, color: kAmber) : null,
+    suffixIcon: suffix,
+    filled: true,
+    fillColor: Colors.white,
+    isDense: true,
+    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+    enabledBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(kPillRadius),
+      borderSide: const BorderSide(color: kAmber, width: 2),
+    ),
+    focusedBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(kPillRadius),
+      borderSide: const BorderSide(color: kAmber, width: 3),
+    ),
+    errorBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(kPillRadius),
+      borderSide: const BorderSide(color: Colors.redAccent, width: 2),
+    ),
+    focusedErrorBorder: OutlineInputBorder(
+      borderRadius: BorderRadius.circular(kPillRadius),
+      borderSide: const BorderSide(color: Colors.redAccent, width: 3),
+    ),
+  );
+}
+
+Widget _shadowWrap(Widget child) {
+  return Container(
+    decoration: BoxDecoration(
+      borderRadius: BorderRadius.circular(kPillRadius),
+      boxShadow: const [
+        BoxShadow(
+          color: kShadowCol,
+          offset: Offset(0, 6),
+          blurRadius: 12,
+        ),
+      ],
+    ),
+    child: child,
+  );
+}
+
+// ---------- SCREEN ----------
 class Signup extends StatefulWidget {
   const Signup({super.key});
-
   @override
   State<Signup> createState() => _SignupState();
 }
@@ -69,7 +116,6 @@ class _SignupState extends State<Signup> {
   final _passCtrl  = TextEditingController();
   final _emailCtrl = TextEditingController();
 
-  // Enable/disable button + password visibility
   final _isValid = ValueNotifier<bool>(false);
   final _obscure = ValueNotifier<bool>(true);
 
@@ -79,7 +125,6 @@ class _SignupState extends State<Signup> {
     _userCtrl.addListener(_revalidate);
     _passCtrl.addListener(_revalidate);
     _emailCtrl.addListener(_revalidate);
-    // Revalidate after first frame (covers autofill/paste)
     WidgetsBinding.instance.addPostFrameCallback((_) => _revalidate());
   }
 
@@ -103,14 +148,19 @@ class _SignupState extends State<Signup> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Valid form — ready to create account')),
       );
-      // Next: call your real signup API here.
+      // Plug real signup API here.
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final labelStyle = Theme.of(context)
+        .textTheme
+        .bodyMedium
+        ?.copyWith(color: kAmber);
+
     return Scaffold(
-      backgroundColor: const Color(0xFFFEF7E6), // same cream bg as Login
+      backgroundColor: kBg,
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
@@ -124,89 +174,179 @@ class _SignupState extends State<Signup> {
                   children: [
                     // Title
                     Text(
-                      'Create Your Account',
+                      'Sign Up',
                       textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                            color: const Color(0xFFFFC107),
+                      style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                            color: kAmber,
                             fontWeight: FontWeight.w700,
                           ),
                     ),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 36),
 
-                    // Username
-                    TextFormField(
-                      controller: _userCtrl,
-                      textInputAction: TextInputAction.next,
-                      inputFormatters: [
-                        LengthLimitingTextInputFormatter(30),
-                        FilteringTextInputFormatter.deny(RegExp(r'\s')),
-                      ],
-                      decoration: const InputDecoration(
-                        hintText: 'Username',
-                        prefixIcon: Icon(Icons.person_outline),
-                        filled: true,
-                        fillColor: Colors.white,
-                      ),
-                      validator: _username,
-                      onChanged: (_) => _revalidate(),
-                      onEditingComplete: _revalidate,
-                    ),
-                    const SizedBox(height: 12),
-
-                    // Password (with eye toggle)
-                    ValueListenableBuilder<bool>(
-                      valueListenable: _obscure,
-                      builder: (_, isObscure, __) => TextFormField(
-                        controller: _passCtrl,
-                        obscureText: isObscure,
+                    // ----- USER (label above + pill input) -----
+                    Text('User', style: labelStyle),
+                    const SizedBox(height: 6),
+                    _shadowWrap(
+                      TextFormField(
+                        controller: _userCtrl,
                         textInputAction: TextInputAction.next,
-                        inputFormatters: [LengthLimitingTextInputFormatter(64)],
-                        decoration: InputDecoration(
-                          hintText: 'Password',
-                          prefixIcon: const Icon(Icons.lock_outline),
-                          filled: true,
-                          fillColor: Colors.white,
-                          suffixIcon: IconButton(
-                            onPressed: () => _obscure.value = !isObscure,
-                            icon: Icon(isObscure ? Icons.visibility_off : Icons.visibility),
-                          ),
-                        ),
-                        validator: _password,
+                        inputFormatters: [
+                          LengthLimitingTextInputFormatter(30),
+                          FilteringTextInputFormatter.deny(RegExp(r'\s')),
+                        ],
+                        decoration: _pillInput(icon: Icons.person_outline),
+                        validator: _username,
                         onChanged: (_) => _revalidate(),
                         onEditingComplete: _revalidate,
                       ),
                     ),
-                    const SizedBox(height: 12),
 
-                    // Email (gmail only, hard length cap)
-                    TextFormField(
-                      controller: _emailCtrl,
-                      textInputAction: TextInputAction.done,
-                      keyboardType: TextInputType.emailAddress,
-                      autofillHints: const [AutofillHints.email],
-                      inputFormatters: [
-                        LengthLimitingTextInputFormatter(kMaxGmailLocal + kGmailSuffixLen),
-                        FilteringTextInputFormatter.deny(RegExp(r'\s')),
-                      ],
-                      decoration: const InputDecoration(
-                        hintText: 'Email (gmail only)',
-                        prefixIcon: Icon(Icons.email_outlined),
-                        filled: true,
-                        fillColor: Colors.white,
+                    const SizedBox(height: 16),
+
+                    // ----- PASSWORD -----
+                    Text('Password', style: labelStyle),
+                    const SizedBox(height: 6),
+                    ValueListenableBuilder<bool>(
+                      valueListenable: _obscure,
+                      builder: (_, isObscure, __) => _shadowWrap(
+                        TextFormField(
+                          controller: _passCtrl,
+                          obscureText: isObscure,
+                          textInputAction: TextInputAction.next,
+                          inputFormatters: [LengthLimitingTextInputFormatter(64)],
+                          decoration: _pillInput(
+                            icon: Icons.lock_outline,
+                            suffix: IconButton(
+                              onPressed: () => _obscure.value = !isObscure,
+                              icon: Icon(isObscure ? Icons.visibility_off : Icons.visibility),
+                              color: kAmber,
+                            ),
+                          ),
+                          validator: _password,
+                          onChanged: (_) => _revalidate(),
+                          onEditingComplete: _revalidate,
+                        ),
                       ),
-                      validator: _gmailOnly,
-                      onChanged: (_) => _revalidate(),
-                      onEditingComplete: _revalidate,
-                      onFieldSubmitted: (_) => _submit(),
                     ),
-                    const SizedBox(height: 24),
 
-                    // Create (disabled until valid)
+                    const SizedBox(height: 16),
+
+                    // ----- EMAIL -----
+                    Text('Email', style: labelStyle),
+                    const SizedBox(height: 6),
+                    _shadowWrap(
+                      TextFormField(
+                        controller: _emailCtrl,
+                        textInputAction: TextInputAction.done,
+                        keyboardType: TextInputType.emailAddress,
+                        autofillHints: const [AutofillHints.email],
+                        inputFormatters: [
+                          LengthLimitingTextInputFormatter(kMaxGmailLocal + kGmailSuffixLen),
+                          FilteringTextInputFormatter.deny(RegExp(r'\s')),
+                        ],
+                        decoration: _pillInput(icon: Icons.email_outlined),
+                        validator: _gmailOnly,
+                        onChanged: (_) => _revalidate(),
+                        onEditingComplete: _revalidate,
+                        onFieldSubmitted: (_) => _submit(),
+                      ),
+                    ),
+
+                    const SizedBox(height: 26),
+
+                    // ----- CTA "Next" (pill, shadow, disabled until valid) -----
                     ValueListenableBuilder<bool>(
                       valueListenable: _isValid,
-                      builder: (_, ok, __) => ElevatedButton(
-                        onPressed: ok ? _submit : null,
-                        child: const Text('Create'),
+                      builder: (_, ok, __) => Center(
+                        child: SizedBox(
+                          width: 180,
+                          height: 48,
+                          child: DecoratedBox(
+                            decoration: const BoxDecoration(
+                              borderRadius: BorderRadius.all(Radius.circular(24)),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: kShadowCol,
+                                  offset: Offset(0, 6),
+                                  blurRadius: 12,
+                                ),
+                              ],
+                            ),
+                            child: ElevatedButton(
+                              onPressed: ok ? _submit : null,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: kAmber,
+                                foregroundColor: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(24),
+                                ),
+                                elevation: 0,
+                                textStyle: const TextStyle(fontWeight: FontWeight.w600),
+                              ),
+                              child: const Text('Next'),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // ----- "Other Sign In Options" -----
+                    Center(
+                      child: Text(
+                        'Other Sign In Options',
+                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: kLinkGreen),
+                      ),
+                    ),
+                    const SizedBox(height: 10),
+
+                    // ----- Round Gmail button -----
+                    Center(
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(32),
+                        onTap: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Google Sign-In (pending)')),
+                          );
+                        },
+                        child: Container(
+                          width: 64,
+                          height: 64,
+                          decoration: const BoxDecoration(
+                            color: Colors.white,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: kShadowCol,
+                                offset: Offset(0, 6),
+                                blurRadius: 12,
+                              ),
+                            ],
+                          ),
+                          alignment: Alignment.center,
+                          // Replace with your Gmail asset if you have one:
+                          // child: Image.asset('assets/icons/gmail.png', width: 32, height: 32),
+                          child: const Icon(Icons.mail, size: 32, color: Colors.redAccent),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 22),
+
+                    // ----- Bottom link -----
+                    Center(
+                      child: TextButton(
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Navigate to Log In (pending)')),
+                          );
+                        },
+                        style: TextButton.styleFrom(
+                          foregroundColor: kLinkGreen,
+                          textStyle: const TextStyle(decoration: TextDecoration.underline),
+                        ),
+                        child: const Text('Already have an account? Log In'),
                       ),
                     ),
                   ],
