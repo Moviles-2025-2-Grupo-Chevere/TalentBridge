@@ -15,7 +15,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 
 @Composable
-fun SignUpSuccessDialog(
+fun SignUpPopUp(
     show: Boolean,
     onDismiss: () -> Unit,
     onLoginClick: () -> Unit
