@@ -15,3 +15,8 @@ local.properties
 .kotlinc/
 .kotlin/
 .DS_Store
+.gradle/
+**/build/
+*.lock
+local.properties
+.idea/
