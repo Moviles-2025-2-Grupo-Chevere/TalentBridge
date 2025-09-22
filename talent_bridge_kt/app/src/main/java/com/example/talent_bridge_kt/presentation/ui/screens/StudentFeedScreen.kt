@@ -15,7 +15,8 @@ fun StudentFeedScreen(
     onLeaderFeed: () -> Unit = {},
     onSavedProjects: () -> Unit = {},
     onSearch: () -> Unit = {},
-    onStudentProfile: () -> Unit = {}
+    onStudentProfile: () -> Unit = {},
+    onSomeoneElseProfile: () -> Unit = {}
 
 ) {
     Surface(color = CreamBackground, modifier = Modifier.fillMaxSize()) {
@@ -52,6 +53,12 @@ fun StudentFeedScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { onStudentProfile() })
+            Spacer(Modifier.height(16.dp))
+
+            Text(text = "Someone Else Screen",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onSomeoneElseProfile() })
             Spacer(Modifier.height(16.dp))
 
         }
