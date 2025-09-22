@@ -9,7 +9,7 @@ class MyProfile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      color: const Color(0xFFFFFBE6), // Light cream background
+      color: const Color(0xFFFFF8E6), // White background
       child: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20.0),
