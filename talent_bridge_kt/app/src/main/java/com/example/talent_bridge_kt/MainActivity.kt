@@ -43,7 +43,8 @@ class MainActivity : ComponentActivity() {
                         }
                         composable(Routes.CreateAccount) {
                             CreateAccountScreen(
-                                onBack = { navController.popBackStack() }
+                                onBack = { navController.popBackStack() },
+
                             )
                         }
                         composable(Routes.StudentFeed) {

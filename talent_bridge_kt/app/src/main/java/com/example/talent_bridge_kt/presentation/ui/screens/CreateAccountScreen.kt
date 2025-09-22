@@ -1,5 +1,6 @@
 package com.example.talent_bridge_kt.presentation.ui.screens
 
+import SignUpPopUp
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -34,6 +35,8 @@ fun CreateAccountScreen(
     var user by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
+    var showDialog by remember { mutableStateOf(false) }
+
 
     Surface(color = CreamBackground, modifier = Modifier.fillMaxSize()) {
         Box(modifier = Modifier.fillMaxSize()) {
@@ -91,7 +94,7 @@ fun CreateAccountScreen(
                 Spacer(Modifier.height(28.dp))
 
                 Button(
-                    onClick = { /* TODO */ },
+                    onClick = { showDialog = true },
                     shape = RoundedCornerShape(28.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = AccentYellow),
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp),
@@ -129,6 +132,15 @@ fun CreateAccountScreen(
                         .padding(top = 8.dp)
                         .clickable { onBack() },
                     textAlign = TextAlign.Center
+                )
+                // ==== Pop-up overlay ====
+                SignUpPopUp(
+                    show = showDialog,
+                    onDismiss = { showDialog = false },
+                    onLoginClick = {
+                        showDialog = false
+                        onBack()
+                    }
                 )
             }
         }
