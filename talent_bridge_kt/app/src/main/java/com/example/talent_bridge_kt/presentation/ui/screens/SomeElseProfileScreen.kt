@@ -60,16 +60,16 @@ fun SomeElseProfileScreen(
     val PurpleBorder = Color(0xFFB39DDB)
 
     Surface(color = CreamBackground, modifier = Modifier.fillMaxSize()) {
-        // Estructura manual: TopBar (estático) + Contenido (peso 1) + BottomBar (estático)
+
         Column(modifier = Modifier.fillMaxSize()) {
 
-            // TOP BAR CUSTOM (no usa APIs experimentales)
+
             TopBarCustom(
                 height = 100.dp,
                 onBack = onBack,
+                onMenu=onBottomMenu
             )
 
-            // CONTENIDO
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -115,13 +115,12 @@ fun SomeElseProfileScreen(
                     }
                 }
 
-                // Description
-                SectionTitle("Descripción")
+
+                SectionTitle("Description")
                 Text(description, fontSize = 14.sp, color = Color.DarkGray)
-                Text("Experiencia previa:", fontSize = 14.sp, color = TitleGreen)
+                Text("Previous Experience:", fontSize = 14.sp, color = TitleGreen)
                 experienceItems.forEach { Bullet(it) }
 
-                // Chips (sin FlowRow ni APIs experimentales)
                 ChipsGrid(
                     tags = chips,
                     itemsPerRow = 3,
@@ -130,11 +129,11 @@ fun SomeElseProfileScreen(
                 )
 
                 // Contacto
-                SectionTitle("Contacto")
+                SectionTitle("Contact")
 
                 ContactRow(
                     label = "Email:",
-                    value = "usuario123@gmail.com",
+                    value = "juanpablo57@gmail.com",
                     buttonText = "Request portfolio",
                     onAction = onRequestPortfolio
                 )
@@ -152,8 +151,6 @@ fun SomeElseProfileScreen(
                 }
                 Spacer(Modifier.height(8.dp))
             }
-
-            // BOTTOM BAR CUSTOM (estático)
             BottomBarCustom(
                 onHome = onBottomHome,
                 onSearch = onBottomSearch,
@@ -164,12 +161,13 @@ fun SomeElseProfileScreen(
     }
 }
 
-/* ---------- Top / Bottom bars sin APIs experimentales ---------- */
+
 
 @Composable
 private fun TopBarCustom(
     height: Dp,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    onMenu: () -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -179,19 +177,11 @@ private fun TopBarCustom(
             .background(CreamBackground)
             .padding(horizontal = 8.dp),
     ) {
-        // Back (izquierda)
+
         Row(
             modifier = Modifier
-                .align(Alignment.CenterStart),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = TitleGreen)
-            }
-        }
-        // Logo (centro)
-        Row(
-            modifier = Modifier.align(Alignment.Center),
+                .align(Alignment.CenterStart)
+                .padding(start = 8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Image(
@@ -201,6 +191,23 @@ private fun TopBarCustom(
                 contentScale = ContentScale.Fit
             )
         }
+
+
+        Row(
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .padding(end = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = TitleGreen)
+            }
+            Spacer(Modifier.width(4.dp))
+            IconButton(onClick = onMenu) {
+                Icon(Icons.Filled.Menu, contentDescription = "Menu", tint = TitleGreen)
+            }
+        }
+
     }
 }
 
@@ -233,7 +240,6 @@ private fun BottomBarCustom(
     }
 }
 
-/* ---------- Helpers / UI atoms ---------- */
 
 @Composable
 private fun SectionTitle(text: String) {
@@ -254,7 +260,6 @@ private fun Bullet(text: String) {
     }
 }
 
-/** Grid simple de chips sin FlowRow (estable). */
 @Composable
 private fun ChipsGrid(
     tags: List<String>,
