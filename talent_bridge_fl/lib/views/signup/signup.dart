@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:talent_bridge_fl/views/login/login.dart';
 
 // ---------- COLOR & SHAPE TOKENS ----------
 const kBg         = Color(0xFFFEF7E6); // cream background
@@ -77,11 +78,11 @@ InputDecoration _pillInput({
     ),
     errorBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(kPillRadius),
-      borderSide: const BorderSide(color: Colors.redAccent, width: 2),
+      borderSide: BorderSide(color: Colors.redAccent, width: 2),
     ),
     focusedErrorBorder: OutlineInputBorder(
       borderRadius: BorderRadius.circular(kPillRadius),
-      borderSide: const BorderSide(color: Colors.redAccent, width: 3),
+      borderSide: BorderSide(color: Colors.redAccent, width: 3),
     ),
   );
 }
@@ -292,14 +293,7 @@ class _SignupState extends State<Signup> {
 
                     const SizedBox(height: 20),
 
-                    // ----- "Other Sign In Options" -----
-                    Center(
-                      child: Text(
-                        'Other Sign In Options',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: kLinkGreen),
-                      ),
-                    ),
-                    const SizedBox(height: 10),
+                    
 
                     // ----- Round Gmail button -----
                     Center(
@@ -334,12 +328,12 @@ class _SignupState extends State<Signup> {
 
                     const SizedBox(height: 22),
 
-                    // ----- Bottom link -----
+                    // ----- Bottom link (Sign Up -> Login) -----
                     Center(
                       child: TextButton(
                         onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Navigate to Log In (pending)')),
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const Login()),
                           );
                         },
                         style: TextButton.styleFrom(
