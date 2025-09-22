@@ -13,7 +13,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import com.example.talent_bridge_kt.core.navegation.Routes
 import com.example.talent_bridge_kt.presentation.ui.screens.CreateAccountScreen
-import com.example.talent_bridge_kt.presentation.ui.screens.InitiativeProfileScreen
+import com.example.talent_bridge_kt.presentation.ui.screens.InitiativeProfileSceen
+
 import com.example.talent_bridge_kt.presentation.ui.screens.LeaderFeedScreen
 import com.example.talent_bridge_kt.presentation.ui.screens.LoginScreen
 import com.example.talent_bridge_kt.presentation.ui.screens.SavedProjectsScreen
@@ -58,7 +59,7 @@ class MainActivity : ComponentActivity() {
                                 )
                         }
                         composable(Routes.InitiativeProfile) {
-                            InitiativeProfileScreen(
+                            InitiativeProfileSceen(
                                 onBack = { navController.popBackStack() }
                             )
                         }
