@@ -70,7 +70,7 @@ fun SearchScreen(
             Spacer(Modifier.height(8.dp))
 
             Text(
-                text = "Buscar",
+                text = "Search",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Medium,
                 color = AccentYellow,
@@ -100,7 +100,6 @@ fun SearchScreen(
                 )
                 Spacer(Modifier.width(8.dp))
 
-                // ← Aquí usamos el icono dibujado
                 IconButton(onClick = { /* abrir filtros */ }) {
                     FilterIcon(size = 28.dp, color = Color.Gray)
                 }
@@ -118,13 +117,13 @@ fun SearchScreen(
                     .width(140.dp),
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
             ) {
-                Text("Aplicar", color = Color.White, fontSize = 16.sp)
+                Text("Apply", color = Color.White, fontSize = 16.sp)
             }
 
             Spacer(Modifier.height(28.dp))
 
             Text(
-                "Recientes",
+                "Recent",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Medium,
                 color = AccentYellow,
@@ -162,7 +161,6 @@ private fun RecentItemRow(text: String) {
     }
 }
 
-/** Reloj (como icono de “reciente”) */
 @Composable
 private fun ClockIcon(
     size: Dp,
