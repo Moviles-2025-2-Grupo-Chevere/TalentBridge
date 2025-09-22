@@ -32,6 +32,7 @@ class MyProfile extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 18.0,
                         fontWeight: FontWeight.bold,
+                        fontFamily: 'OpenSans',
                       ),
                     ),
                   ],
@@ -49,13 +50,19 @@ class MyProfile extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 8.0),
-              _buildContactItem('Email:', 'usuario123@gmail.com'),
-              _buildContactItem('LinkedIn:', 'usuario123'),
-              _buildContactItem(
-                'Number:',
-                'Agregar número',
-                isLink: true,
-                linkColor: Colors.blue,
+              Center(
+                child: Column(
+                  children: [
+                    _buildContactItem('Email:', 'usuario123@gmail.com'),
+                    _buildContactItem('LinkedIn:', 'usuario123'),
+                    _buildContactItem(
+                      'Number:',
+                      'Agregar número',
+                      isLink: true,
+                      linkColor: Colors.blue,
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(height: 24.0),
 
@@ -227,38 +234,40 @@ class MyProfile extends StatelessWidget {
   }) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 4.0),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              color: Colors.green,
-              fontSize: 14.0,
+      child: Center(
+        child: Row(
+          mainAxisSize: MainAxisSize
+              .min, // This makes the row only as wide as its content
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.green,
+                fontSize: 14.0,
+              ),
             ),
-          ),
-          const SizedBox(width: 8.0),
-          isLink
-              ? InkWell(
-                  onTap: () {
-                    // Handle link tap
-                  },
-                  child: Text(
-                    value,
-                    style: TextStyle(
-                      color: linkColor ?? Colors.blue,
-                      decoration: TextDecoration.underline,
-                      fontSize: 14.0,
+            const SizedBox(width: 8.0),
+            isLink
+                ? InkWell(
+                    onTap: () {
+                      // Handle link tap
+                    },
+                    child: Text(
+                      value,
+                      style: TextStyle(
+                        color: linkColor ?? Colors.blue,
+                        decoration: TextDecoration.underline,
+                        fontSize: 14.0,
+                      ),
                     ),
-                  ),
-                )
-              : Expanded(
-                  child: Text(
+                  )
+                : Text(
                     value,
                     style: const TextStyle(fontSize: 14.0),
                   ),
-                ),
-        ],
+          ],
+        ),
       ),
     );
   }
