@@ -11,4 +11,6 @@ object Routes {
     const val StudentProfile = "student_profile"
 
     const val SomeOneElseProfile ="someone_else_profile"
+
+    const val Credits = "credits"
 }
