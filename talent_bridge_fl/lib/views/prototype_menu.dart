@@ -52,7 +52,11 @@ class _PrototypeMenuState extends State<PrototypeMenu> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Talent Bridge'),
+        title: Image.asset(
+          'assets/MainAppIcon.png', // Replace with your image path
+          height: 40, // Adjust height as needed
+          fit: BoxFit.contain,
+        ),
       ),
       bottomNavigationBar: BottomNavigationBar(
         items: [
