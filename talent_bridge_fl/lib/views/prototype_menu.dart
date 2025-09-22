@@ -57,14 +57,30 @@ class _PrototypeMenuState extends State<PrototypeMenu> {
           height: 40, // Adjust height as needed
           fit: BoxFit.contain,
         ),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.arrow_back),
+            onPressed: () {
+              Navigator.pop(context);
+            },
+          ),
+          IconButton(
+            icon: Icon(Icons.menu),
+            onPressed: () {
+              print('Menu tapped');
+            },
+          ),
+        ],
       ),
       bottomNavigationBar: BottomNavigationBar(
+        type: BottomNavigationBarType.fixed, // Add this line
         items: [
           BottomNavigationBarItem(
             icon: Icon(Icons.add_home),
             label: 'Home',
           ),
           BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
+          BottomNavigationBarItem(icon: Icon(Icons.menu), label: 'Menu'),
           BottomNavigationBarItem(
             icon: Icon(Icons.favorite_outline),
             label: 'Saved',

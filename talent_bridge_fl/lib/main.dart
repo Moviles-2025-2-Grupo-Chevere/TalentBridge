@@ -13,7 +13,10 @@ class MyApp extends StatelessWidget {
     return MaterialApp(
       title: 'Flutter Demo',
       theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(seedColor: Color(0xFFFBFBE6)),
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: Color.fromARGB(255, 97, 32, 37),
+          surface: Color(0xFFFDFAE5),
+        ),
         fontFamily: 'OpenSans',
       ),
       home: const PrototypeMenu(),
