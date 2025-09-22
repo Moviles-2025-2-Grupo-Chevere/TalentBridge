@@ -22,7 +22,8 @@ class MyProfile extends StatelessWidget {
                   children: [
                     // Profile image
                     const CircularImageWidget(
-                      imageUrl: null, // Replace with actual image URL
+                      imageUrl:
+                          'assets/my_profile.jpg', // Replace with actual image URL
                       size: 120.0,
                     ),
                     const SizedBox(height: 16.0),
@@ -44,7 +45,7 @@ class MyProfile extends StatelessWidget {
               const Text(
                 'Contacto',
                 style: TextStyle(
-                  color: Color(0xFFFFD700),
+                  color: Color(0xFF3E6990),
                   fontSize: 18.0,
                   fontWeight: FontWeight.bold,
                 ),
@@ -70,7 +71,7 @@ class MyProfile extends StatelessWidget {
               const Text(
                 'Tu Descripción',
                 style: TextStyle(
-                  color: Color(0xFFFFD700),
+                  color: Color(0xFF3E6990),
                   fontSize: 18.0,
                   fontWeight: FontWeight.bold,
                 ),
@@ -107,7 +108,7 @@ class MyProfile extends StatelessWidget {
               const Text(
                 'Mis Flags',
                 style: TextStyle(
-                  color: Color(0xFFFFD700),
+                  color: Color(0xFF3E6990),
                   fontSize: 18.0,
                   fontWeight: FontWeight.bold,
                 ),
@@ -167,7 +168,7 @@ class MyProfile extends StatelessWidget {
               const Text(
                 'Mis Proyectos',
                 style: TextStyle(
-                  color: Color(0xFFFFD700),
+                  color: Color(0xFF3E6990),
                   fontSize: 18.0,
                   fontWeight: FontWeight.bold,
                 ),

@@ -20,7 +20,7 @@ class AddElementWidget extends StatelessWidget {
     required this.title,
     required this.onTap,
     this.linkText = 'Agregar link',
-    this.titleColor = const Color(0xFFFFD700), // Yellow color for title
+    this.titleColor = const Color(0xFF3E6990), // Yellow color for title
     this.iconColor = const Color(0xFF888888), // Gray color for icon
     this.linkTextColor = Colors.blue,
     this.iconSize = 40.0,

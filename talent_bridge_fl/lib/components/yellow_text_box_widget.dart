@@ -17,8 +17,8 @@ class YellowTextBoxWidget extends StatelessWidget {
   const YellowTextBoxWidget({
     Key? key,
     required this.text,
-    this.borderColor = const Color(0xFFFFD700), // Yellow color for border
-    this.textColor = const Color(0xFFFFD700), // Yellow color for text
+    this.borderColor = const Color(0xFF3E6990), // Yellow color for border
+    this.textColor = const Color(0xFF3E6990), // Yellow color for text
     this.padding = const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
     this.borderWidth = 1.0,
     this.borderRadius = 4.0,
