@@ -90,26 +90,16 @@ class MyProfile extends StatelessWidget {
                 child: Text('• Multiservi', style: TextStyle(fontSize: 14.0)),
               ),
               const SizedBox(height: 8.0),
-              Row(
-                children: [
-                  const Text(
-                    'Carrera',
-                    style: TextStyle(
-                      color: Colors.green,
-                      fontSize: 14.0,
-                    ),
-                  ),
-                  const SizedBox(width: 8.0),
-                  Expanded(
-                    child: Text(
+
+              Center(
+                child: Column(
+                  children: [
+                    _buildContactItem(
+                      'Carrera:',
                       'Estudiante de Ing. Sistemas y Comp.',
-                      style: TextStyle(
-                        fontSize: 14.0,
-                        color: Colors.grey[800],
-                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
               const SizedBox(height: 24.0),
 
@@ -202,7 +192,7 @@ class MyProfile extends StatelessWidget {
                         width: 80.0,
                         height: 80.0,
                         decoration: BoxDecoration(
-                          color: Colors.grey.shade200,
+                          color: const Color.fromARGB(255, 185, 184, 184),
                           borderRadius: BorderRadius.circular(10.0),
                         ),
                         child: const Center(
@@ -233,21 +223,20 @@ class MyProfile extends StatelessWidget {
     Color? linkColor,
   }) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 4.0),
+      padding: const EdgeInsets.only(bottom: 8.0),
       child: Center(
-        child: Row(
-          mainAxisSize: MainAxisSize
-              .min, // This makes the row only as wide as its content
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
             Text(
               label,
               style: const TextStyle(
                 color: Colors.green,
                 fontSize: 14.0,
+                fontWeight: FontWeight.w500,
               ),
             ),
-            const SizedBox(width: 8.0),
+            const SizedBox(height: 4.0),
             isLink
                 ? InkWell(
                     onTap: () {

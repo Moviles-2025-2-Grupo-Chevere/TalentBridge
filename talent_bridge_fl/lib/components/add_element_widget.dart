@@ -29,7 +29,7 @@ class AddElementWidget extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         // Title text
         Text(
@@ -48,7 +48,7 @@ class AddElementWidget extends StatelessWidget {
             width: 80.0,
             height: 80.0,
             decoration: BoxDecoration(
-              color: Colors.grey.shade200,
+              color: const Color.fromARGB(255, 177, 174, 174),
               borderRadius: BorderRadius.circular(10.0),
             ),
             child: Center(
