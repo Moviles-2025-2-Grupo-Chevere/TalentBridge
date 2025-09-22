@@ -21,6 +21,7 @@ import com.example.talent_bridge_kt.presentation.ui.screens.SavedProjectsScreen
 import com.example.talent_bridge_kt.presentation.ui.screens.SearchScreen
 import com.example.talent_bridge_kt.presentation.ui.screens.StudentFeedScreen
 import com.example.talent_bridge_kt.presentation.ui.screens.StudentProfileScreen
+import com.example.talent_bridge_kt.presentation.ui.screens.SomeElseProfileScreen
 import com.example.talent_bridge_kt.ui.theme.Talent_bridge_ktTheme
 
 class MainActivity : ComponentActivity() {
@@ -56,6 +57,7 @@ class MainActivity : ComponentActivity() {
                                 onSavedProjects = { navController.navigate(Routes.SavedProjects) },
                                 onSearch = { navController.navigate(Routes.Search) },
                                 onStudentProfile = { navController.navigate(Routes.StudentProfile) },
+                                onSomeoneElseProfile = {navController.navigate(Routes.SomeOneElseProfile)}
                                 )
                         }
                         composable(Routes.InitiativeProfile) {
@@ -80,6 +82,11 @@ class MainActivity : ComponentActivity() {
                         }
                         composable(Routes.StudentProfile) {
                             StudentProfileScreen(
+                                onBack = { navController.popBackStack() }
+                            )
+                        }
+                        composable(Routes.SomeOneElseProfile) {
+                            SomeElseProfileScreen(
                                 onBack = { navController.popBackStack() }
                             )
                         }
