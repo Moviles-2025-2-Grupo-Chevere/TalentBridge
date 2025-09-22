@@ -80,7 +80,7 @@ class PrototypeViewList extends StatelessWidget {
     required this.updateWidget,
   });
 
-  final Map<String, StatelessWidget> prototypeViews;
+  final Map<String, Widget> prototypeViews;
 
   final void Function(Widget w) updateWidget;
 
