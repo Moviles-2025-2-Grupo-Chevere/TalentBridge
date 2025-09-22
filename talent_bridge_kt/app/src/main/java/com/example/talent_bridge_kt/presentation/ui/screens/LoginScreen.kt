@@ -66,7 +66,7 @@ fun LoginScreen(modifier: Modifier = Modifier,  onCreateAccount: () -> Unit = {}
                 )
                 Spacer(Modifier.height(60.dp))
 
-                Text(text = "Usuario",
+                Text(text = "User",
                     color = AccentYellow,
                     fontSize = 16.sp,
                     modifier = Modifier.align(Alignment.Start)
@@ -93,7 +93,7 @@ fun LoginScreen(modifier: Modifier = Modifier,  onCreateAccount: () -> Unit = {}
 
                 Spacer(Modifier.height(16.dp))
 
-                Text(text= "Contraseña",
+                Text(text= "Password",
                     color = AccentYellow,
                     fontSize = 16.sp,
                     modifier = Modifier.align(Alignment.Start)
@@ -130,7 +130,7 @@ fun LoginScreen(modifier: Modifier = Modifier,  onCreateAccount: () -> Unit = {}
                         contentColor = Color.White
                     ),
                 ) {
-                    Text("Ingresar")
+                    Text("Next")
                 }
 
                 Spacer(Modifier.height(32.dp))
@@ -144,7 +144,7 @@ fun LoginScreen(modifier: Modifier = Modifier,  onCreateAccount: () -> Unit = {}
 
                 Spacer(Modifier.height(16.dp))
 
-                Text(text = "¿No tienes una cuenta? Crear cuenta",
+                Text(text = "New to Talent Bridge? Sign In",
                     color = TitleGreen,
                     fontSize = 16.sp,
                     modifier = Modifier
