@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart'; // input formatters
+import 'package:flutter/services.dart';
+import 'package:talent_bridge_fl/views/signup/signup.dart';
 
 // ---------- UI TOKENS ----------
 const kBg        = Color(0xFFFEF7E6); // cream background
@@ -182,7 +183,7 @@ class _LoginState extends State<Login> {
                     Text('Email', style: labelStyle),
                     const SizedBox(height: 6),
 
-                    // ---------- EMAIL FIELD (with hard length cap & shadow) ----------
+                    // ---------- EMAIL FIELD ----------
                     _shadowWrap(
                       TextFormField(
                         controller: _emailCtrl,
@@ -210,7 +211,7 @@ class _LoginState extends State<Login> {
                     Text('Password', style: labelStyle),
                     const SizedBox(height: 6),
 
-                    // ---------- PASSWORD FIELD WITH EYE + SHADOW ----------
+                    // ---------- PASSWORD FIELD WITH EYE ----------
                     ValueListenableBuilder<bool>(
                       valueListenable: _obscure,
                       builder: (_, isObscure, __) => _shadowWrap(
@@ -303,8 +304,6 @@ class _LoginState extends State<Login> {
                             ],
                           ),
                           alignment: Alignment.center,
-                          // If you have a Gmail asset, swap it in here:
-                          // child: Image.asset('assets/icons/gmail.png', width: 32, height: 32),
                           child: const Icon(Icons.mail, size: 32, color: Colors.redAccent),
                         ),
                       ),
@@ -312,12 +311,12 @@ class _LoginState extends State<Login> {
 
                     const SizedBox(height: 16),
 
-                    // ---------- BOTTOM LINK ----------
+                    // ---------- BOTTOM LINK (Login -> Sign Up) ----------
                     Center(
                       child: TextButton(
                         onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Navigate to Create account (pending)')),
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const Signup()),
                           );
                         },
                         style: TextButton.styleFrom(
