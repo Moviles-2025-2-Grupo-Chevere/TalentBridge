@@ -59,7 +59,7 @@ fun CreateAccountScreen(
             ) {
                 // Título
                 Text(
-                    text = "Crea Tu Cuenta",
+                    text = "Sign Up",
                     color = AccentYellow,
                     fontSize = 36.sp,
                     textAlign = TextAlign.Center,
@@ -68,7 +68,7 @@ fun CreateAccountScreen(
 
                 Spacer(Modifier.height(36.dp))
 
-                FieldLabel("Usuario")
+                FieldLabel("User")
                 PillTextField(
                     value = user,
                     onValueChange = { user = it }
@@ -76,7 +76,7 @@ fun CreateAccountScreen(
 
                 Spacer(Modifier.height(18.dp))
 
-                FieldLabel("Contraseña")
+                FieldLabel("Password")
                 PillTextField(
                     value = password,
                     onValueChange = { password = it },
