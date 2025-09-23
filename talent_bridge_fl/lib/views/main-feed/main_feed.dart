@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:talent_bridge_fl/components/project_list.dart';
-import 'package:talent_bridge_fl/components/project_post.dart';
 import 'package:talent_bridge_fl/data/project_service.dart';
 
 class MainFeed extends StatelessWidget {
@@ -26,7 +25,10 @@ class MainFeed extends StatelessWidget {
           ],
         ),
         Expanded(
-          child: ProjectList(projects: projects),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 0),
+            child: ProjectList(projects: projects),
+          ),
         ),
       ],
     );
