@@ -25,6 +25,7 @@ import com.example.talent_bridge_kt.presentation.ui.screens.SomeElseProfileScree
 import com.example.talent_bridge_kt.presentation.ui.screens.CreditsScreen
 import com.example.talent_bridge_kt.presentation.ui.screens.NavegationScreen
 import com.example.talent_bridge_kt.ui.theme.Talent_bridge_ktTheme
+import com.example.talent_bridge_kt.presentation.ui.screens.InitiativeDetailScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -61,7 +62,8 @@ class MainActivity : ComponentActivity() {
                                 onStudentProfile = { navController.navigate(Routes.StudentProfile) },
                                 onSomeoneElseProfile = {navController.navigate(Routes.SomeOneElseProfile)},
                                 onCredits = {navController.navigate(Routes.Credits)},
-                                onStudentFeed = {navController.navigate(Routes.StudentFeed)}
+                                onStudentFeed = {navController.navigate(Routes.StudentFeed)},
+                                onInitiativeDetail = {navController.navigate(Routes.InitiativeDetail)}
                             )
                         }
                         composable(Routes.InitiativeProfile) {
@@ -103,6 +105,12 @@ class MainActivity : ComponentActivity() {
 
                         composable(Routes.StudentFeed) {
                             StudentFeedScreen(
+                                onBack = { navController.popBackStack() }
+                            )
+                        }
+
+                        composable(Routes.InitiativeDetail) {
+                            InitiativeDetailScreen(
                                 onBack = { navController.popBackStack() }
                             )
                         }

@@ -18,7 +18,9 @@ fun NavegationScreen(
     onStudentProfile: () -> Unit = {},
     onSomeoneElseProfile: () -> Unit = {},
     onCredits: () -> Unit ={},
-    onStudentFeed: () -> Unit ={}
+    onStudentFeed: () -> Unit ={},
+    onInitiativeDetail: () -> Unit ={}
+
 
 ) {
     Surface(color = CreamBackground, modifier = Modifier.fillMaxSize()) {
@@ -73,6 +75,12 @@ fun NavegationScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clickable { onStudentFeed() })
+            Spacer(Modifier.height(16.dp))
+
+            Text(text = "Initiative Detail",
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onInitiativeDetail() })
             Spacer(Modifier.height(16.dp))
 
         }
