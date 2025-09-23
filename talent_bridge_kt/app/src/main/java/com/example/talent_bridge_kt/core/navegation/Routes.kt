@@ -13,4 +13,7 @@ object Routes {
     const val SomeOneElseProfile ="someone_else_profile"
 
     const val Credits = "credits"
+
+    const val Navegation = "navegation"
+
 }

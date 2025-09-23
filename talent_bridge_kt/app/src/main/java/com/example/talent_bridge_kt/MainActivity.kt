@@ -23,6 +23,7 @@ import com.example.talent_bridge_kt.presentation.ui.screens.StudentFeedScreen
 import com.example.talent_bridge_kt.presentation.ui.screens.StudentProfileScreen
 import com.example.talent_bridge_kt.presentation.ui.screens.SomeElseProfileScreen
 import com.example.talent_bridge_kt.presentation.ui.screens.CreditsScreen
+import com.example.talent_bridge_kt.presentation.ui.screens.NavegationScreen
 import com.example.talent_bridge_kt.ui.theme.Talent_bridge_ktTheme
 
 class MainActivity : ComponentActivity() {
@@ -41,17 +42,17 @@ class MainActivity : ComponentActivity() {
                         composable(Routes.Login) {
                             LoginScreen(
                                 onCreateAccount = { navController.navigate(Routes.CreateAccount) } ,
-                                onStudentFeed = { navController.navigate(Routes.StudentFeed) }
+                                onStudentFeed = { navController.navigate(Routes.Navegation) }
                             )
                         }
                         composable(Routes.CreateAccount) {
                             CreateAccountScreen(
                                 onBack = { navController.popBackStack() },
 
-                            )
+                                )
                         }
-                        composable(Routes.StudentFeed) {
-                            StudentFeedScreen(
+                        composable(Routes.Navegation) {
+                            NavegationScreen(
                                 onBack = { navController.popBackStack() } ,
                                 onInitiativeProfile = { navController.navigate(Routes.InitiativeProfile) },
                                 onLeaderFeed = { navController.navigate(Routes.LeaderFeed) },
@@ -59,8 +60,9 @@ class MainActivity : ComponentActivity() {
                                 onSearch = { navController.navigate(Routes.Search) },
                                 onStudentProfile = { navController.navigate(Routes.StudentProfile) },
                                 onSomeoneElseProfile = {navController.navigate(Routes.SomeOneElseProfile)},
-                                onCredits = {navController.navigate(Routes.Credits)}
-                                )
+                                onCredits = {navController.navigate(Routes.Credits)},
+                                onStudentFeed = {navController.navigate(Routes.StudentFeed)}
+                            )
                         }
                         composable(Routes.InitiativeProfile) {
                             InitiativeProfileSceen(
@@ -95,6 +97,12 @@ class MainActivity : ComponentActivity() {
 
                         composable(Routes.Credits) {
                             CreditsScreen(
+                                onBack = { navController.popBackStack() }
+                            )
+                        }
+
+                        composable(Routes.StudentFeed) {
+                            StudentFeedScreen(
                                 onBack = { navController.popBackStack() }
                             )
                         }
