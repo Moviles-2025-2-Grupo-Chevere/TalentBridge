@@ -2,9 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:talent_bridge_fl/domain/project_entity.dart';
 
 class ProjectPost extends StatelessWidget {
-  const ProjectPost({super.key, required this.project});
+  const ProjectPost({
+    super.key,
+    required this.project,
+    required this.showApplyModal,
+  });
 
   final ProjectEntity project;
+  final void Function() showApplyModal;
 
   @override
   Widget build(BuildContext context) {
@@ -58,7 +63,7 @@ class ProjectPost extends StatelessWidget {
               children: [
                 TextButton(onPressed: () {}, child: Text('Comentarios')),
                 TextButton(onPressed: () {}, child: Text('Guardar')),
-                TextButton(onPressed: () {}, child: Text('Aplicar')),
+                TextButton(onPressed: showApplyModal, child: Text('Aplicar')),
               ],
             ),
           ],
