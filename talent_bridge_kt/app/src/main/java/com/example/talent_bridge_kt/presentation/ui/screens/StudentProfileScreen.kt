@@ -47,22 +47,19 @@ fun StudentProfileScreen(
     onAddProject: () -> Unit = {},
     onBack: () -> Unit = {}
 ) {
-
     var email by remember { mutableStateOf("lucianaperez@gmail.com") }
     var linkedin by remember { mutableStateOf("lucianap23") }
     var number by remember { mutableStateOf<String?>(null) }
     val tags = remember { listOf("Diseño", "UI/UX", "AI") }
 
     Surface(color = CreamBackground, modifier = modifier.fillMaxSize()) {
-
         Column(modifier = Modifier.fillMaxSize()) {
 
             TopBarCustom(
-                height = 100.dp,
+                height = 64.dp,
                 onBack = onBack,
-                onMenu = { /* abrir menú si aplica */ }
+                onMenu = { }
             )
-
 
             LazyColumn(
                 modifier = Modifier
@@ -78,7 +75,7 @@ fun StudentProfileScreen(
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Image(
-                            painter = painterResource(id = R.drawable.leader),
+                            painter = painterResource(id = R.drawable.student1),
                             contentDescription = "Avatar",
                             modifier = Modifier
                                 .size(120.dp)
@@ -87,22 +84,30 @@ fun StudentProfileScreen(
                             contentScale = ContentScale.Crop
                         )
                         Spacer(Modifier.height(10.dp))
-                        Text("LucianaPerez", fontSize = 18.sp, color = TitleGreen, fontWeight = FontWeight.SemiBold)
+                        Text(
+                            "LucianaPerez",
+                            fontSize = 18.sp,
+                            color = TitleGreen,
+                            fontWeight = FontWeight.SemiBold
+                        )
                     }
                 }
 
-                // Contacto
-                item { SectionTitle("Contacto") }
+
+                item { SectionTitle("Contact") }
                 item {
-                    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Column(
+                        Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
                         LabeledValue("Email:", email)
                         LabeledValue("LinkedIn:", linkedin)
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("Número:", color = TitleGreen, fontSize = 14.sp)
+                            Text("Number:", color = TitleGreen, fontSize = 14.sp)
                             Spacer(Modifier.width(8.dp))
                             if (number.isNullOrBlank()) {
                                 Text(
-                                    "Agregar número",
+                                    "Add number",
                                     color = LinkGreen,
                                     fontSize = 14.sp,
                                     modifier = Modifier.clickable { onEditNumber() }
@@ -114,23 +119,24 @@ fun StudentProfileScreen(
                     }
                 }
 
-                // Descripción
-                item { SectionTitle("Tu Descripción") }
+
+                item { SectionTitle("Description") }
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
                             "Interesado en proyectos con paga con relación a la IA.",
-                            fontSize = 14.sp, color = Color.DarkGray
+                            fontSize = 14.sp,
+                            color = Color.DarkGray
                         )
-                        Text("Experiencia previa:", fontSize = 14.sp, color = TitleGreen)
+                        Text("Previous experience:", fontSize = 14.sp, color = TitleGreen)
                         Bullet("Monitoria IP")
                     }
                 }
 
-                // Chips
+
                 item {
                     Column {
-                        Text("Carrera", fontSize = 12.sp, color = Color.DarkGray)
+                        Text("Career", fontSize = 12.sp, color = Color.DarkGray)
                         Spacer(Modifier.height(6.dp))
                         FlowRow(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -150,19 +156,19 @@ fun StudentProfileScreen(
                     }
                 }
 
-                // CV y Portafolio
+
                 item {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
                         AddBox(
-                            title = "Agregar CV",
+                            title = "Add CV",
                             modifier = Modifier.weight(1f),
                             onClick = onAddCv
                         )
                         AddBox(
-                            title = "Agregar Portafolio",
+                            title = "Add Portafolio",
                             modifier = Modifier.weight(1f),
                             onClick = onAddPortfolio
                         )
@@ -170,28 +176,27 @@ fun StudentProfileScreen(
                 }
 
                 // Mis Proyectos
-                item { SectionTitle("Mis Proyectos") }
+                item { SectionTitle("My Projects") }
                 item { EmptyProjectsCard(onAddProject) }
 
                 item { Spacer(Modifier.height(28.dp)) }
                 item {
                     Column(Modifier.padding(24.dp)) {
                         Text("Saved Projects")
-                        TextButton(onClick = onBack) { Text("Volver") }
+                        TextButton(onClick = onBack) { Text("Back") }
                     }
                 }
             }
 
             BottomBarCustom(
                 onHome = {  },
-                onSearch = {  },
+                onSearch = { },
                 onMenu = {  },
-                onFav = { }
+                onFav = {  }
             )
         }
     }
 }
-
 
 
 @Composable
@@ -206,37 +211,41 @@ private fun TopBarCustom(
             .height(height)
             .shadow(2.dp)
             .background(CreamBackground)
-            .padding(horizontal = 8.dp),
+            .padding(horizontal = 8.dp)
     ) {
         Row(
-            modifier = Modifier.align(Alignment.CenterStart),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = TitleGreen)
-            }
-        }
-        Row(
-            modifier = Modifier.align(Alignment.Center),
+            modifier = Modifier
+                .align(Alignment.CenterStart)
+                .padding(start = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Image(
                 painter = painterResource(id = R.drawable.logo),
                 contentDescription = "Talent Bridge",
-                modifier = Modifier.height(70.dp),
+                modifier = Modifier.height(90.dp),
                 contentScale = ContentScale.Fit
             )
         }
+
+
         Row(
-            modifier = Modifier.align(Alignment.CenterEnd),
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .padding(end = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = TitleGreen)
+            }
+            Spacer(Modifier.width(4.dp))
             IconButton(onClick = onMenu) {
                 Icon(Icons.Filled.Menu, contentDescription = "Menu", tint = TitleGreen)
             }
         }
     }
 }
+
+
 
 @Composable
 private fun BottomBarCustom(
@@ -317,7 +326,7 @@ private fun AddBox(
         ) {
             Icon(
                 imageVector = Icons.Default.Add,
-                contentDescription = "Agregar",
+                contentDescription = "Add",
                 tint = Color.Gray,
                 modifier = Modifier.size(32.dp)
             )
@@ -325,7 +334,12 @@ private fun AddBox(
         Spacer(Modifier.height(8.dp))
         Text(title, fontSize = 14.sp, color = TitleGreen, textAlign = TextAlign.Center)
         Spacer(Modifier.height(4.dp))
-        Text("Agregar link", color = LinkGreen, fontSize = 12.sp, modifier = Modifier.clickable { onClick() })
+        Text(
+            "Add link",
+            color = LinkGreen,
+            fontSize = 12.sp,
+            modifier = Modifier.clickable { onClick() }
+        )
     }
 }
 
@@ -342,7 +356,7 @@ private fun EmptyProjectsCard(onAddProject: () -> Unit) {
                 contentColor = Color.White
             ),
         ) {
-            Text("Agregar proyecto")
+            Text("Add proyecto")
         }
     }
 }
