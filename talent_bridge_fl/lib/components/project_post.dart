@@ -13,6 +13,33 @@ class ProjectPost extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
         child: Column(
           children: [
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: EdgeInsets.symmetric(vertical: 4, horizontal: 2),
+                  child: CircleAvatar(
+                    radius: 24,
+                  ),
+                ),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        project.title,
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
+                      Text(
+                        "${project.createdBy.name} · 5m",
+                        style: TextStyle(fontWeight: FontWeight.w300),
+                      ),
+                      Text(project.description),
+                    ],
+                  ),
+                ),
+              ],
+            ),
             if (project.imgUrl != null) Image.asset(project.imgUrl!),
             Wrap(
               spacing: 4,
