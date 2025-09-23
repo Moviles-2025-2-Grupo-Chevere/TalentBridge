@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:talent_bridge_fl/components/project_post.dart';
+import 'package:talent_bridge_fl/components/submit_alert.dart';
 import 'package:talent_bridge_fl/domain/project_entity.dart';
 
 class ProjectList extends StatelessWidget {
@@ -14,7 +15,17 @@ class ProjectList extends StatelessWidget {
       itemBuilder: (ctx, index) => Dismissible(
         key: ValueKey(projects[index]),
         onDismissed: (direction) {},
-        child: ProjectPost(project: projects[index]),
+        child: ProjectPost(
+          project: projects[index],
+          showApplyModal: () {
+            showDialog(
+              context: context,
+              builder: (BuildContext context) {
+                return SubmitAlert();
+              },
+            );
+          },
+        ),
       ),
     );
   }
