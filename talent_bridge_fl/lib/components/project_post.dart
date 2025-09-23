@@ -8,6 +8,7 @@ class ProjectPost extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    var profilePictureUrl = project.createdBy.profilePictureUrl;
     return Card(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
@@ -20,6 +21,9 @@ class ProjectPost extends StatelessWidget {
                   padding: EdgeInsets.symmetric(vertical: 4, horizontal: 2),
                   child: CircleAvatar(
                     radius: 24,
+                    backgroundImage: profilePictureUrl != null
+                        ? AssetImage(profilePictureUrl)
+                        : null,
                   ),
                 ),
                 Expanded(
