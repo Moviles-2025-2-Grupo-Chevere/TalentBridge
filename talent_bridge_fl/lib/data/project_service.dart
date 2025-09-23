@@ -8,26 +8,50 @@ class ProjectService {
     UserEntity user1 = UserEntity(
       name: 'Juanito',
       profilePictureUrl: '$assetsimages/gumball.jpg',
+      mainProgram: 'Graphic Design',
+      description:
+          'Creative designer with 3+ years of experience in visual communication and branding.',
+      skills: ['Adobe Photoshop', 'Illustrator', 'UI/UX Design', 'Branding'],
     );
     UserEntity user2 = UserEntity(
       name: 'Maria',
       profilePictureUrl: '$assetsimages/bb_princess.jpeg',
+      mainProgram: 'Software Engineering',
+      description:
+          'Full-stack developer passionate about mobile app development and clean code.',
+      skills: ['Flutter', 'React', 'Node.js', 'MongoDB', 'Git'],
     );
     UserEntity user3 = UserEntity(
       name: 'Carlos',
       profilePictureUrl: '$assetsimages/rigby.jpg',
+      mainProgram: 'Computer Science',
+      description:
+          'Web developer specializing in modern frontend frameworks and responsive design.',
+      skills: ['JavaScript', 'React', 'Vue.js', 'CSS', 'HTML'],
     );
     UserEntity user4 = UserEntity(
       name: 'Ana',
       profilePictureUrl: '$assetsimages/anais.jpg',
+      mainProgram: 'Data Science',
+      description:
+          'Data scientist with expertise in machine learning and statistical analysis.',
+      skills: ['Python', 'R', 'TensorFlow', 'Pandas', 'SQL'],
     );
     UserEntity user5 = UserEntity(
       name: 'Pedro',
       profilePictureUrl: '$assetsimages/mordecai.jpeg',
+      mainProgram: 'Game Development',
+      description:
+          'Indie game developer with passion for creating immersive gaming experiences.',
+      skills: ['Unity', 'C#', 'Blender', '3D Animation', 'Game Design'],
     );
     UserEntity user6 = UserEntity(
       name: 'Sofia',
       profilePictureUrl: '$assetsimages/margaret.jpg',
+      mainProgram: 'Artificial Intelligence',
+      description:
+          'AI engineer focused on natural language processing and chatbot development.',
+      skills: ['Python', 'NLP', 'TensorFlow', 'PyTorch', 'Machine Learning'],
     );
     //talent_bridge_fl/assets/images/dummy_post_img.jpeg
 
