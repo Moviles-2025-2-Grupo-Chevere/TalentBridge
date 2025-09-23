@@ -39,7 +39,6 @@ fun CreditsScreen(
 
             TopBarLogoOnly(height = 100.dp)
 
-
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -47,20 +46,10 @@ fun CreditsScreen(
                     .padding(horizontal = 20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Hero
                 Spacer(Modifier.height(16.dp))
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    text = "The\nTeam",
-                    color = AccentYellow,
-                    fontSize = 28.sp,
-                    lineHeight = 30.sp,
-                    textAlign = TextAlign.Center,
-                    fontWeight = FontWeight.SemiBold,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 4.dp)
-                )
+
+
+                TitleWithLogo()
 
                 // Botón Home -> back
                 Spacer(Modifier.height(12.dp))
@@ -78,16 +67,16 @@ fun CreditsScreen(
                     Text("Home")
                 }
 
-                // Lista de miembros (izq/der alternado)
+
                 Spacer(Modifier.height(16.dp))
                 val team = remember {
                     listOf(
-                        TeamMember("Daniel Triviño",     R.drawable.student_dani),
-                        TeamMember("David Fuquen",      R.drawable.student_david),
-                        TeamMember("Mariana Ortega",    R.drawable.student_mari),
-                        TeamMember("Manuela Lizcano",    R.drawable.student_manu),
-                        TeamMember("Juan Diego Lozano", R.drawable.student_judi),
-                        TeamMember("María Paula Murrillo",  R.drawable.student_mp),
+                        TeamMember("Daniel Triviño",        R.drawable.student_dani),
+                        TeamMember("David Fuquen",         R.drawable.student_david),
+                        TeamMember("Mariana Ortega",       R.drawable.student_mari),
+                        TeamMember("Manuela Lizcano",      R.drawable.student_manu),
+                        TeamMember("Juan Diego Lozano",    R.drawable.student_judi),
+                        TeamMember("María Paula Murrillo", R.drawable.student_mp),
                     )
                 }
 
@@ -107,12 +96,11 @@ fun CreditsScreen(
 
 private data class TeamMember(val name: String, val imageRes: Int)
 
-/** Fila de miembro alternando izquierda/derecha según alignLeft. */
+
 @Composable
 private fun MemberRow(member: TeamMember, alignLeft: Boolean) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = if (alignLeft) Arrangement.Start else Arrangement.End,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -143,6 +131,33 @@ private fun Avatar(member: TeamMember) {
 
 
 @Composable
+private fun TitleWithLogo() {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = 4.dp),
+        horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.logo),
+            contentDescription = "Talent Bridge",
+            contentScale = ContentScale.Fit,
+            modifier = Modifier.height(100.dp)
+        )
+        Spacer(Modifier.width(12.dp))
+        Text(
+            text = "The Team",
+            color = AccentYellow,
+            fontSize = 28.sp,
+            lineHeight = 30.sp,
+            textAlign = TextAlign.Start,
+            fontWeight = FontWeight.SemiBold
+        )
+    }
+}
+
+@Composable
 private fun TopBarLogoOnly(height: Dp) {
     Box(
         modifier = Modifier
@@ -160,6 +175,5 @@ private fun TopBarLogoOnly(height: Dp) {
                 .align(Alignment.CenterStart)
                 .height(70.dp)
         )
-
     }
 }
