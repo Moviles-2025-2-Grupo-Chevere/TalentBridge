@@ -54,15 +54,13 @@ fun InitiativeProfileSceen(
 
     Surface(color = CreamBackground, modifier = modifier.fillMaxSize()) {
 
-
         Column(modifier = Modifier.fillMaxSize()) {
 
             TopBarCustom(
-                height = 100.dp,
+                height = 64.dp,
                 onBack = onBack,
                 onMenu = {  }
             )
-
 
             Box(modifier = Modifier.weight(1f)) {
                 LazyColumn(
@@ -95,8 +93,8 @@ fun InitiativeProfileSceen(
                         }
                     }
 
-                    // Contacto
-                    item { SectionTitle("Contacto") }
+
+                    item { SectionTitle("Contact") }
                     item {
                         Column(
                             Modifier.fillMaxWidth(),
@@ -109,7 +107,7 @@ fun InitiativeProfileSceen(
                                 Spacer(Modifier.width(8.dp))
                                 if (number.isNullOrBlank()) {
                                     Text(
-                                        "Agregar número",
+                                        "Add número",
                                         color = LinkGreen,
                                         fontSize = 14.sp,
                                         modifier = Modifier.clickable { onEditNumber() }
@@ -122,14 +120,14 @@ fun InitiativeProfileSceen(
                     }
 
                     // Descripción
-                    item { SectionTitle("Descripción") }
+                    item { SectionTitle("Description") }
                     item {
                         Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                             Text(
                                 "Buscamos interesados en proyectos de AI.",
                                 fontSize = 14.sp, color = Color.DarkGray
                             )
-                            Text("Perfiles:", fontSize = 14.sp, color = TitleGreen)
+                            Text("Profiles:", fontSize = 14.sp, color = TitleGreen)
                             Bullet("Aceptamos estudiantes de todos los semestres")
                         }
                     }
@@ -137,7 +135,7 @@ fun InitiativeProfileSceen(
                     // Chips
                     item {
                         Column {
-                            Text("Carrera", fontSize = 12.sp, color = Color.DarkGray)
+                            Text("Career", fontSize = 12.sp, color = Color.DarkGray)
                             Spacer(Modifier.height(6.dp))
                             FlowRow(
                                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -157,14 +155,14 @@ fun InitiativeProfileSceen(
                         }
                     }
 
-                    // CV y Portafolio (arreglo de weight)
+
                     item {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
                             AddBox(
-                                title = "Agregar Oferta",
+                                title = "Add Offer",
                                 modifier = Modifier.weight(1f),
                                 onClick = onAddOferta
                             )
@@ -191,6 +189,7 @@ fun InitiativeProfileSceen(
     }
 }
 
+
 @Composable
 private fun TopBarCustom(
     height: Dp,
@@ -205,38 +204,40 @@ private fun TopBarCustom(
             .background(CreamBackground)
             .padding(horizontal = 8.dp),
     ) {
-        // Back (izquierda)
+
         Row(
-            modifier = Modifier.align(Alignment.CenterStart),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            IconButton(onClick = onBack) {
-                Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = TitleGreen)
-            }
-        }
-        // Logo
-        Row(
-            modifier = Modifier.align(Alignment.Center),
+            modifier = Modifier
+                .align(Alignment.CenterStart)
+                .padding(start = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Image(
                 painter = painterResource(id = R.drawable.logo),
                 contentDescription = "Talent Bridge",
-                modifier = Modifier.height(70.dp),
+                modifier = Modifier.height(80.dp),
                 contentScale = ContentScale.Fit
             )
         }
-        // Menú
+
+
         Row(
-            modifier = Modifier.align(Alignment.CenterEnd),
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .padding(end = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = TitleGreen)
+            }
+            Spacer(Modifier.width(4.dp))
             IconButton(onClick = onMenu) {
                 Icon(Icons.Filled.Menu, contentDescription = "Menu", tint = TitleGreen)
             }
         }
     }
 }
+
+
 
 @Composable
 private fun BottomBarCustom(
@@ -317,7 +318,7 @@ private fun AddBox(
         ) {
             Icon(
                 imageVector = Icons.Default.Add,
-                contentDescription = "Agregar",
+                contentDescription = "Add",
                 tint = Color.Gray,
                 modifier = Modifier.size(32.dp)
             )
@@ -326,7 +327,7 @@ private fun AddBox(
         Text(title, fontSize = 14.sp, color = TitleGreen, textAlign = TextAlign.Center)
         Spacer(Modifier.height(4.dp))
         Text(
-            "Agregar link",
+            "Add link",
             color = LinkGreen,
             fontSize = 12.sp,
             modifier = Modifier.clickable { onClick() }
@@ -337,7 +338,7 @@ private fun AddBox(
 @Composable
 private fun EmptyProjectsCard(onAddProject: () -> Unit) {
     Column(modifier = Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-        Text("No tienes proyectos activos.", fontSize = 13.sp, color = Color.DarkGray)
+        Text("No active projects.", fontSize = 13.sp, color = Color.DarkGray)
         Spacer(Modifier.height(12.dp))
         OutlinedButton(
             onClick = onAddProject,
@@ -347,7 +348,7 @@ private fun EmptyProjectsCard(onAddProject: () -> Unit) {
                 contentColor = Color.White
             ),
         ) {
-            Text("Agregar proyecto")
+            Text("Add project")
         }
     }
 }
