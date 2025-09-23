@@ -13,13 +13,14 @@ import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -37,22 +38,29 @@ import com.example.talent_bridge_kt.ui.theme.CreamBackground
 import com.example.talent_bridge_kt.ui.theme.LinkGreen
 import com.example.talent_bridge_kt.ui.theme.TitleGreen
 
-
+/* =========================================================================
+ * ExploreProjectsScreen – con header, cards, bottom bar y pop-up de “Aplicar”
+ * ========================================================================= */
 @Composable
 fun StudentFeedScreen(
     onBack: () -> Unit = {},
     onOpenMenu: () -> Unit = {},
+    // Bottom bar
     onHome: () -> Unit = {},
     onSearch: () -> Unit = {},
     onFav: () -> Unit = {},
+    // Navegación desde el pop-up (opcional)
+    onGoToApplications: () -> Unit = {}
 ) {
+    var showSubmitted by remember { mutableStateOf(false) }
+
     Surface(color = Color.White, modifier = Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
 
-            // Encabezado fijo
-            TopBarCustom(height = 100.dp, onBack = onBack, onMenu = onOpenMenu)
+            // Encabezado fijo (logo + back + menú)
+            TopBarCustom(height = 56.dp, onBack = onBack, onMenu = onOpenMenu)
 
-            // Contenido scrollable
+            // Contenido
             LazyColumn(
                 modifier = Modifier
                     .weight(1f)
@@ -73,7 +81,7 @@ fun StudentFeedScreen(
                     )
                 }
 
-                // Card #1
+                // Card 1
                 item {
                     ProjectCardSimple(
                         time = "1 · 5m",
@@ -81,11 +89,12 @@ fun StudentFeedScreen(
                         subtitle = "Personas interesadas en el diseño gráfico.",
                         description = "Esperamos una disponibilidad de 2 horas semanales.",
                         tags = listOf("Diseño", "Dibujo", "2 Horas"),
-                        imageRes = R.drawable.iniciativa // cambia por tu imagen (mock)
+                        imageRes = R.drawable.robocol,
+                        onApplyClick = { showSubmitted = true }
                     )
                 }
 
-                // Card #2
+                // Card 2
                 item {
                     ProjectCardSimple(
                         time = "2 · 10m",
@@ -93,11 +102,12 @@ fun StudentFeedScreen(
                         subtitle = "Personas interesadas en el diseño gráfico.",
                         description = "Esperamos una disponibilidad de 2 horas semanales.",
                         tags = listOf("Diseño", "Dibujo", "2 Horas"),
-                        imageRes = R.drawable.leader // cambia por tu imagen (mock)
+                        imageRes = R.drawable.relaja,
+                        onApplyClick = { showSubmitted = true }
                     )
                 }
 
-                // Card #3 (sin imagen si quieres)
+                // Card 3 (sin imagen)
                 item {
                     ProjectCardSimple(
                         time = "hoy",
@@ -105,7 +115,8 @@ fun StudentFeedScreen(
                         subtitle = "Afiche para feria 2025",
                         description = "Esperamos una disponibilidad de 2 horas semanales.",
                         tags = listOf("Diseño", "Dibujo", "2 Horas"),
-                        imageRes = null // sin imagen
+                        imageRes = null,
+                        onApplyClick = { showSubmitted = true }
                     )
                 }
 
@@ -121,9 +132,20 @@ fun StudentFeedScreen(
             )
         }
     }
+
+    // Pop-up “Application Submitted!”
+    if (showSubmitted) {
+        ApplicationSubmittedDialog(
+            onMyApplications = {
+                showSubmitted = false
+                onGoToApplications()
+            },
+            onKeepExploring = { showSubmitted = false }
+        )
+    }
 }
 
-/* ------------------- Componentes UI ------------------- */
+/* ============================ COMPONENTES ============================ */
 
 @Composable
 private fun ProjectCardSimple(
@@ -132,22 +154,23 @@ private fun ProjectCardSimple(
     subtitle: String,
     description: String,
     tags: List<String>,
-    imageRes: Int? // puede ser null
+    imageRes: Int?,                   // puede ser null
+    onApplyClick: () -> Unit
 ) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .shadow(2.dp, RoundedCornerShape(8.dp))
             .background(Color.White, RoundedCornerShape(8.dp))
-            .border(1.dp, AccentYellow, RoundedCornerShape(8.dp))
+            .border(1.dp, Color(0xFFEDEDED), RoundedCornerShape(8.dp))
             .padding(12.dp)
     ) {
-        // encabezado mini
+        // mini-header
         Row(verticalAlignment = Alignment.CenterVertically) {
             Image(
                 painter = painterResource(id = R.drawable.iniciativa),
                 contentDescription = "iniciativa",
-                modifier = Modifier.size(70.dp),
+                modifier = Modifier.size(28.dp),
                 contentScale = ContentScale.Crop
             )
             Spacer(Modifier.width(8.dp))
@@ -155,7 +178,7 @@ private fun ProjectCardSimple(
         }
 
         Spacer(Modifier.height(8.dp))
-        Text(title, color = TitleGreen, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
+        Text(title, color = TitleGreen, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
         Text(subtitle, fontSize = 12.sp, color = Color.DarkGray)
         Spacer(Modifier.height(8.dp))
         Text(description, fontSize = 12.sp, color = Color.DarkGray)
@@ -167,18 +190,18 @@ private fun ProjectCardSimple(
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(140.dp)
+                    .aspectRatio(1f)
                     .border(1.dp, Color(0xFFEDEDED), RoundedCornerShape(6.dp)),
                 contentScale = ContentScale.Crop
             )
         }
 
-        // Chips simples
+        // Chips
         Spacer(Modifier.height(8.dp))
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally) // centra las chips y mantiene espacio
         ) {
             tags.forEach { tag ->
                 Box(
@@ -200,7 +223,7 @@ private fun ProjectCardSimple(
             verticalAlignment = Alignment.CenterVertically
         ) {
             OutlinedButton(
-                onClick = { /* Comentarios */ },
+                onClick = { /* guardar */ },
                 shape = RoundedCornerShape(20.dp),
                 colors = ButtonDefaults.outlinedButtonColors(
                     containerColor = Color.White,
@@ -218,7 +241,7 @@ private fun ProjectCardSimple(
             ) { Text("Save", fontSize = 12.sp) }
 
             OutlinedButton(
-                onClick = { /* aplicar */ },
+                onClick = onApplyClick,
                 shape = RoundedCornerShape(20.dp),
                 colors = ButtonDefaults.outlinedButtonColors(
                     containerColor = Color.White,
@@ -230,7 +253,70 @@ private fun ProjectCardSimple(
     }
 }
 
-/* ------------------- Barras (custom, estables) ------------------- */
+/* ------------------------- Pop-up/Diálogo ------------------------- */
+
+@Composable
+private fun ApplicationSubmittedDialog(
+    onMyApplications: () -> Unit,
+    onKeepExploring: () -> Unit
+) {
+    // Scrim oscuro
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.55f)),
+        contentAlignment = Alignment.Center
+    ) {
+        // Tarjeta centrada
+        Column(
+            modifier = Modifier
+                .widthIn(min = 240.dp, max = 320.dp)
+                .shadow(8.dp, RoundedCornerShape(16.dp))
+                .background(Color(0xFF0F6A7A), RoundedCornerShape(16.dp))
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                "Application\nSubmitted!",
+                color = Color.White,
+                fontSize = 18.sp,
+                lineHeight = 22.sp,
+                textAlign = TextAlign.Center,
+                fontWeight = FontWeight.SemiBold
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "Your application has been\nsubmitted successfully.",
+                color = Color(0xFFEAF7FA),
+                fontSize = 12.sp,
+                textAlign = TextAlign.Center
+            )
+            Spacer(Modifier.height(16.dp))
+
+            Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                Button(
+                    onClick = onMyApplications,
+                    shape = RoundedCornerShape(24.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.White,
+                        contentColor = Color(0xFF0F6A7A)
+                    )
+                ) { Text("My applications", fontSize = 12.sp) }
+
+                Button(
+                    onClick = onKeepExploring,
+                    shape = RoundedCornerShape(24.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color.White,
+                        contentColor = Color(0xFF0F6A7A)
+                    )
+                ) { Text("Keep Exploring", fontSize = 12.sp) }
+            }
+        }
+    }
+}
+
+/* -------------------------- Top / Bottom bars -------------------------- */
 
 @Composable
 private fun TopBarCustom(
@@ -303,7 +389,5 @@ private fun BottomBarCustom(
             IconButton(onClick = onMenu)  { Icon(Icons.Filled.Menu,  contentDescription = "Menu",  tint = TitleGreen) }
             IconButton(onClick = onFav)   { Icon(Icons.Filled.FavoriteBorder, contentDescription = "Fav", tint = TitleGreen) }
         }
-
-
     }
 }
