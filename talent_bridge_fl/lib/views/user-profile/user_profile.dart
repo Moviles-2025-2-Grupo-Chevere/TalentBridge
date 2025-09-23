@@ -29,7 +29,7 @@ class UserProfile extends StatelessWidget {
                     const SizedBox(height: 16.0),
                     // Username
                     const Text(
-                      'Usuario123',
+                      'UsuarioXYZ',
                       style: TextStyle(
                         fontSize: 18.0,
                         fontWeight: FontWeight.bold,
@@ -40,27 +40,12 @@ class UserProfile extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 24.0),
-
-              // Contact section
-              const Text(
-                'Contacto',
-                style: TextStyle(
-                  color: Color(0xFF3E6990),
-                  fontSize: 18.0,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              const SizedBox(height: 8.0),
               Center(
                 child: Column(
                   children: [
-                    _buildContactItem('Email:', 'usuario123@gmail.com'),
-                    _buildContactItem('LinkedIn:', 'usuario123'),
                     _buildContactItem(
-                      'Number:',
-                      'Agregar número',
-                      isLink: true,
-                      linkColor: Colors.blue,
+                      'Carrera:',
+                      'Diseño',
                     ),
                   ],
                 ),
@@ -69,16 +54,18 @@ class UserProfile extends StatelessWidget {
 
               // Description section
               const Text(
-                'Tu Descripción',
+                'Descripción',
                 style: TextStyle(
                   color: Color(0xFF3E6990),
                   fontSize: 18.0,
                   fontWeight: FontWeight.bold,
+                  fontFamily: 'OpenSans',
+                  height: 1.5,
                 ),
               ),
               const SizedBox(height: 8.0),
               const Text(
-                'Interesado en proyectos con paga con relación a la IA.',
+                'Interesado en proyectos no pagos (por experiencia) de diseño gráfico, edición de video y desarrollo web. Busco oportunidades para aprender y crecer en estas áreas.',
                 style: TextStyle(fontSize: 14.0),
               ),
               const SizedBox(height: 8.0),
@@ -88,21 +75,12 @@ class UserProfile extends StatelessWidget {
               ),
               const Padding(
                 padding: EdgeInsets.only(left: 16.0),
-                child: Text('• Multiservi', style: TextStyle(fontSize: 14.0)),
-              ),
-              const SizedBox(height: 8.0),
-
-              Center(
-                child: Column(
-                  children: [
-                    _buildContactItem(
-                      'Carrera:',
-                      'Estudiante de Ing. Sistemas y Comp.',
-                    ),
-                  ],
+                child: Text(
+                  '• Monitor de investigación de la facultad de Arquitectura y Diseño',
+                  style: TextStyle(fontSize: 14.0),
                 ),
               ),
-              const SizedBox(height: 24.0),
+              const SizedBox(height: 8.0),
 
               // Flags section (skill tags)
               const Text(
@@ -120,53 +98,15 @@ class UserProfile extends StatelessWidget {
                 children: [
                   YellowTextBoxWidget(text: 'Diseño', onTap: () {}),
                   YellowTextBoxWidget(text: 'Dibujo', onTap: () {}),
-                  YellowTextBoxWidget(text: '2 Horas', onTap: () {}),
-                  YellowTextBoxWidget(text: 'Diseño', onTap: () {}),
-                  YellowTextBoxWidget(text: 'Diseño', onTap: () {}),
+                  YellowTextBoxWidget(text: 'AutoCad', onTap: () {}),
+                  YellowTextBoxWidget(text: 'Planos', onTap: () {}),
+                  YellowTextBoxWidget(text: 'Cerámica', onTap: () {}),
                 ],
               ),
-              Center(
-                child: TextButton(
-                  onPressed: () {},
-                  child: const Text(
-                    'Agregar flag',
-                    style: TextStyle(
-                      color: Colors.blue,
-                      decoration: TextDecoration.underline,
-                    ),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 24.0),
 
-              // Link sections for CV and Portfolio
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Expanded(
-                    child: AddElementWidget(
-                      title: 'Agregar CV',
-                      onTap: () {
-                        // Add CV action
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 16.0),
-                  Expanded(
-                    child: AddElementWidget(
-                      title: 'Agregar Portafolio',
-                      onTap: () {
-                        // Add Portfolio action
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 24.0),
-
-              // Projects section
+              // Contact section
               const Text(
-                'Mis Proyectos',
+                'Contacto',
                 style: TextStyle(
                   color: Color(0xFF3E6990),
                   fontSize: 18.0,
@@ -177,38 +117,32 @@ class UserProfile extends StatelessWidget {
               Center(
                 child: Column(
                   children: [
-                    Text(
-                      'No tienes proyectos activos.',
-                      style: TextStyle(
-                        fontSize: 14.0,
-                        color: Colors.grey[600],
-                      ),
+                    _buildContactItem(
+                      'Email:',
+                      'usuario123@gmail.com',
+                      isLink: true,
+                      linkColor: Colors.blue,
                     ),
-                    const SizedBox(height: 16.0),
-                    InkWell(
-                      onTap: () {
-                        // Add project action
-                      },
-                      child: Container(
-                        width: 80.0,
-                        height: 80.0,
-                        decoration: BoxDecoration(
-                          color: const Color.fromARGB(255, 185, 184, 184),
-                          borderRadius: BorderRadius.circular(10.0),
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.add,
-                            color: Colors.grey,
-                            size: 40.0,
-                          ),
-                        ),
-                      ),
+                    _buildContactItem(
+                      'LinkedIn:',
+                      'usuario123',
+                      isLink: true,
+                      linkColor: Colors.blue,
+                    ),
+                    _buildContactItem(
+                      'Number:',
+                      '+39 1234 567890',
+                      isLink: true,
+                      linkColor: Colors.blue,
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 40.0),
+              const SizedBox(height: 24.0),
+
+              // Link sections for CV and Portfolio
+
+              // Projects section
             ],
           ),
         ),
