@@ -3,12 +3,33 @@ import 'package:talent_bridge_fl/domain/user_entity.dart';
 
 class ProjectService {
   getProjects() {
-    UserEntity user1 = UserEntity(name: 'Juanito');
-    UserEntity user2 = UserEntity(name: 'Maria');
-    UserEntity user3 = UserEntity(name: 'Carlos');
-    UserEntity user4 = UserEntity(name: 'Ana');
-    UserEntity user5 = UserEntity(name: 'Pedro');
-    UserEntity user6 = UserEntity(name: 'Sofia');
+    var assetsimages = 'assets/images';
+    var dummyImgRoute = '$assetsimages/dummy_post_img.jpeg';
+    UserEntity user1 = UserEntity(
+      name: 'Juanito',
+      profilePictureUrl: '$assetsimages/gumball.jpg',
+    );
+    UserEntity user2 = UserEntity(
+      name: 'Maria',
+      profilePictureUrl: '$assetsimages/bb_princess.jpeg',
+    );
+    UserEntity user3 = UserEntity(
+      name: 'Carlos',
+      profilePictureUrl: '$assetsimages/rigby.jpg',
+    );
+    UserEntity user4 = UserEntity(
+      name: 'Ana',
+      profilePictureUrl: '$assetsimages/anais.jpg',
+    );
+    UserEntity user5 = UserEntity(
+      name: 'Pedro',
+      profilePictureUrl: '$assetsimages/mordecai.jpeg',
+    );
+    UserEntity user6 = UserEntity(
+      name: 'Sofia',
+      profilePictureUrl: '$assetsimages/margaret.jpg',
+    );
+    //talent_bridge_fl/assets/images/dummy_post_img.jpeg
 
     var projects = [
       ProjectEntity(
@@ -18,6 +39,7 @@ class ProjectService {
         description:
             'People interested in graphic design. We hope for an availability of 2 weekly hours.',
         skills: ['Design', 'Drawing', '2 hours'],
+        imgUrl: dummyImgRoute,
       ),
       ProjectEntity(
         createdAt: DateTime.now().subtract(Duration(days: 1)),

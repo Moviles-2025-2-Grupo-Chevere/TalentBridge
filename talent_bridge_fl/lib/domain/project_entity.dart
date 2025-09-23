@@ -7,6 +7,7 @@ class ProjectEntity {
     required this.title,
     required this.description,
     required this.skills,
+    this.imgUrl,
   });
 
   final DateTime createdAt;
@@ -14,4 +15,5 @@ class ProjectEntity {
   final String title;
   final String description;
   final List<String> skills;
+  final String? imgUrl;
 }
