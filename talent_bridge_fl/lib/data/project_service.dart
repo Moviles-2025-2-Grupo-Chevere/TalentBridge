@@ -9,6 +9,8 @@ class ProjectService {
     UserEntity user4 = UserEntity(name: 'Ana');
     UserEntity user5 = UserEntity(name: 'Pedro');
     UserEntity user6 = UserEntity(name: 'Sofia');
+    //talent_bridge_fl/assets/images/dummy_post_img.jpeg
+    var dummyImgRoute = 'assets/images/dummy_post_img.jpeg';
 
     var projects = [
       ProjectEntity(
@@ -18,6 +20,7 @@ class ProjectService {
         description:
             'People interested in graphic design. We hope for an availability of 2 weekly hours.',
         skills: ['Design', 'Drawing', '2 hours'],
+        imgUrl: dummyImgRoute,
       ),
       ProjectEntity(
         createdAt: DateTime.now().subtract(Duration(days: 1)),

@@ -13,6 +13,7 @@ class ProjectPost extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
         child: Column(
           children: [
+            if (project.imgUrl != null) Image.asset(project.imgUrl!),
             Wrap(
               spacing: 4,
               children: [
