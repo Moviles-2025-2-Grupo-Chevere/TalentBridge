@@ -23,13 +23,13 @@ class OrgProfile extends StatelessWidget {
                     // Profile image
                     const CircularImageWidget(
                       imageUrl:
-                          'assets/my_profile.jpg', // Replace with actual image URL
+                          'assets/org_profile.jpg', // Replace with actual image URL
                       size: 120.0,
                     ),
                     const SizedBox(height: 16.0),
                     // Username
                     const Text(
-                      'Usuario123',
+                      'Organizacion123',
                       style: TextStyle(
                         fontSize: 18.0,
                         fontWeight: FontWeight.bold,
@@ -54,11 +54,11 @@ class OrgProfile extends StatelessWidget {
               Center(
                 child: Column(
                   children: [
-                    _buildContactItem('Email:', 'usuario123@gmail.com'),
-                    _buildContactItem('LinkedIn:', 'usuario123'),
+                    _buildContactItem('Email:', 'organizacion123@gmail.com'),
+                    _buildContactItem('LinkedIn:', 'organizacion123'),
                     _buildContactItem(
-                      'Number:',
-                      'Agregar número',
+                      'Instagram:',
+                      'Agregar Instagram',
                       isLink: true,
                       linkColor: Colors.blue,
                     ),
@@ -78,17 +78,13 @@ class OrgProfile extends StatelessWidget {
               ),
               const SizedBox(height: 8.0),
               const Text(
-                'Interesado en proyectos con paga con relación a la IA.',
+                'Iniciativa de IA.',
                 style: TextStyle(fontSize: 14.0),
               ),
               const SizedBox(height: 8.0),
               const Text(
-                'Experiencia previa:',
+                'Aceptamos estudiantes de todas las carreras y semestres!',
                 style: TextStyle(fontSize: 14.0),
-              ),
-              const Padding(
-                padding: EdgeInsets.only(left: 16.0),
-                child: Text('• Multiservi', style: TextStyle(fontSize: 14.0)),
               ),
               const SizedBox(height: 8.0),
 
@@ -97,7 +93,7 @@ class OrgProfile extends StatelessWidget {
                   children: [
                     _buildContactItem(
                       'Carrera:',
-                      'Estudiante de Ing. Sistemas y Comp.',
+                      'Multidisciplinaria',
                     ),
                   ],
                 ),
@@ -120,9 +116,9 @@ class OrgProfile extends StatelessWidget {
                 children: [
                   YellowTextBoxWidget(text: 'Diseño', onTap: () {}),
                   YellowTextBoxWidget(text: 'Dibujo', onTap: () {}),
-                  YellowTextBoxWidget(text: '2 Horas', onTap: () {}),
-                  YellowTextBoxWidget(text: 'Diseño', onTap: () {}),
-                  YellowTextBoxWidget(text: 'Diseño', onTap: () {}),
+                  YellowTextBoxWidget(text: 'Robótica', onTap: () {}),
+                  YellowTextBoxWidget(text: 'ROS', onTap: () {}),
+                  YellowTextBoxWidget(text: 'MatLab', onTap: () {}),
                 ],
               ),
               Center(
@@ -145,21 +141,13 @@ class OrgProfile extends StatelessWidget {
                 children: [
                   Expanded(
                     child: AddElementWidget(
-                      title: 'Agregar CV',
+                      title: 'Agregar Oferta',
                       onTap: () {
                         // Add CV action
                       },
                     ),
                   ),
                   const SizedBox(width: 16.0),
-                  Expanded(
-                    child: AddElementWidget(
-                      title: 'Agregar Portafolio',
-                      onTap: () {
-                        // Add Portfolio action
-                      },
-                    ),
-                  ),
                 ],
               ),
               const SizedBox(height: 24.0),
