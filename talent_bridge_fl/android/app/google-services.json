@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "1011234630304",
+    "project_id": "talentbridge-dev-21980",
+    "storage_bucket": "talentbridge-dev-21980.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1011234630304:android:652cd435d80228cfc777c5",
+        "android_client_info": {
+          "package_name": "com.example.talent_bridge_fl"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBMRcUkpITwf4yRfbh5xPzsiky-N4kXv-Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1011234630304:android:09eb3dfdf8bb397cc777c5",
+        "android_client_info": {
+          "package_name": "com.example.talent_bridge_kt"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBMRcUkpITwf4yRfbh5xPzsiky-N4kXv-Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
