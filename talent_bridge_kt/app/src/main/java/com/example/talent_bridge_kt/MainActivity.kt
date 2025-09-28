@@ -7,11 +7,25 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.rememberNavController
+import com.example.talent_bridge_kt.core.navegation.Routes
+import com.example.talent_bridge_kt.presentation.ui.screens.CreateAccountScreen
+import com.example.talent_bridge_kt.presentation.ui.screens.InitiativeProfileSceen
+
+import com.example.talent_bridge_kt.presentation.ui.screens.LeaderFeedScreen
+import com.example.talent_bridge_kt.presentation.ui.screens.LoginScreen
+import com.example.talent_bridge_kt.presentation.ui.screens.SavedProjectsScreen
+import com.example.talent_bridge_kt.presentation.ui.screens.SearchScreen
+import com.example.talent_bridge_kt.presentation.ui.screens.StudentFeedScreen
+import com.example.talent_bridge_kt.presentation.ui.screens.StudentProfileScreen
+import com.example.talent_bridge_kt.presentation.ui.screens.SomeElseProfileScreen
+import com.example.talent_bridge_kt.presentation.ui.screens.CreditsScreen
+import com.example.talent_bridge_kt.presentation.ui.screens.NavegationScreen
 import com.example.talent_bridge_kt.ui.theme.Talent_bridge_ktTheme
+import com.example.talent_bridge_kt.presentation.ui.screens.InitiativeDetailScreen
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -19,29 +33,91 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             Talent_bridge_ktTheme {
-                Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    Greeting(
-                        name = "Grupo chevere del grupo chevere que hace kotlin",
-                        modifier = Modifier.padding(innerPadding)
-                    )
+                val navController = rememberNavController()
+                Scaffold(Modifier.fillMaxSize()) { inner ->
+                    NavHost(
+                        navController = navController,
+                        startDestination = Routes.Login,
+                        modifier = Modifier.padding(inner)
+                    ) {
+                        composable(Routes.Login) {
+                            LoginScreen(
+                                onCreateAccount = { navController.navigate(Routes.CreateAccount) } ,
+                                onStudentFeed = { navController.navigate(Routes.Navegation) }
+                            )
+                        }
+                        composable(Routes.CreateAccount) {
+                            CreateAccountScreen(
+                                onBack = { navController.popBackStack() },
+
+                                )
+                        }
+                        composable(Routes.Navegation) {
+                            NavegationScreen(
+                                onBack = { navController.popBackStack() } ,
+                                onInitiativeProfile = { navController.navigate(Routes.InitiativeProfile) },
+                                onLeaderFeed = { navController.navigate(Routes.LeaderFeed) },
+                                onSavedProjects = { navController.navigate(Routes.SavedProjects) },
+                                onSearch = { navController.navigate(Routes.Search) },
+                                onStudentProfile = { navController.navigate(Routes.StudentProfile) },
+                                onSomeoneElseProfile = {navController.navigate(Routes.SomeOneElseProfile)},
+                                onCredits = {navController.navigate(Routes.Credits)},
+                                onStudentFeed = {navController.navigate(Routes.StudentFeed)},
+                                onInitiativeDetail = {navController.navigate(Routes.InitiativeDetail)}
+                            )
+                        }
+                        composable(Routes.InitiativeProfile) {
+                            InitiativeProfileSceen(
+                                onBack = { navController.popBackStack() }
+                            )
+                        }
+                        composable(Routes.LeaderFeed) {
+                            LeaderFeedScreen(
+                                onBack = { navController.popBackStack() }
+                            )
+                        }
+                        composable(Routes.SavedProjects) {
+                            SavedProjectsScreen(
+                                onBack = { navController.popBackStack() }
+                            )
+                        }
+                        composable(Routes.Search) {
+                            SearchScreen(
+                                onBack = { navController.popBackStack() }
+                            )
+                        }
+                        composable(Routes.StudentProfile) {
+                            StudentProfileScreen(
+                                onBack = { navController.popBackStack() }
+                            )
+                        }
+                        composable(Routes.SomeOneElseProfile) {
+                            SomeElseProfileScreen(
+                                onBack = { navController.popBackStack() }
+                            )
+                        }
+
+                        composable(Routes.Credits) {
+                            CreditsScreen(
+                                onBack = { navController.popBackStack() }
+                            )
+                        }
+
+                        composable(Routes.StudentFeed) {
+                            StudentFeedScreen(
+                                onBack = { navController.popBackStack() }
+                            )
+                        }
+
+                        composable(Routes.InitiativeDetail) {
+                            InitiativeDetailScreen(
+                                onBack = { navController.popBackStack() }
+                            )
+                        }
+
+                    }
                 }
             }
         }
-    }
-}
-
-@Composable
-fun Greeting(name: String, modifier: Modifier = Modifier) {
-    Text(
-        text = "Hello $name!",
-        modifier = modifier
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun GreetingPreview() {
-    Talent_bridge_ktTheme {
-        Greeting("Grupo chevere del grupo chevere que hace kotlin")
     }
 }
