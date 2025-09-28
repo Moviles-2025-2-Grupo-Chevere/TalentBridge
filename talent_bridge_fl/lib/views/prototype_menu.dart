@@ -53,7 +53,7 @@ class _PrototypeMenuState extends State<PrototypeMenu> {
     return Scaffold(
       appBar: AppBar(
         title: Image.asset(
-          'assets/MainAppIcon.png', // Replace with your image path
+          'assets/images/MainAppIcon.png', // Replace with your image path
           height: 40, // Adjust height as needed
           fit: BoxFit.contain,
         ),
