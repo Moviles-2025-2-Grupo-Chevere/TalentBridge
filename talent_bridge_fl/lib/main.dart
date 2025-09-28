@@ -13,19 +13,11 @@ void main() async {
 
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
-
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
+    return const MaterialApp(
       title: 'Talent Bridge',
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color.fromARGB(255, 97, 32, 37),
-          surface: const Color(0xFFFDFAE5),
-        ),
-        fontFamily: 'OpenSans',
-      ),
-      home: const AppGate(),
+      home: PrototypeMenu(),
     );
   }
 }

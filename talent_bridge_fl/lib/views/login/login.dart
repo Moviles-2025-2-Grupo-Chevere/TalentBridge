@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // input formatters
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:talent_bridge_fl/views/main-feed/main_feed.dart';
 import 'package:talent_bridge_fl/views/signup/signup.dart';
 
 // ---------- UI TOKENS ----------
@@ -149,7 +150,13 @@ class _LoginState extends State<Login> {
         email: _emailCtrl.text.trim(),
         password: _passCtrl.text,
       );
-      // AppGate detecta user != null y te lleva a PrototypeMenu
+
+      if (!mounted) return;
+
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => MainFeed()),
+        (route) => false,
+      );
     } on FirebaseAuthException catch (e) {
       final msg = switch (e.code) {
         'user-not-found' => 'No existe usuario con ese email.',
@@ -159,7 +166,7 @@ class _LoginState extends State<Login> {
         _ => e.message ?? 'Error al iniciar sesión',
       };
       m.showSnackBar(SnackBar(content: Text(msg)));
-    } catch (e) {
+    } catch (_) {
       m.showSnackBar(const SnackBar(content: Text('Error inesperado.')));
     }
   }
