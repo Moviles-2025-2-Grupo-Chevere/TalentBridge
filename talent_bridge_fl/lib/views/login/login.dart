@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // input formatters
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // solo para capturar FirebaseAuthException (UX de errores)
 import 'package:talent_bridge_fl/views/main-feed/main_feed.dart';
 import 'package:talent_bridge_fl/views/signup/signup.dart';
+import 'package:talent_bridge_fl/services/firebase_service.dart';
 
 // ---------- UI TOKENS ----------
 const kBg = Color(0xFFFEF7E6); // cream background
@@ -116,11 +117,20 @@ class _LoginState extends State<Login> {
   final _isValid = ValueNotifier<bool>(false);
   final _obscure = ValueNotifier<bool>(true);
 
+  // Façade
+  final _fb = FirebaseService();
+
   @override
   void initState() {
     super.initState();
     _emailCtrl.addListener(_revalidate);
     _passCtrl.addListener(_revalidate);
+
+    // (Opcional) registrar vista de pantalla para analytics
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   _fb.logEvent('screen_view', {'screen': 'Login'});
+    // });
+
     // Post-frame revalidation (covers autofill/paste)
     WidgetsBinding.instance.addPostFrameCallback((_) => _revalidate());
   }
@@ -146,18 +156,17 @@ class _LoginState extends State<Login> {
     m.hideCurrentSnackBar();
 
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
-        email: _emailCtrl.text.trim(),
-        password: _passCtrl.text,
-      );
+      await _fb.signIn(_emailCtrl.text.trim(), _passCtrl.text);
 
       if (!mounted) return;
 
+      // Ir a MainFeed y limpiar el stack
       Navigator.of(context).pushAndRemoveUntil(
         MaterialPageRoute(builder: (_) => MainFeed()),
         (route) => false,
       );
     } on FirebaseAuthException catch (e) {
+      // Conservamos tu UX de errores con códigos específicos
       final msg = switch (e.code) {
         'user-not-found' => 'No existe usuario con ese email.',
         'wrong-password' => 'Contraseña incorrecta.',
@@ -166,8 +175,8 @@ class _LoginState extends State<Login> {
         _ => e.message ?? 'Error al iniciar sesión',
       };
       m.showSnackBar(SnackBar(content: Text(msg)));
-    } catch (_) {
-      m.showSnackBar(const SnackBar(content: Text('Error inesperado.')));
+    } catch (e) {
+      m.showSnackBar(SnackBar(content: Text('Error inesperado: $e')));
     }
   }
 
@@ -201,11 +210,10 @@ class _LoginState extends State<Login> {
 
                     const SizedBox(height: 12),
 
-                    // ---------- EMAIL LABEL ----------
+                    // ---------- EMAIL ----------
                     Text('Email', style: labelStyle),
                     const SizedBox(height: 6),
 
-                    // ---------- EMAIL FIELD (with hard length cap & shadow) ----------
                     _shadowWrap(
                       TextFormField(
                         controller: _emailCtrl,
@@ -213,7 +221,6 @@ class _LoginState extends State<Login> {
                         textInputAction: TextInputAction.next,
                         autofillHints: const [AutofillHints.email],
                         inputFormatters: [
-                          // TOTAL cap = local + "@gmail.com"
                           LengthLimitingTextInputFormatter(
                             kMaxGmailLocal + kGmailSuffixLen,
                           ),
@@ -231,11 +238,10 @@ class _LoginState extends State<Login> {
 
                     const SizedBox(height: 16),
 
-                    // ---------- PASSWORD LABEL ----------
+                    // ---------- PASSWORD ----------
                     Text('Password', style: labelStyle),
                     const SizedBox(height: 6),
 
-                    // ---------- PASSWORD FIELD WITH EYE + SHADOW ----------
                     ValueListenableBuilder<bool>(
                       valueListenable: _obscure,
                       builder: (_, isObscure, __) => _shadowWrap(
@@ -338,8 +344,6 @@ class _LoginState extends State<Login> {
                             ],
                           ),
                           alignment: Alignment.center,
-                          // If you have a Gmail asset, swap it in here:
-                          // child: Image.asset('assets/icons/gmail.png', width: 32, height: 32),
                           child: const Icon(
                             Icons.mail,
                             size: 32,

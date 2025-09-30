@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // para mapear errores conocidos
 import 'package:talent_bridge_fl/views/login/login.dart';
+import 'package:talent_bridge_fl/services/firebase_service.dart';
 
 // ---------- COLOR & SHAPE TOKENS ----------
 const kBg = Color(0xFFFEF7E6); // cream background
@@ -62,7 +63,6 @@ InputDecoration _pillInput({
   Widget? suffix,
 }) {
   return InputDecoration(
-    // no floating label; we place a Text() label *above* the field
     prefixIcon: icon != null ? Icon(icon, color: kAmber) : null,
     suffixIcon: suffix,
     filled: true,
@@ -121,13 +121,20 @@ class _SignupState extends State<Signup> {
   final _isValid = ValueNotifier<bool>(false);
   final _obscure = ValueNotifier<bool>(true);
 
+  // Façade
+  final _fb = FirebaseService();
+
   @override
   void initState() {
     super.initState();
     _userCtrl.addListener(_revalidate);
     _passCtrl.addListener(_revalidate);
     _emailCtrl.addListener(_revalidate);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _revalidate());
+
+    // (Opcional) registrar vista de pantalla
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   _fb.logEvent('screen_view', {'screen': 'Signup'});
+    // });
   }
 
   @override
@@ -152,20 +159,17 @@ class _SignupState extends State<Signup> {
     m.hideCurrentSnackBar();
 
     try {
-      // Crea cuenta con email y password
-      final cred = await FirebaseAuth.instance.createUserWithEmailAndPassword(
+      await _fb.signUp(
         email: _emailCtrl.text.trim(),
         password: _passCtrl.text,
+        displayName: _userCtrl.text.trim(),
       );
 
-      // Guarda el username en el perfil (opcional)
-      await cred.user?.updateDisplayName(_userCtrl.text.trim());
+      if (!mounted) return;
 
-      // (Opcional) verificar correo:
-      // await cred.user?.sendEmailVerification();
-
-      // No navegues: AppGate detecta sesión y te lleva a PrototypeMenu.
       m.showSnackBar(const SnackBar(content: Text('Account created!')));
+      // Si prefieres volver al Login automáticamente, descomenta:
+      // Navigator.of(context).push(MaterialPageRoute(builder: (_) => const Login()));
     } on FirebaseAuthException catch (e) {
       final msg = switch (e.code) {
         'email-already-in-use' => 'Ese email ya está registrado.',
@@ -174,8 +178,8 @@ class _SignupState extends State<Signup> {
         _ => e.message ?? 'Error al registrarse',
       };
       m.showSnackBar(SnackBar(content: Text(msg)));
-    } catch (_) {
-      m.showSnackBar(const SnackBar(content: Text('Error inesperado.')));
+    } catch (e) {
+      m.showSnackBar(SnackBar(content: Text('Error inesperado: $e')));
     }
   }
 
@@ -210,7 +214,7 @@ class _SignupState extends State<Signup> {
                     ),
                     const SizedBox(height: 36),
 
-                    // ----- USER (label above + pill input) -----
+                    // ----- USER -----
                     Text('User', style: labelStyle),
                     const SizedBox(height: 6),
                     _shadowWrap(
@@ -289,7 +293,7 @@ class _SignupState extends State<Signup> {
 
                     const SizedBox(height: 26),
 
-                    // ----- CTA "Next" (pill, shadow, disabled until valid) -----
+                    // ----- CTA "Next" -----
                     ValueListenableBuilder<bool>(
                       valueListenable: _isValid,
                       builder: (_, ok, __) => Center(
@@ -368,8 +372,6 @@ class _SignupState extends State<Signup> {
                             ],
                           ),
                           alignment: Alignment.center,
-                          // Replace with your Gmail asset if you have one:
-                          // child: Image.asset('assets/icons/gmail.png', width: 32, height: 32),
                           child: const Icon(
                             Icons.mail,
                             size: 32,
