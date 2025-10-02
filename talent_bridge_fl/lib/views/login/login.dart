@@ -1,16 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // input formatters
+import 'package:firebase_auth/firebase_auth.dart'; // solo para capturar FirebaseAuthException (UX de errores)
+import 'package:talent_bridge_fl/views/main-feed/main_feed.dart';
+import 'package:talent_bridge_fl/views/signup/signup.dart';
+import 'package:talent_bridge_fl/services/firebase_service.dart';
 
 // ---------- UI TOKENS ----------
-const kBg        = Color(0xFFFEF7E6); // cream background
-const kAmber     = Color(0xFFFFC107); // field border & button
-const kBrandGreen= Color(0xFF568C73); // title
+const kBg = Color(0xFFFEF7E6); // cream background
+const kAmber = Color(0xFFFFC107); // field border & button
+const kBrandGreen = Color(0xFF568C73); // title
 const kLinkGreen = Color(0xFF5E8F5A); // bottom link
 const kShadowCol = Color(0x33000000); // 20% black for soft shadows
-const kRadius    = 22.0;              // rounded corners
+const kRadius = 22.0; // rounded corners
 
 // ---------- GMAIL LIMITS ----------
-const int kMaxGmailLocal = 30;  // max chars before @gmail.com
+const int kMaxGmailLocal = 30; // max chars before @gmail.com
 const int kGmailSuffixLen = 10; // length of "@gmail.com"
 
 // ---------- VALIDATORS ----------
@@ -99,25 +103,34 @@ Widget _shadowWrap(Widget child) {
 
 // ---------- SCREEN ----------
 class Login extends StatefulWidget {
-  const Login({ super.key });
+  const Login({super.key});
 
   @override
   State<Login> createState() => _LoginState();
 }
 
 class _LoginState extends State<Login> {
-  final _formKey   = GlobalKey<FormState>();
+  final _formKey = GlobalKey<FormState>();
   final _emailCtrl = TextEditingController();
-  final _passCtrl  = TextEditingController();
+  final _passCtrl = TextEditingController();
 
   final _isValid = ValueNotifier<bool>(false);
   final _obscure = ValueNotifier<bool>(true);
+
+  // Façade
+  final _fb = FirebaseService();
 
   @override
   void initState() {
     super.initState();
     _emailCtrl.addListener(_revalidate);
     _passCtrl.addListener(_revalidate);
+
+    // (Opcional) registrar vista de pantalla para analytics
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   _fb.logEvent('screen_view', {'screen': 'Login'});
+    // });
+
     // Post-frame revalidation (covers autofill/paste)
     WidgetsBinding.instance.addPostFrameCallback((_) => _revalidate());
   }
@@ -136,23 +149,42 @@ class _LoginState extends State<Login> {
     if (ok != _isValid.value) _isValid.value = ok;
   }
 
-  void _submit() {
-    if (_formKey.currentState?.validate() ?? false) {
-      final m = ScaffoldMessenger.of(context);
-      m.hideCurrentSnackBar();
-      m.showSnackBar(
-        const SnackBar(content: Text('Valid form — ready to authenticate')),
+  Future<void> _submit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    final m = ScaffoldMessenger.of(context);
+    m.hideCurrentSnackBar();
+
+    try {
+      await _fb.signIn(_emailCtrl.text.trim(), _passCtrl.text);
+
+      if (!mounted) return;
+
+      // Ir a MainFeed y limpiar el stack
+      Navigator.of(context).pushAndRemoveUntil(
+        MaterialPageRoute(builder: (_) => MainFeed()),
+        (route) => false,
       );
-      // Next: call your backend/Firebase here.
+    } on FirebaseAuthException catch (e) {
+      // Conservamos tu UX de errores con códigos específicos
+      final msg = switch (e.code) {
+        'user-not-found' => 'No existe usuario con ese email.',
+        'wrong-password' => 'Contraseña incorrecta.',
+        'invalid-credential' => 'Credenciales inválidas.',
+        'too-many-requests' => 'Demasiados intentos. Intenta más tarde.',
+        _ => e.message ?? 'Error al iniciar sesión',
+      };
+      m.showSnackBar(SnackBar(content: Text(msg)));
+    } catch (e) {
+      m.showSnackBar(SnackBar(content: Text('Error inesperado: $e')));
     }
   }
 
   @override
-  Widget build(BuildContext context){
-    final labelStyle = Theme.of(context)
-        .textTheme
-        .bodyMedium
-        ?.copyWith(color: kAmber);
+  Widget build(BuildContext context) {
+    final labelStyle = Theme.of(
+      context,
+    ).textTheme.bodyMedium?.copyWith(color: kAmber);
 
     return Scaffold(
       backgroundColor: kBg,
@@ -178,11 +210,10 @@ class _LoginState extends State<Login> {
 
                     const SizedBox(height: 12),
 
-                    // ---------- EMAIL LABEL ----------
+                    // ---------- EMAIL ----------
                     Text('Email', style: labelStyle),
                     const SizedBox(height: 6),
 
-                    // ---------- EMAIL FIELD (with hard length cap & shadow) ----------
                     _shadowWrap(
                       TextFormField(
                         controller: _emailCtrl,
@@ -190,8 +221,9 @@ class _LoginState extends State<Login> {
                         textInputAction: TextInputAction.next,
                         autofillHints: const [AutofillHints.email],
                         inputFormatters: [
-                          // TOTAL cap = local + "@gmail.com"
-                          LengthLimitingTextInputFormatter(kMaxGmailLocal + kGmailSuffixLen),
+                          LengthLimitingTextInputFormatter(
+                            kMaxGmailLocal + kGmailSuffixLen,
+                          ),
                           FilteringTextInputFormatter.deny(RegExp(r'\s')),
                         ],
                         decoration: _roundedInput(
@@ -206,11 +238,10 @@ class _LoginState extends State<Login> {
 
                     const SizedBox(height: 16),
 
-                    // ---------- PASSWORD LABEL ----------
+                    // ---------- PASSWORD ----------
                     Text('Password', style: labelStyle),
                     const SizedBox(height: 6),
 
-                    // ---------- PASSWORD FIELD WITH EYE + SHADOW ----------
                     ValueListenableBuilder<bool>(
                       valueListenable: _obscure,
                       builder: (_, isObscure, __) => _shadowWrap(
@@ -227,7 +258,11 @@ class _LoginState extends State<Login> {
                             icon: Icons.lock_outline,
                             suffix: IconButton(
                               onPressed: () => _obscure.value = !isObscure,
-                              icon: Icon(isObscure ? Icons.visibility_off : Icons.visibility),
+                              icon: Icon(
+                                isObscure
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                              ),
                               color: kAmber,
                             ),
                           ),
@@ -257,7 +292,9 @@ class _LoginState extends State<Login> {
                                   blurRadius: 12,
                                 ),
                               ],
-                              borderRadius: BorderRadius.all(Radius.circular(24)),
+                              borderRadius: BorderRadius.all(
+                                Radius.circular(24),
+                              ),
                             ),
                             child: ElevatedButton(
                               onPressed: ok ? _submit : null,
@@ -268,7 +305,9 @@ class _LoginState extends State<Login> {
                                   borderRadius: BorderRadius.circular(24),
                                 ),
                                 elevation: 0,
-                                textStyle: const TextStyle(fontWeight: FontWeight.w600),
+                                textStyle: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                               child: const Text('Sign in'),
                             ),
@@ -285,7 +324,9 @@ class _LoginState extends State<Login> {
                         borderRadius: BorderRadius.circular(32),
                         onTap: () {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Google Sign-In (pending)')),
+                            const SnackBar(
+                              content: Text('Google Sign-In (pending)'),
+                            ),
                           );
                         },
                         child: Container(
@@ -303,9 +344,11 @@ class _LoginState extends State<Login> {
                             ],
                           ),
                           alignment: Alignment.center,
-                          // If you have a Gmail asset, swap it in here:
-                          // child: Image.asset('assets/icons/gmail.png', width: 32, height: 32),
-                          child: const Icon(Icons.mail, size: 32, color: Colors.redAccent),
+                          child: const Icon(
+                            Icons.mail,
+                            size: 32,
+                            color: Colors.redAccent,
+                          ),
                         ),
                       ),
                     ),
@@ -316,15 +359,19 @@ class _LoginState extends State<Login> {
                     Center(
                       child: TextButton(
                         onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Navigate to Create account (pending)')),
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const Signup()),
                           );
                         },
                         style: TextButton.styleFrom(
                           foregroundColor: kLinkGreen,
-                          textStyle: const TextStyle(decoration: TextDecoration.underline),
+                          textStyle: const TextStyle(
+                            decoration: TextDecoration.underline,
+                          ),
                         ),
-                        child: const Text("Don't have an account? Create account"),
+                        child: const Text(
+                          "Don't have an account? Create account",
+                        ),
                       ),
                     ),
                   ],

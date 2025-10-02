@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:firebase_auth/firebase_auth.dart'; // para mapear errores conocidos
+import 'package:talent_bridge_fl/views/login/login.dart';
+import 'package:talent_bridge_fl/services/firebase_service.dart';
 
 // ---------- COLOR & SHAPE TOKENS ----------
-const kBg         = Color(0xFFFEF7E6); // cream background
-const kAmber      = Color(0xFFFFC107); // borders & CTA
+const kBg = Color(0xFFFEF7E6); // cream background
+const kAmber = Color(0xFFFFC107); // borders & CTA
 const kBrandGreen = Color(0xFF568C73); // titles
-const kLinkGreen  = Color(0xFF5E8F5A); // links / helper text
-const kShadowCol  = Color(0x33000000); // 20% black shadow
-const kPillRadius = 26.0;              // pill look (≈ height/2)
+const kLinkGreen = Color(0xFF5E8F5A); // links / helper text
+const kShadowCol = Color(0x33000000); // 20% black shadow
+const kPillRadius = 26.0; // pill look (≈ height/2)
 
 // ---------- GMAIL LIMITS ----------
-const int kMaxGmailLocal = 30;  // max chars before @gmail.com
+const int kMaxGmailLocal = 30; // max chars before @gmail.com
 const int kGmailSuffixLen = 10; // length of "@gmail.com"
 
 // ---------- VALIDATORS ----------
@@ -60,7 +63,6 @@ InputDecoration _pillInput({
   Widget? suffix,
 }) {
   return InputDecoration(
-    // no floating label; we place a Text() label *above* the field
     prefixIcon: icon != null ? Icon(icon, color: kAmber) : null,
     suffixIcon: suffix,
     filled: true,
@@ -112,12 +114,15 @@ class Signup extends StatefulWidget {
 class _SignupState extends State<Signup> {
   final _formKey = GlobalKey<FormState>();
 
-  final _userCtrl  = TextEditingController();
-  final _passCtrl  = TextEditingController();
+  final _userCtrl = TextEditingController();
+  final _passCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
 
   final _isValid = ValueNotifier<bool>(false);
   final _obscure = ValueNotifier<bool>(true);
+
+  // Façade
+  final _fb = FirebaseService();
 
   @override
   void initState() {
@@ -125,7 +130,11 @@ class _SignupState extends State<Signup> {
     _userCtrl.addListener(_revalidate);
     _passCtrl.addListener(_revalidate);
     _emailCtrl.addListener(_revalidate);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _revalidate());
+
+    // (Opcional) registrar vista de pantalla
+    // WidgetsBinding.instance.addPostFrameCallback((_) {
+    //   _fb.logEvent('screen_view', {'screen': 'Signup'});
+    // });
   }
 
   @override
@@ -143,21 +152,42 @@ class _SignupState extends State<Signup> {
     if (ok != _isValid.value) _isValid.value = ok;
   }
 
-  void _submit() {
-    if (_formKey.currentState?.validate() ?? false) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Valid form — ready to create account')),
+  Future<void> _submit() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    final m = ScaffoldMessenger.of(context);
+    m.hideCurrentSnackBar();
+
+    try {
+      await _fb.signUp(
+        email: _emailCtrl.text.trim(),
+        password: _passCtrl.text,
+        displayName: _userCtrl.text.trim(),
       );
-      // Plug real signup API here.
+
+      if (!mounted) return;
+
+      m.showSnackBar(const SnackBar(content: Text('Account created!')));
+      // Si prefieres volver al Login automáticamente, descomenta:
+      // Navigator.of(context).push(MaterialPageRoute(builder: (_) => const Login()));
+    } on FirebaseAuthException catch (e) {
+      final msg = switch (e.code) {
+        'email-already-in-use' => 'Ese email ya está registrado.',
+        'invalid-email' => 'Email inválido.',
+        'weak-password' => 'La contraseña es muy débil.',
+        _ => e.message ?? 'Error al registrarse',
+      };
+      m.showSnackBar(SnackBar(content: Text(msg)));
+    } catch (e) {
+      m.showSnackBar(SnackBar(content: Text('Error inesperado: $e')));
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final labelStyle = Theme.of(context)
-        .textTheme
-        .bodyMedium
-        ?.copyWith(color: kAmber);
+    final labelStyle = Theme.of(
+      context,
+    ).textTheme.bodyMedium?.copyWith(color: kAmber);
 
     return Scaffold(
       backgroundColor: kBg,
@@ -176,14 +206,15 @@ class _SignupState extends State<Signup> {
                     Text(
                       'Sign Up',
                       textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                      style: Theme.of(context).textTheme.headlineLarge
+                          ?.copyWith(
                             color: kAmber,
                             fontWeight: FontWeight.w700,
                           ),
                     ),
                     const SizedBox(height: 36),
 
-                    // ----- USER (label above + pill input) -----
+                    // ----- USER -----
                     Text('User', style: labelStyle),
                     const SizedBox(height: 6),
                     _shadowWrap(
@@ -213,12 +244,18 @@ class _SignupState extends State<Signup> {
                           controller: _passCtrl,
                           obscureText: isObscure,
                           textInputAction: TextInputAction.next,
-                          inputFormatters: [LengthLimitingTextInputFormatter(64)],
+                          inputFormatters: [
+                            LengthLimitingTextInputFormatter(64),
+                          ],
                           decoration: _pillInput(
                             icon: Icons.lock_outline,
                             suffix: IconButton(
                               onPressed: () => _obscure.value = !isObscure,
-                              icon: Icon(isObscure ? Icons.visibility_off : Icons.visibility),
+                              icon: Icon(
+                                isObscure
+                                    ? Icons.visibility_off
+                                    : Icons.visibility,
+                              ),
                               color: kAmber,
                             ),
                           ),
@@ -241,7 +278,9 @@ class _SignupState extends State<Signup> {
                         keyboardType: TextInputType.emailAddress,
                         autofillHints: const [AutofillHints.email],
                         inputFormatters: [
-                          LengthLimitingTextInputFormatter(kMaxGmailLocal + kGmailSuffixLen),
+                          LengthLimitingTextInputFormatter(
+                            kMaxGmailLocal + kGmailSuffixLen,
+                          ),
                           FilteringTextInputFormatter.deny(RegExp(r'\s')),
                         ],
                         decoration: _pillInput(icon: Icons.email_outlined),
@@ -254,7 +293,7 @@ class _SignupState extends State<Signup> {
 
                     const SizedBox(height: 26),
 
-                    // ----- CTA "Next" (pill, shadow, disabled until valid) -----
+                    // ----- CTA "Next" -----
                     ValueListenableBuilder<bool>(
                       valueListenable: _isValid,
                       builder: (_, ok, __) => Center(
@@ -263,7 +302,9 @@ class _SignupState extends State<Signup> {
                           height: 48,
                           child: DecoratedBox(
                             decoration: const BoxDecoration(
-                              borderRadius: BorderRadius.all(Radius.circular(24)),
+                              borderRadius: BorderRadius.all(
+                                Radius.circular(24),
+                              ),
                               boxShadow: [
                                 BoxShadow(
                                   color: kShadowCol,
@@ -281,7 +322,9 @@ class _SignupState extends State<Signup> {
                                   borderRadius: BorderRadius.circular(24),
                                 ),
                                 elevation: 0,
-                                textStyle: const TextStyle(fontWeight: FontWeight.w600),
+                                textStyle: const TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                ),
                               ),
                               child: const Text('Next'),
                             ),
@@ -296,7 +339,9 @@ class _SignupState extends State<Signup> {
                     Center(
                       child: Text(
                         'Other Sign In Options',
-                        style: Theme.of(context).textTheme.bodyMedium?.copyWith(color: kLinkGreen),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodyMedium?.copyWith(color: kLinkGreen),
                       ),
                     ),
                     const SizedBox(height: 10),
@@ -307,7 +352,9 @@ class _SignupState extends State<Signup> {
                         borderRadius: BorderRadius.circular(32),
                         onTap: () {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Google Sign-In (pending)')),
+                            const SnackBar(
+                              content: Text('Google Sign-In (pending)'),
+                            ),
                           );
                         },
                         child: Container(
@@ -325,9 +372,11 @@ class _SignupState extends State<Signup> {
                             ],
                           ),
                           alignment: Alignment.center,
-                          // Replace with your Gmail asset if you have one:
-                          // child: Image.asset('assets/icons/gmail.png', width: 32, height: 32),
-                          child: const Icon(Icons.mail, size: 32, color: Colors.redAccent),
+                          child: const Icon(
+                            Icons.mail,
+                            size: 32,
+                            color: Colors.redAccent,
+                          ),
                         ),
                       ),
                     ),
@@ -338,13 +387,15 @@ class _SignupState extends State<Signup> {
                     Center(
                       child: TextButton(
                         onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Navigate to Log In (pending)')),
+                          Navigator.of(context).push(
+                            MaterialPageRoute(builder: (_) => const Login()),
                           );
                         },
                         style: TextButton.styleFrom(
                           foregroundColor: kLinkGreen,
-                          textStyle: const TextStyle(decoration: TextDecoration.underline),
+                          textStyle: const TextStyle(
+                            decoration: TextDecoration.underline,
+                          ),
                         ),
                         child: const Text('Already have an account? Log In'),
                       ),
