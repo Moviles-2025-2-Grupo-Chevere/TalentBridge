@@ -57,7 +57,6 @@ class ProfileViewModel(
         }
     }
 
-    // ---------- helpers para Career (tags) ----------
     fun addTag(tag: String) {
         val cur = (uiState.value as? ProfileUiState.Ready)?.profile ?: return
         if (tag.isBlank() || cur.tags.any { it.equals(tag, ignoreCase = true) }) return
@@ -69,7 +68,6 @@ class ProfileViewModel(
         update(cur.copy(tags = cur.tags.filterNot { it.equals(tag, ignoreCase = true) }))
     }
 
-    // ---------- helpers para Projects ----------
     fun addProject(project: Project) {
         val cur = (uiState.value as? ProfileUiState.Ready)?.profile ?: return
         update(cur.copy(projects = cur.projects + project))

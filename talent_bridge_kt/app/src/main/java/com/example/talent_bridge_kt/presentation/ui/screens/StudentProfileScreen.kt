@@ -75,7 +75,6 @@ fun StudentProfileScreen(
     var pDesc by remember { mutableStateOf("") }
     var pSkills by remember { mutableStateOf("") }
 
-    // --------- VM sin Hilt ---------
     val repo = remember { FakeProfileRepository() }
     val vm = remember {
         ProfileViewModel(
@@ -344,7 +343,6 @@ fun StudentProfileScreen(
         }
     }
 
-    // -------------- Dialog para crear proyecto --------------
     if (showProjectDialog) {
         AlertDialog(
             onDismissRequest = { showProjectDialog = false },
@@ -370,7 +368,6 @@ fun StudentProfileScreen(
     }
 }
 
-/* -------------------- helpers visuales -------------------- */
 
 @Composable
 private fun TagPill(text: String) {
@@ -429,7 +426,6 @@ private fun ProjectCard(
     }
 }
 
-/* ----------------- resto de helpers que ya tenías ----------------- */
 
 @Composable
 private fun TopBarCustom(height: Dp, onBack: () -> Unit, onMenu: () -> Unit) { /* igual a tu versión */
