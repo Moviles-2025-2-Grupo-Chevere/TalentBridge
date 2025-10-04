@@ -23,7 +23,7 @@ class OrgProfile extends StatelessWidget {
                     // Profile image
                     const CircularImageWidget(
                       imageUrl:
-                          'assets/org_profile.jpg', // Replace with actual image URL
+                          'assets/images/org_profile.jpg', // Replace with actual image URL
                       size: 120.0,
                     ),
                     const SizedBox(height: 16.0),

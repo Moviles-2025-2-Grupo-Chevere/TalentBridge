@@ -23,7 +23,7 @@ class UserProfile extends StatelessWidget {
                     // Profile image
                     const CircularImageWidget(
                       imageUrl:
-                          'assets/other_user.jpg', // Replace with actual image URL
+                          'assets/images/other_user.jpg', // Replace with actual image URL
                       size: 120.0,
                     ),
                     const SizedBox(height: 16.0),

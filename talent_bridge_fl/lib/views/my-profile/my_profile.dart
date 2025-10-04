@@ -23,7 +23,7 @@ class MyProfile extends StatelessWidget {
                     // Profile image
                     const CircularImageWidget(
                       imageUrl:
-                          'assets/my_profile.jpg', // Replace with actual image URL
+                          'assets/images/my_profile.jpg', // Replace with actual image URL
                       size: 120.0,
                     ),
                     const SizedBox(height: 16.0),
