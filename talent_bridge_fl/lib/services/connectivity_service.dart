@@ -136,6 +136,9 @@ class ConnectivityService {
       final List<ConnectivityResult> results = await _connectivity
           .checkConnectivity();
 
+      // Guard against using BuildContext after async gap
+      if (!context.mounted) return;
+
       // Update status based on current connectivity
       _updateConnectionStatus(results, context);
 
@@ -150,6 +153,9 @@ class ConnectivityService {
         );
       }
     } catch (e) {
+      // Guard against using BuildContext after async gap
+      if (!context.mounted) return;
+
       // Handle any errors during connectivity check
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
