@@ -4,6 +4,7 @@ import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.talent_bridge_kt.domain.model.Profile
+import com.example.talent_bridge_kt.domain.model.Project
 import com.example.talent_bridge_kt.domain.usecase.GetProfileUseCase
 import com.example.talent_bridge_kt.domain.usecase.UpdateProfileUseCase
 import com.example.talent_bridge_kt.domain.usecase.UploadAvatarUseCase
@@ -54,5 +55,28 @@ class ProfileViewModel(
             is Resource.Success -> _uiState.value = ProfileUiState.Ready(res.data, "Saved")
             is Resource.Error   -> _uiState.value = ProfileUiState.Error(res.message)
         }
+    }
+
+    // ---------- helpers para Career (tags) ----------
+    fun addTag(tag: String) {
+        val cur = (uiState.value as? ProfileUiState.Ready)?.profile ?: return
+        if (tag.isBlank() || cur.tags.any { it.equals(tag, ignoreCase = true) }) return
+        update(cur.copy(tags = cur.tags + tag.trim()))
+    }
+
+    fun removeTag(tag: String) {
+        val cur = (uiState.value as? ProfileUiState.Ready)?.profile ?: return
+        update(cur.copy(tags = cur.tags.filterNot { it.equals(tag, ignoreCase = true) }))
+    }
+
+    // ---------- helpers para Projects ----------
+    fun addProject(project: Project) {
+        val cur = (uiState.value as? ProfileUiState.Ready)?.profile ?: return
+        update(cur.copy(projects = cur.projects + project))
+    }
+
+    fun removeProject(projectId: String) {
+        val cur = (uiState.value as? ProfileUiState.Ready)?.profile ?: return
+        update(cur.copy(projects = cur.projects.filterNot { it.id == projectId }))
     }
 }
