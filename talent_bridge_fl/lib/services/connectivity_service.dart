@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
+import '../main.dart'; // Import to access navigatorKey
 
 class ConnectivityService {
   static final ConnectivityService _instance = ConnectivityService._internal();
@@ -15,6 +16,11 @@ class ConnectivityService {
   bool get isOnline => _isOnline;
 
   void initialize(BuildContext context) {
+    // Check initial connectivity status
+    _connectivity.checkConnectivity().then((List<ConnectivityResult> results) {
+      _updateConnectionStatus(results, context);
+    });
+
     _connectivitySubscription = _connectivity.onConnectivityChanged.listen(
       (List<ConnectivityResult> results) {
         _updateConnectionStatus(results, context);
@@ -41,11 +47,22 @@ class ConnectivityService {
       // Regained connection
       _isOnline = true;
       _hideNoConnectionOverlay();
-    }
+    } else {}
   }
 
   void _showNoConnectionOverlay(BuildContext context) {
     if (_overlayEntry != null) return;
+
+    // Get the navigator's overlay using the global navigator key
+    final navigatorState = navigatorKey.currentState;
+    if (navigatorState == null) {
+      return;
+    }
+
+    final overlayState = navigatorState.overlay;
+    if (overlayState == null) {
+      return;
+    }
 
     _overlayEntry = OverlayEntry(
       builder: (context) => Positioned(
@@ -122,7 +139,7 @@ class ConnectivityService {
       ),
     );
 
-    Overlay.of(context).insert(_overlayEntry!);
+    overlayState.insert(_overlayEntry!);
   }
 
   void _hideNoConnectionOverlay() {
