@@ -11,10 +11,11 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.lifecycle.viewmodel.compose.viewModel
+
 import com.example.talent_bridge_kt.core.navegation.Routes
 import com.example.talent_bridge_kt.presentation.ui.screens.CreateAccountScreen
 import com.example.talent_bridge_kt.presentation.ui.screens.InitiativeProfileSceen
-
 import com.example.talent_bridge_kt.presentation.ui.screens.LeaderFeedScreen
 import com.example.talent_bridge_kt.presentation.ui.screens.LoginScreen
 import com.example.talent_bridge_kt.presentation.ui.screens.SavedProjectsScreen
@@ -24,8 +25,16 @@ import com.example.talent_bridge_kt.presentation.ui.screens.StudentProfileScreen
 import com.example.talent_bridge_kt.presentation.ui.screens.SomeElseProfileScreen
 import com.example.talent_bridge_kt.presentation.ui.screens.CreditsScreen
 import com.example.talent_bridge_kt.presentation.ui.screens.NavegationScreen
-import com.example.talent_bridge_kt.ui.theme.Talent_bridge_ktTheme
 import com.example.talent_bridge_kt.presentation.ui.screens.InitiativeDetailScreen
+import com.example.talent_bridge_kt.ui.theme.Talent_bridge_ktTheme
+
+
+import com.google.firebase.firestore.FirebaseFirestore
+import com.example.talent_bridge_kt.data.repository.FirestoreSearchRepository
+import com.example.talent_bridge_kt.presentation.ui.screens.SearchViewModel
+import com.example.talent_bridge_kt.presentation.ui.screens.SearchViewModelFactory
+
+
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -42,28 +51,27 @@ class MainActivity : ComponentActivity() {
                     ) {
                         composable(Routes.Login) {
                             LoginScreen(
-                                onCreateAccount = { navController.navigate(Routes.CreateAccount) } ,
+                                onCreateAccount = { navController.navigate(Routes.CreateAccount) },
                                 onStudentFeed = { navController.navigate(Routes.Navegation) }
                             )
                         }
                         composable(Routes.CreateAccount) {
                             CreateAccountScreen(
                                 onBack = { navController.popBackStack() },
-
-                                )
+                            )
                         }
                         composable(Routes.Navegation) {
                             NavegationScreen(
-                                onBack = { navController.popBackStack() } ,
+                                onBack = { navController.popBackStack() },
                                 onInitiativeProfile = { navController.navigate(Routes.InitiativeProfile) },
                                 onLeaderFeed = { navController.navigate(Routes.LeaderFeed) },
                                 onSavedProjects = { navController.navigate(Routes.SavedProjects) },
                                 onSearch = { navController.navigate(Routes.Search) },
                                 onStudentProfile = { navController.navigate(Routes.StudentProfile) },
-                                onSomeoneElseProfile = {navController.navigate(Routes.SomeOneElseProfile)},
-                                onCredits = {navController.navigate(Routes.Credits)},
-                                onStudentFeed = {navController.navigate(Routes.StudentFeed)},
-                                onInitiativeDetail = {navController.navigate(Routes.InitiativeDetail)}
+                                onSomeoneElseProfile = { navController.navigate(Routes.SomeOneElseProfile) },
+                                onCredits = { navController.navigate(Routes.Credits) },
+                                onStudentFeed = { navController.navigate(Routes.StudentFeed) },
+                                onInitiativeDetail = { navController.navigate(Routes.InitiativeDetail) }
                             )
                         }
                         composable(Routes.InitiativeProfile) {
@@ -81,11 +89,19 @@ class MainActivity : ComponentActivity() {
                                 onBack = { navController.popBackStack() }
                             )
                         }
+
+
                         composable(Routes.Search) {
+                            val repo = FirestoreSearchRepository(FirebaseFirestore.getInstance())
+                            val vm: SearchViewModel = viewModel(
+                                factory = SearchViewModelFactory(repo)
+                            )
                             SearchScreen(
+                                vm = vm,
                                 onBack = { navController.popBackStack() }
                             )
                         }
+
                         composable(Routes.StudentProfile) {
                             StudentProfileScreen(
                                 onBack = { navController.popBackStack() }
@@ -96,25 +112,21 @@ class MainActivity : ComponentActivity() {
                                 onBack = { navController.popBackStack() }
                             )
                         }
-
                         composable(Routes.Credits) {
                             CreditsScreen(
                                 onBack = { navController.popBackStack() }
                             )
                         }
-
                         composable(Routes.StudentFeed) {
                             StudentFeedScreen(
                                 onBack = { navController.popBackStack() }
                             )
                         }
-
                         composable(Routes.InitiativeDetail) {
                             InitiativeDetailScreen(
                                 onBack = { navController.popBackStack() }
                             )
                         }
-
                     }
                 }
             }
