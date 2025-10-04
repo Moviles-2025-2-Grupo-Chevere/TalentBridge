@@ -58,19 +58,23 @@ object AuthManager {
         val numericId = randomNumericId(idDigits)
 
         val profile = hashMapOf(
+            "description" to "",
             "displayName" to displayName,
             "email" to email,
             "headline" to "",
             "id" to numericId,
             "isPublic" to isPublic,
+            "lastLoginAt" to FieldValue.serverTimestamp(),
+            "lastPortfolioUpdateAt" to "",
             "linkedin" to "",
             "location" to "",
+            "major" to "",
             "mobileNumber" to "",
             "photoUrl" to "",
             "projects" to emptyList<String>(),
             "skillsOrTopics" to emptyList<String>(),
-            "updateAt" to FieldValue.serverTimestamp(),
-            "description" to ""
+
+            
         )
 
         db.collection("users").document(uid).set(profile)

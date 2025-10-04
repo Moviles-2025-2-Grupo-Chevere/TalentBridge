@@ -73,4 +73,6 @@ dependencies {
     // para await() con Tasks de Firebase
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
 
+    implementation("com.google.firebase:firebase-analytics-ktx")
+
 }
