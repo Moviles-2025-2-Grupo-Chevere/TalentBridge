@@ -44,7 +44,7 @@ class CircularImageWidget extends StatelessWidget {
           child: imageUrl == null || imageUrl!.isEmpty
               ? placeholderWidget ??
                     Icon(
-                      Icons.person,
+                      Icons.add_a_photo,
                       size: size * 0.6,
                       color: Colors.black54,
                     )
@@ -55,7 +55,7 @@ class CircularImageWidget extends StatelessWidget {
                   errorBuilder: (context, error, stackTrace) {
                     return placeholderWidget ??
                         Icon(
-                          Icons.person,
+                          Icons.add_a_photo,
                           size: size * 0.6,
                           color: Colors.black54,
                         );
@@ -68,7 +68,7 @@ class CircularImageWidget extends StatelessWidget {
                   errorBuilder: (context, error, stackTrace) {
                     return placeholderWidget ??
                         Icon(
-                          Icons.person,
+                          Icons.add_a_photo,
                           size: size * 0.6,
                           color: Colors.black54,
                         );
@@ -80,7 +80,7 @@ class CircularImageWidget extends StatelessWidget {
                   errorBuilder: (context, error, stackTrace) {
                     return placeholderWidget ??
                         Icon(
-                          Icons.person,
+                          Icons.add_a_photo,
                           size: size * 0.6,
                           color: Colors.black54,
                         );
