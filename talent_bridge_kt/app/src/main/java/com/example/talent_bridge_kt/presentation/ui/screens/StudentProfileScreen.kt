@@ -1,5 +1,8 @@
 package com.example.talent_bridge_kt.presentation.ui.screens
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -25,17 +28,31 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.talent_bridge_kt.R
 import com.example.talent_bridge_kt.ui.theme.AccentYellow
 import com.example.talent_bridge_kt.ui.theme.CreamBackground
 import com.example.talent_bridge_kt.ui.theme.LinkGreen
 import com.example.talent_bridge_kt.ui.theme.TitleGreen
+
+// VM + casos de uso + fake repo (ajusta paquetes si difieren en tu proyecto)
+import com.example.talent_bridge_kt.data.fake.FakeProfileRepository
+import com.example.talent_bridge_kt.domain.usecase.GetProfileUseCase
+import com.example.talent_bridge_kt.domain.usecase.UpdateProfileUseCase
+import com.example.talent_bridge_kt.domain.usecase.UploadAvatarUseCase
+import com.example.talent_bridge_kt.presentation.ui.viewmodel.ProfileUiState
+import com.example.talent_bridge_kt.presentation.ui.viewmodel.ProfileViewModel
+
+import androidx.core.content.FileProvider
+import androidx.compose.ui.text.style.TextOverflow
+import java.io.File
 
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
@@ -47,10 +64,43 @@ fun StudentProfileScreen(
     onAddProject: () -> Unit = {},
     onBack: () -> Unit = {}
 ) {
+    // --------- TUS ESTADOS ORIGINALES ---------
     var email by remember { mutableStateOf("lucianaperez@gmail.com") }
     var linkedin by remember { mutableStateOf("lucianap23") }
     var number by remember { mutableStateOf<String?>(null) }
-    val tags = remember { listOf("Diseño", "UI/UX", "AI") }
+    val localTags = remember { listOf("Diseño", "UI/UX", "AI") }
+
+    // --------- ViewModel (wiring simple sin Hilt) ---------
+    val repo = remember { FakeProfileRepository() }
+    val vm = remember {
+        ProfileViewModel(
+            getProfile = GetProfileUseCase(repo),
+            updateProfile = UpdateProfileUseCase(repo),
+            uploadAvatar = UploadAvatarUseCase(repo)
+        )
+    }
+    val uiState by vm.uiState.collectAsState()
+
+    // --------- Cámara con TakePicture + FileProvider ---------
+    val context = LocalContext.current
+    var cameraUri by remember { mutableStateOf<Uri?>(null) }
+
+    fun createTempImageUri(): Uri {
+        val imagesDir = File(context.cacheDir, "images").apply { mkdirs() }
+        val file = File.createTempFile("avatar_", ".jpg", imagesDir)
+        return FileProvider.getUriForFile(
+            context,
+            "${context.packageName}.fileprovider",
+            file
+        )
+    }
+
+    val takePicture = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.TakePicture()
+    ) { success ->
+        // Evita smart-cast error usando let
+        if (success) cameraUri?.let { vm.onAvatarPicked(it) }
+    }
 
     Surface(color = CreamBackground, modifier = modifier.fillMaxSize()) {
         Column(modifier = Modifier.fillMaxSize()) {
@@ -68,32 +118,47 @@ fun StudentProfileScreen(
                 contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Header
+                // Header (igual layout; Image -> AsyncImage + click para abrir cámara)
                 item {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Image(
-                            painter = painterResource(id = R.drawable.student1),
+                        val avatarModel: Any = when (val s = uiState) {
+                            is ProfileUiState.Ready -> s.profile.avatarUrl ?: R.drawable.student1
+                            else -> R.drawable.student1
+                        }
+
+                        AsyncImage(
+                            model = avatarModel,
                             contentDescription = "Avatar",
                             modifier = Modifier
                                 .size(120.dp)
                                 .clip(CircleShape)
-                                .background(Color(0xFFEDE7F6)),
+                                .background(Color(0xFFEDE7F6))
+                                .clickable {
+                                    val tmp = createTempImageUri()
+                                    cameraUri = tmp
+                                    takePicture.launch(tmp) // pasamos Uri no nulo
+                                },
                             contentScale = ContentScale.Crop
                         )
                         Spacer(Modifier.height(10.dp))
                         Text(
-                            "LucianaPerez",
+                            text = when (val s = uiState) {
+                                is ProfileUiState.Ready -> s.profile.name.ifBlank { "LucianaPerez" }
+                                else -> "LucianaPerez"
+                            },
                             fontSize = 18.sp,
                             color = TitleGreen,
-                            fontWeight = FontWeight.SemiBold
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                     }
                 }
 
-
+                // Contact
                 item { SectionTitle("Contact") }
                 item {
                     Column(
@@ -119,12 +184,15 @@ fun StudentProfileScreen(
                     }
                 }
 
-
+                // Description
                 item { SectionTitle("Description") }
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(
-                            "Interesado en proyectos con paga con relación a la IA.",
+                            when (val s = uiState) {
+                                is ProfileUiState.Ready -> s.profile.bio ?: "Interesado en proyectos con paga con relación a la IA."
+                                else -> "Interesado en proyectos con paga con relación a la IA."
+                            },
                             fontSize = 14.sp,
                             color = Color.DarkGray
                         )
@@ -133,8 +201,12 @@ fun StudentProfileScreen(
                     }
                 }
 
-
+                // Tags
                 item {
+                    val tags = when (val s = uiState) {
+                        is ProfileUiState.Ready -> if (s.profile.tags.isNotEmpty()) s.profile.tags else localTags
+                        else -> localTags
+                    }
                     Column {
                         Text("Career", fontSize = 12.sp, color = Color.DarkGray)
                         Spacer(Modifier.height(6.dp))
@@ -156,7 +228,7 @@ fun StudentProfileScreen(
                     }
                 }
 
-
+                // Acciones
                 item {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -198,6 +270,9 @@ fun StudentProfileScreen(
     }
 }
 
+// ===================================================================================
+// Helpers en el MISMO ARCHIVO (así no chocan los “private in file” de otros archivos)
+// ===================================================================================
 
 @Composable
 private fun TopBarCustom(
@@ -227,7 +302,6 @@ private fun TopBarCustom(
             )
         }
 
-
         Row(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
@@ -244,8 +318,6 @@ private fun TopBarCustom(
         }
     }
 }
-
-
 
 @Composable
 private fun BottomBarCustom(
@@ -274,8 +346,6 @@ private fun BottomBarCustom(
         }
     }
 }
-
-
 
 @Composable
 private fun SectionTitle(text: String) {
