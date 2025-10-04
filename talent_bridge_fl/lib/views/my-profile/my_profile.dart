@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:talent_bridge_fl/components/add_element_widget.dart';
 import 'package:talent_bridge_fl/components/yellow_text_box_widget.dart';
 import 'package:talent_bridge_fl/components/circular_image_widget.dart';
+import 'package:image_picker/image_picker.dart';
 
 class MyProfile extends StatelessWidget {
   const MyProfile({Key? key}) : super(key: key);
