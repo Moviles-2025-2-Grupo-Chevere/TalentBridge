@@ -113,6 +113,9 @@ fun CreateAccountScreen(
                         AuthManager.register(
                             email = email.trim(),
                             password = password,
+                            displayName = user,
+                            idDigits = 8,
+                            defaultIsPublic = true,
                             onSuccess = {
                                 isLoading = false
                                 showDialog = true
