@@ -137,22 +137,9 @@ fun CreateAccountScreen(
 
                 Spacer(Modifier.height(28.dp))
 
-                Text(
-                    "Other Sign In Options",
-                    color = TitleGreen,
-                    fontSize = 16.sp
-                )
 
                 Spacer(Modifier.height(16.dp))
 
-                Image(
-                    painter = painterResource(R.drawable.gmail_logo),
-                    contentDescription = "Sign in with Gmail",
-                    modifier = Modifier.size(64.dp),
-                    contentScale = ContentScale.Fit
-                )
-
-                Spacer(Modifier.height(28.dp))
 
                 Text(
                     text = "Already have an account? Log In",

@@ -159,12 +159,6 @@ fun LoginScreen(modifier: Modifier = Modifier,  onCreateAccount: () -> Unit = {}
 
                 Spacer(Modifier.height(32.dp))
 
-                Image(
-                    painter = painterResource(id = R.drawable.gmail_logo),
-                    contentDescription = "Gmail Logo",
-                    modifier = Modifier.size(40.dp),
-                    contentScale = ContentScale.Fit
-                )
 
                 Spacer(Modifier.height(16.dp))
 
