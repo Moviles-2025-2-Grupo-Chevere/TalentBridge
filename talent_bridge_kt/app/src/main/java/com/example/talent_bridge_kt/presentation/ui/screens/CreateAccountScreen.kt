@@ -23,10 +23,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.talent_bridge_kt.R
 import com.example.talent_bridge_kt.ui.theme.CreamBackground
-import com.example.talent_bridge_kt.ui.theme.CreamBackground
 import com.example.talent_bridge_kt.ui.theme.TitleGreen
 import com.example.talent_bridge_kt.ui.theme.AccentYellow
 import com.example.talent_bridge_kt.ui.theme.LinkGreen
+import android.widget.Toast
+import androidx.compose.ui.platform.LocalContext
+import com.example.talent_bridge_kt.data.AuthManager
 
 @Composable
 fun CreateAccountScreen(
@@ -36,6 +38,15 @@ fun CreateAccountScreen(
     var password by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
     var showDialog by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+
+    fun isValidEmail(v: String) =
+        android.util.Patterns.EMAIL_ADDRESS.matcher(v).matches()
+    fun isValidPassword(v: String) = v.length >= 6
+    fun toast(msg: String) =
+        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
 
 
     Surface(color = CreamBackground, modifier = Modifier.fillMaxSize()) {
@@ -94,7 +105,26 @@ fun CreateAccountScreen(
                 Spacer(Modifier.height(28.dp))
 
                 Button(
-                    onClick = { showDialog = true },
+                    onClick = {
+                        if (!isValidEmail(email)) { toast("Invalid Email"); return@Button }
+                        if (!isValidPassword(password)) { toast("Password must have at least six characters"); return@Button }
+
+                        isLoading = true
+                        AuthManager.register(
+                            email = email.trim(),
+                            password = password,
+                            onSuccess = {
+                                isLoading = false
+                                showDialog = true
+
+                            },
+                            onError = { msg ->
+                                isLoading = false
+                                toast("Unsuccessful account creation: $msg")
+                            }
+                        )
+                    },
+                    enabled = !isLoading,
                     shape = RoundedCornerShape(28.dp),
                     colors = ButtonDefaults.buttonColors(containerColor = AccentYellow),
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp),
@@ -102,7 +132,7 @@ fun CreateAccountScreen(
                         .fillMaxWidth(0.6f)
                         .shadow(6.dp, RoundedCornerShape(28.dp))
                 ) {
-                    Text("Next", color = Color.White, fontSize = 18.sp)
+                    Text(if (isLoading) "Creating..." else "Next", color = Color.White, fontSize = 18.sp)
                 }
 
                 Spacer(Modifier.height(28.dp))

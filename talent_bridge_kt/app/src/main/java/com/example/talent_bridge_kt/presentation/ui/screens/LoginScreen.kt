@@ -23,8 +23,8 @@ import com.example.talent_bridge_kt.R
 import com.example.talent_bridge_kt.ui.theme.AccentYellow
 import com.example.talent_bridge_kt.ui.theme.CreamBackground
 import com.example.talent_bridge_kt.ui.theme.TitleGreen
-import com.google.firebase.auth.ktx.auth
-import com.google.firebase.ktx.Firebase
+import com.example.talent_bridge_kt.data.AuthManager
+
 
 
 @Composable
@@ -36,7 +36,6 @@ fun LoginScreen(modifier: Modifier = Modifier,  onCreateAccount: () -> Unit = {}
     var isLoading by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
-    val auth = Firebase.auth
 
     fun isValidEmail(value: String) =
         android.util.Patterns.EMAIL_ADDRESS.matcher(value).matches()
@@ -46,26 +45,29 @@ fun LoginScreen(modifier: Modifier = Modifier,  onCreateAccount: () -> Unit = {}
         Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
 
     fun doLogin() {
-        if (!isValidEmail(email)) { showToast("Email inválido"); return }
-        if (!isValidPassword(password)) { showToast("La contraseña debe tener al menos 6 caracteres"); return }
+        if (!isValidEmail(email)) { showToast("Invalid email"); return }
+        if (!isValidPassword(password)) { showToast("Password must have at least six characters"); return }
 
         isLoading = true
-        auth.signInWithEmailAndPassword(email.trim(), password)
-            .addOnCompleteListener { task ->
+        AuthManager.login(
+            email = email.trim(),
+            password = password,
+            onSuccess = {
                 isLoading = false
-                if (task.isSuccessful) {
-                    onStudentFeed()
-                } else {
-                    val m = task.exception?.message?.lowercase().orEmpty()
-                    val msg = when {
-                        "password is invalid" in m -> "Contraseña incorrecta"
-                        "no user record" in m      -> "No existe una cuenta con ese email"
-                        "badly formatted" in m     -> "Email con formato inválido"
-                        else -> "Error de autenticación: ${task.exception?.message ?: "desconocido"}"
+                onStudentFeed()
+            },
+            onError = { msg ->
+                isLoading = false
+                showToast(
+                    when {
+                        msg.contains("password is invalid", ignoreCase = true) -> "Incorrect password"
+                        msg.contains("no user record", ignoreCase = true)      -> "There is no account associated to this email"
+                        msg.contains("badly formatted", ignoreCase = true)     -> "Invalid email"
+                        else -> "Auth Error: $msg"
                     }
-                    showToast(msg)
-                }
+                )
             }
+        )
     }
 
     Surface(color = CreamBackground, modifier = Modifier.fillMaxSize()) {
@@ -85,7 +87,7 @@ fun LoginScreen(modifier: Modifier = Modifier,  onCreateAccount: () -> Unit = {}
                 )
                 Spacer(Modifier.height(60.dp))
 
-                Text(text = "User",
+                Text(text = "Email",
                     color = AccentYellow,
                     fontSize = 16.sp,
                     modifier = Modifier.align(Alignment.Start)
@@ -152,7 +154,7 @@ fun LoginScreen(modifier: Modifier = Modifier,  onCreateAccount: () -> Unit = {}
                         contentColor = Color.White
                     ),
                 ) {
-                    Text(if (isLoading) "Ingresando..." else "Next")
+                    Text(if (isLoading) "Loading..." else "Next")
                 }
 
                 Spacer(Modifier.height(32.dp))
