@@ -1,46 +1,31 @@
 package com.example.talent_bridge_kt.presentation.ui.screens
 
-import android.R.attr.onClick
+import android.widget.Toast
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Surface
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
-import com.example.talent_bridge_kt.ui.theme.CreamBackground
-import com.example.talent_bridge_kt.ui.theme.TitleGreen
-import com.example.talent_bridge_kt.ui.theme.AccentYellow
-import com.example.talent_bridge_kt.ui.theme.LinkGreen
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
-import androidx.compose.material3.Text
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.OutlinedButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.layout.ContentScale
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.example.talent_bridge_kt.R
+import com.example.talent_bridge_kt.ui.theme.AccentYellow
+import com.example.talent_bridge_kt.ui.theme.CreamBackground
+import com.example.talent_bridge_kt.ui.theme.TitleGreen
+import com.google.firebase.auth.ktx.auth
+import com.google.firebase.ktx.Firebase
+
 
 @Composable
 fun LoginScreen(modifier: Modifier = Modifier,  onCreateAccount: () -> Unit = {},
@@ -48,6 +33,40 @@ fun LoginScreen(modifier: Modifier = Modifier,  onCreateAccount: () -> Unit = {}
     //States
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var isLoading by remember { mutableStateOf(false) }
+
+    val context = LocalContext.current
+    val auth = Firebase.auth
+
+    fun isValidEmail(value: String) =
+        android.util.Patterns.EMAIL_ADDRESS.matcher(value).matches()
+    fun isValidPassword(value: String) = value.length >= 6
+
+    fun showToast(msg: String) =
+        Toast.makeText(context, msg, Toast.LENGTH_SHORT).show()
+
+    fun doLogin() {
+        if (!isValidEmail(email)) { showToast("Email inválido"); return }
+        if (!isValidPassword(password)) { showToast("La contraseña debe tener al menos 6 caracteres"); return }
+
+        isLoading = true
+        auth.signInWithEmailAndPassword(email.trim(), password)
+            .addOnCompleteListener { task ->
+                isLoading = false
+                if (task.isSuccessful) {
+                    onStudentFeed()
+                } else {
+                    val m = task.exception?.message?.lowercase().orEmpty()
+                    val msg = when {
+                        "password is invalid" in m -> "Contraseña incorrecta"
+                        "no user record" in m      -> "No existe una cuenta con ese email"
+                        "badly formatted" in m     -> "Email con formato inválido"
+                        else -> "Error de autenticación: ${task.exception?.message ?: "desconocido"}"
+                    }
+                    showToast(msg)
+                }
+            }
+    }
 
     Surface(color = CreamBackground, modifier = Modifier.fillMaxSize()) {
         Box(Modifier.fillMaxSize(), contentAlignment = Alignment.TopCenter) {
@@ -105,6 +124,8 @@ fun LoginScreen(modifier: Modifier = Modifier,  onCreateAccount: () -> Unit = {}
                     singleLine = true,
                     shape = RoundedCornerShape(28.dp),
                     modifier = Modifier.fillMaxWidth(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    visualTransformation = PasswordVisualTransformation(),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedContainerColor = Color.White,
                         unfocusedContainerColor = Color.White,
@@ -120,7 +141,8 @@ fun LoginScreen(modifier: Modifier = Modifier,  onCreateAccount: () -> Unit = {}
                 Spacer(Modifier.height(28.dp))
 
                 OutlinedButton(
-                    onClick = onStudentFeed,
+                    onClick = { if (!isLoading) doLogin() },
+                    enabled = !isLoading,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp),
@@ -130,7 +152,7 @@ fun LoginScreen(modifier: Modifier = Modifier,  onCreateAccount: () -> Unit = {}
                         contentColor = Color.White
                     ),
                 ) {
-                    Text("Next")
+                    Text(if (isLoading) "Ingresando..." else "Next")
                 }
 
                 Spacer(Modifier.height(32.dp))
