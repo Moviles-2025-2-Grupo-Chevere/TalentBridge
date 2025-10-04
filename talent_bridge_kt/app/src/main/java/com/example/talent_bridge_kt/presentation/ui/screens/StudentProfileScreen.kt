@@ -16,6 +16,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
@@ -32,6 +35,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -51,7 +55,8 @@ import com.example.talent_bridge_kt.presentation.ui.viewmodel.ProfileUiState
 import com.example.talent_bridge_kt.presentation.ui.viewmodel.ProfileViewModel
 
 import androidx.core.content.FileProvider
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.ui.text.input.KeyboardType
 import java.io.File
 
 @OptIn(ExperimentalLayoutApi::class)
@@ -64,10 +69,12 @@ fun StudentProfileScreen(
     onAddProject: () -> Unit = {},
     onBack: () -> Unit = {}
 ) {
-    // --------- TUS ESTADOS ORIGINALES ---------
+    // --------- ESTADOS LOCALES / EDIT ---------
     var email by remember { mutableStateOf("lucianaperez@gmail.com") }
     var linkedin by remember { mutableStateOf("lucianap23") }
     var number by remember { mutableStateOf<String?>(null) }
+    var bio by remember { mutableStateOf("Interesado en proyectos con paga con relación a la IA.") }
+    var isEditing by remember { mutableStateOf(false) }
     val localTags = remember { listOf("Diseño", "UI/UX", "AI") }
 
     // --------- ViewModel (wiring simple sin Hilt) ---------
@@ -80,6 +87,15 @@ fun StudentProfileScreen(
         )
     }
     val uiState by vm.uiState.collectAsState()
+
+    // Sincroniza estados locales cuando llega el perfil del VM
+    LaunchedEffect(uiState) {
+        val p = (uiState as? ProfileUiState.Ready)?.profile ?: return@LaunchedEffect
+        email = p.email
+        linkedin = p.linkedin ?: ""
+        number = p.phone
+        bio = p.bio ?: bio
+    }
 
     // --------- Cámara con TakePicture + FileProvider ---------
     val context = LocalContext.current
@@ -98,7 +114,6 @@ fun StudentProfileScreen(
     val takePicture = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.TakePicture()
     ) { success ->
-        // Evita smart-cast error usando let
         if (success) cameraUri?.let { vm.onAvatarPicked(it) }
     }
 
@@ -118,7 +133,7 @@ fun StudentProfileScreen(
                 contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                // Header (igual layout; Image -> AsyncImage + click para abrir cámara)
+                // ================== Header ==================
                 item {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -139,15 +154,15 @@ fun StudentProfileScreen(
                                 .clickable {
                                     val tmp = createTempImageUri()
                                     cameraUri = tmp
-                                    takePicture.launch(tmp) // pasamos Uri no nulo
+                                    takePicture.launch(tmp)
                                 },
                             contentScale = ContentScale.Crop
                         )
                         Spacer(Modifier.height(10.dp))
                         Text(
                             text = when (val s = uiState) {
-                                is ProfileUiState.Ready -> s.profile.name.ifBlank { "LucianaPerez" }
-                                else -> "LucianaPerez"
+                                is ProfileUiState.Ready -> s.profile.name.ifBlank { "Luciana Perez" }
+                                else -> "Luciana Perez"
                             },
                             fontSize = 18.sp,
                             color = TitleGreen,
@@ -155,53 +170,99 @@ fun StudentProfileScreen(
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
+                        Spacer(Modifier.height(8.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            IconButton(onClick = { isEditing = !isEditing }) {
+                                Icon(
+                                    imageVector = if (isEditing) Icons.Filled.Close else Icons.Filled.Edit,
+                                    contentDescription = if (isEditing) "Cancel edit" else "Edit",
+                                    tint = TitleGreen
+                                )
+                            }
+                            if (isEditing) {
+                                Text("Editing", color = TitleGreen, fontSize = 14.sp)
+                            }
+                        }
                     }
                 }
 
-                // Contact
+                // ================== Contact ==================
                 item { SectionTitle("Contact") }
                 item {
                     Column(
                         Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(8.dp)
                     ) {
-                        LabeledValue("Email:", email)
-                        LabeledValue("LinkedIn:", linkedin)
+                        if (!isEditing) {
+                            LabeledValue("Email:", email)
+                            LabeledValue("LinkedIn:", linkedin)
+                        } else {
+                            OutlinedTextField(
+                                value = email,
+                                onValueChange = { email = it },
+                                label = { Text("Email") },
+                                singleLine = true,
+                                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            OutlinedTextField(
+                                value = linkedin,
+                                onValueChange = { linkedin = it },
+                                label = { Text("LinkedIn (usuario o URL)") },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text("Number:", color = TitleGreen, fontSize = 14.sp)
                             Spacer(Modifier.width(8.dp))
-                            if (number.isNullOrBlank()) {
-                                Text(
-                                    "Add number",
-                                    color = LinkGreen,
-                                    fontSize = 14.sp,
-                                    modifier = Modifier.clickable { onEditNumber() }
-                                )
+                            if (!isEditing) {
+                                if (number.isNullOrBlank()) {
+                                    Text(
+                                        "Add number",
+                                        color = LinkGreen,
+                                        fontSize = 14.sp,
+                                        modifier = Modifier.clickable { onEditNumber() }
+                                    )
+                                } else {
+                                    Text(number!!, fontSize = 14.sp, color = Color.DarkGray)
+                                }
                             } else {
-                                Text(number!!, fontSize = 14.sp, color = Color.DarkGray)
+                                OutlinedTextField(
+                                    value = number ?: "",
+                                    onValueChange = { number = it },
+                                    label = { Text("Número") },
+                                    singleLine = true,
+                                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                                    modifier = Modifier.fillMaxWidth()
+                                )
                             }
                         }
                     }
                 }
 
-                // Description
+                // ================== Description ==================
                 item { SectionTitle("Description") }
                 item {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text(
-                            when (val s = uiState) {
-                                is ProfileUiState.Ready -> s.profile.bio ?: "Interesado en proyectos con paga con relación a la IA."
-                                else -> "Interesado en proyectos con paga con relación a la IA."
-                            },
-                            fontSize = 14.sp,
-                            color = Color.DarkGray
-                        )
+                        if (!isEditing) {
+                            Text(bio, fontSize = 14.sp, color = Color.DarkGray)
+                        } else {
+                            OutlinedTextField(
+                                value = bio,
+                                onValueChange = { bio = it },
+                                label = { Text("Descripción / Bio") },
+                                modifier = Modifier.fillMaxWidth(),
+                                minLines = 3
+                            )
+                        }
                         Text("Previous experience:", fontSize = 14.sp, color = TitleGreen)
                         Bullet("Monitoria IP")
                     }
                 }
 
-                // Tags
+                // ================== Tags ==================
                 item {
                     val tags = when (val s = uiState) {
                         is ProfileUiState.Ready -> if (s.profile.tags.isNotEmpty()) s.profile.tags else localTags
@@ -228,7 +289,7 @@ fun StudentProfileScreen(
                     }
                 }
 
-                // Acciones
+                // ================== Acciones ==================
                 item {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -247,7 +308,45 @@ fun StudentProfileScreen(
                     }
                 }
 
-                // Mis Proyectos
+                // ================== Guardar / Cancelar (solo en edición) ==================
+                if (isEditing) {
+                    item {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            OutlinedButton(
+                                onClick = { isEditing = false }, // descarta cambios locales
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Text("Cancel")
+                            }
+                            Button(
+                                onClick = {
+                                    val current = (uiState as? ProfileUiState.Ready)?.profile
+                                    if (current != null) {
+                                        vm.update(
+                                            current.copy(
+                                                email = email,
+                                                linkedin = linkedin.ifBlank { null },
+                                                phone = number,
+                                                bio = bio
+                                            )
+                                        )
+                                    }
+                                    isEditing = false
+                                },
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(Icons.Filled.Done, contentDescription = null)
+                                Spacer(Modifier.width(6.dp))
+                                Text("Save")
+                            }
+                        }
+                    }
+                }
+
+                // ================== Mis Proyectos ==================
                 item { SectionTitle("My Projects") }
                 item { EmptyProjectsCard(onAddProject) }
 
@@ -261,10 +360,10 @@ fun StudentProfileScreen(
             }
 
             BottomBarCustom(
-                onHome = {  },
+                onHome = { },
                 onSearch = { },
-                onMenu = {  },
-                onFav = {  }
+                onMenu = { },
+                onFav = { }
             )
         }
     }
