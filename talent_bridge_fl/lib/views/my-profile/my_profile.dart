@@ -1,10 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:talent_bridge_fl/components/add_element_widget.dart';
 import 'package:talent_bridge_fl/components/yellow_text_box_widget.dart';
 import 'package:talent_bridge_fl/components/circular_image_widget.dart';
+import 'package:talent_bridge_fl/services/profile_pic_storage.dart';
 
-class MyProfile extends StatelessWidget {
+class MyProfile extends StatefulWidget {
   const MyProfile({Key? key}) : super(key: key);
+
+  @override
+  State<MyProfile> createState() => _MyProfileState();
+}
+
+class _MyProfileState extends State<MyProfile> {
+  String? _profileImagePath;
+
+  @override
+  void initState() {
+    super.initState();
+    // Load saved profile image path
+    _profileImagePath = ProfileStorage.getProfileImagePath();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -21,15 +37,16 @@ class MyProfile extends StatelessWidget {
                 child: Column(
                   children: [
                     // Profile image
-                    const CircularImageWidget(
+                    CircularImageWidget(
                       imageUrl:
-                          'assets/my_profile.jpg', // Replace with actual image URL
+                          _profileImagePath ?? 'assets/images/my_profile.jpg',
                       size: 120.0,
+                      onTap: _showTakePhotoDialog,
                     ),
                     const SizedBox(height: 16.0),
                     // Username
                     const Text(
-                      'Usuario123',
+                      'Casey Neistat',
                       style: TextStyle(
                         fontSize: 18.0,
                         fontWeight: FontWeight.bold,
@@ -259,6 +276,79 @@ class MyProfile extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+
+  // Show dialog to confirm taking a profile picture
+  void _showTakePhotoDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Take Profile Picture'),
+          content: const Text('Do you want to take a new profile picture?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Cancel
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _takePhoto(); // Accept
+              },
+              child: const Text('Accept'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Take photo using system camera
+  Future<void> _takePhoto() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+
+      // Use the device's camera app
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 85, // Compress to 85% quality
+        preferredCameraDevice: CameraDevice.front, // Start with front camera
+      );
+
+      if (image != null && mounted) {
+        setState(() {
+          _profileImagePath = image.path;
+        });
+        // Save to storage
+        ProfileStorage.saveProfileImagePath(image.path);
+      }
+    } catch (e) {
+      _showErrorDialog('Error accessing camera: $e');
+    }
+  }
+
+  // Show error dialog
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Error'),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
     );
   }
 }
