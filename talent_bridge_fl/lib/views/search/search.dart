@@ -25,6 +25,9 @@ class _SearchState extends State<Search> {
   List<UserDocument> _allUsers = [];
   UserDocument? _currentUser;
 
+  // Search results
+  List<UserDocument> _searchResults = [];
+
   // Fake “recent” items for the UI
   final _recents = const <String>[
     'Daniel Triviño',
@@ -36,7 +39,8 @@ class _SearchState extends State<Search> {
   void initState() {
     super.initState();
     _loadUserData();
-    // En caso de autofill/pegado después del build
+    // Listen for search bar changes
+    _queryCtrl.addListener(_onQueryChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {});
   }
 
@@ -54,13 +58,31 @@ class _SearchState extends State<Search> {
           }
         }
       }
+      // Initial search results empty
+      _searchResults = [];
     });
   }
 
   @override
   void dispose() {
+    _queryCtrl.removeListener(_onQueryChanged);
     _queryCtrl.dispose();
     super.dispose();
+  }
+
+  void _onQueryChanged() {
+    final q = _queryCtrl.text.trim().toLowerCase();
+    if (q.isEmpty) {
+      setState(() {
+        _searchResults = [];
+      });
+      return;
+    }
+    setState(() {
+      _searchResults = _allUsers
+          .where((u) => u.displayName.toLowerCase().contains(q))
+          .toList();
+    });
   }
 
   void _applySearch() {
@@ -78,144 +100,160 @@ class _SearchState extends State<Search> {
       context,
     ).textTheme.bodyMedium?.copyWith(color: kAmber);
 
-    return Scaffold(
-      backgroundColor: kBg,
-      body: SafeArea(
-        child: Column(
-          children: [
-            // ---------- Body ----------
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      _currentUser != null ? _currentUser!.displayName : '?',
-                    ),
-                    // Label “Buscar”
-                    Text('Search', style: labelStyle),
-                    const SizedBox(height: 8),
+    return SafeArea(
+      child: Column(
+        children: [
+          Expanded(
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Text(
+                  //   _currentUser != null ? _currentUser!.displayName : '?',
+                  // ),
+                  // Label “Buscar”
+                  Text('Search', style: labelStyle),
+                  const SizedBox(height: 8),
 
-                    // Fila: campo pill + botón de filtros (sin lupa)
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        // Campo de texto con borde pill y sombra
-                        Expanded(
-                          child: _shadowWrap(
-                            TextField(
-                              controller: _queryCtrl,
-                              textInputAction: TextInputAction.search,
-                              onSubmitted: (_) => _applySearch(),
-                              inputFormatters: [
-                                LengthLimitingTextInputFormatter(100),
-                              ],
-                              decoration: _pillInput(), // sin icono de lupa
-                            ),
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: _shadowWrap(
+                          TextField(
+                            controller: _queryCtrl,
+                            textInputAction: TextInputAction.search,
+                            onSubmitted: (_) => _applySearch(),
+                            inputFormatters: [
+                              LengthLimitingTextInputFormatter(100),
+                            ],
+                            decoration: _pillInput(), // sin icono de lupa
                           ),
-                        ),
-                        const SizedBox(width: 8),
-
-                        // Botón redondo de filtros
-                        _shadowWrap(
-                          Material(
-                            color: Colors.white,
-                            shape: const CircleBorder(),
-                            child: InkWell(
-                              customBorder: const CircleBorder(),
-                              onTap: () =>
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('Filtros (pendiente)'),
-                                    ),
-                                  ),
-                              child: const Padding(
-                                padding: EdgeInsets.all(12),
-                                child: Icon(Icons.tune, color: Colors.black87),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // “Recientes”
-                    Text('Recent searches', style: labelStyle),
-                    const SizedBox(height: 12),
-
-                    // Lista de recientes (icono reloj + tarjeta pill)
-                    ..._recents.map(
-                      (title) => Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: Row(
-                          crossAxisAlignment: CrossAxisAlignment.center,
-                          children: [
-                            const Icon(
-                              Icons.access_time,
-                              color: Colors.black45,
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: Material(
-                                color: Colors.white,
-                                elevation: 4,
-                                shadowColor: kShadowCol,
-                                borderRadius: BorderRadius.circular(12),
-                                child: InkWell(
-                                  borderRadius: BorderRadius.circular(12),
-                                  onTap: () => ScaffoldMessenger.of(context)
-                                      .showSnackBar(
-                                        SnackBar(
-                                          content: Text('Abrir "$title"'),
-                                        ),
-                                      ),
-                                  child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 12,
-                                    ),
-                                    child: Row(
-                                      children: [
-                                        CircleAvatar(
-                                          radius: 16,
-                                          backgroundColor:
-                                              Colors.purple.shade200,
-                                          child: const Icon(
-                                            Icons.blur_on,
-                                            size: 18,
-                                            color: Colors.white,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Expanded(
-                                          child: Text(
-                                            title,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: const TextStyle(
-                                              fontSize: 14,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                ),
-                              ),
-                            ),
-                          ],
                         ),
                       ),
+                      const SizedBox(width: 8),
+
+                      // Botón redondo de filtros
+                      _shadowWrap(
+                        Material(
+                          color: Colors.white,
+                          shape: const CircleBorder(),
+                          child: InkWell(
+                            customBorder: const CircleBorder(),
+                            onTap: () =>
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('Filtros (pendiente)'),
+                                  ),
+                                ),
+                            child: const Padding(
+                              padding: EdgeInsets.all(12),
+                              child: Icon(Icons.tune, color: Colors.black87),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 24),
+
+                  // Search results
+                  if (_searchResults.isNotEmpty) ...[
+                    Text('Results', style: labelStyle),
+                    const SizedBox(height: 12),
+                    ..._searchResults.map(
+                      (user) => SearchCard(title: user.displayName),
                     ),
+                    const SizedBox(height: 24),
                   ],
+
+                  // “Recientes”
+                  Text('Recent searches', style: labelStyle),
+                  const SizedBox(height: 12),
+
+                  // Lista de recientes (icono reloj + tarjeta pill)
+                  ..._recents.map(
+                    (title) => SearchCard(title: title),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class SearchCard extends StatelessWidget {
+  const SearchCard({
+    super.key,
+    required this.title,
+  });
+
+  final String title;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 12),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          const Icon(
+            Icons.access_time,
+            color: Colors.black45,
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Material(
+              color: Colors.white,
+              elevation: 4,
+              shadowColor: kShadowCol,
+              borderRadius: BorderRadius.circular(12),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () => ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Abrir "$title"'),
+                  ),
+                ),
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 12,
+                  ),
+                  child: Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 16,
+                        backgroundColor: Colors.purple.shade200,
+                        child: const Icon(
+                          Icons.blur_on,
+                          size: 18,
+                          color: Colors.white,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 14,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

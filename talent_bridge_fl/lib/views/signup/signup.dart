@@ -190,6 +190,7 @@ class _SignupState extends State<Signup> {
     ).textTheme.bodyMedium?.copyWith(color: kAmber);
 
     return Scaffold(
+      appBar: AppBar(backgroundColor: kBg,),
       backgroundColor: kBg,
       body: SafeArea(
         child: Center(
@@ -387,9 +388,7 @@ class _SignupState extends State<Signup> {
                     Center(
                       child: TextButton(
                         onPressed: () {
-                          Navigator.of(context).push(
-                            MaterialPageRoute(builder: (_) => const Login()),
-                          );
+                          Navigator.of(context).pop();
                         },
                         style: TextButton.styleFrom(
                           foregroundColor: kLinkGreen,

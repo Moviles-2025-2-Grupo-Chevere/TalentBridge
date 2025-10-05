@@ -6,7 +6,7 @@ import 'package:talent_bridge_fl/components/circular_image_widget.dart';
 import 'package:talent_bridge_fl/services/profile_pic_storage.dart';
 
 class MyProfile extends StatefulWidget {
-  const MyProfile({Key? key}) : super(key: key);
+  const MyProfile({super.key});
 
   @override
   State<MyProfile> createState() => _MyProfileState();

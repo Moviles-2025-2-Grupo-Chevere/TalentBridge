@@ -1,9 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
-
 import 'views/login/login.dart';
-import 'views/prototype_menu.dart';
 import 'services/connectivity_service.dart';
 
 // Global navigator key
@@ -43,28 +40,7 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       title: 'Talent Bridge',
       navigatorKey: navigatorKey, // Add the navigator key
-      home: const PrototypeMenu(),
-    );
-  }
-}
-
-class AppGate extends StatelessWidget {
-  const AppGate({super.key});
-
-  @override
-  Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
-
-        final user = snapshot.data;
-        return user == null ? const Login() : const PrototypeMenu();
-      },
+      home: const Login(),
     );
   }
 }

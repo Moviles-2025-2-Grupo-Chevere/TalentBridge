@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 
 // ---- Tokens ----
-const kBg         = Color(0xFFFEF7E6); // cream
-const kAmber      = Color(0xFFFFC107); // title & names
+const kBg = Color(0xFFFEF7E6); // cream
+const kAmber = Color(0xFFFFC107); // title & names
 const kBrandGreen = Color(0xFF568C73); // brand tint / fallback
-const kShadowCol  = Color(0x33000000); // soft shadow
+const kShadowCol = Color(0x33000000); // soft shadow
 const kPillRadius = 26.0;
-const kHomeBtn    = Color(0xFF2E6674);
+const kHomeBtn = Color(0xFF2E6674);
 
 // Simple data holder for each teammate
 class _Member {
@@ -25,49 +25,24 @@ class Credits extends StatefulWidget {
 class _CreditsState extends State<Credits> {
   // Edit these to point to your real asset files (leave null for placeholder)
   final List<_Member> _members = const [
-  _Member('Daniel',     'assets/images/DANIEL.JPG'),
-  _Member('David',      'assets/images/DAVID.JPG'),
-  _Member('Mariana',    'assets/images/MARIANA.JPG'),
-  _Member('Manuela',    'assets/images/MANUELA.JPG'),
-  _Member('Juan Diego', 'assets/images/MP.JPG'),   // map as you need
-  _Member('María Pau',  'assets/images/MP.JPG'),
-];
-
+    _Member('Daniel', 'assets/images/DANIEL.JPG'),
+    _Member('David', 'assets/images/DAVID.JPG'),
+    _Member('Mariana', 'assets/images/MARIANA.JPG'),
+    _Member('Manuela', 'assets/images/MANUELA.JPG'),
+    _Member('Juan Diego', 'assets/images/MP.JPG'), // map as you need
+    _Member('María Pau', 'assets/images/MP.JPG'),
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: AppBar(
+        title: Text('Credits'),
+      ),
       backgroundColor: kBg,
       body: SafeArea(
         child: Column(
           children: [
-            // ---------- Header ----------
-            Container(
-              height: 64,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: const BoxDecoration(
-                color: kBg,
-                boxShadow: [
-                  BoxShadow(
-                    color: kShadowCol,
-                    offset: Offset(0, 1),
-                    blurRadius: 4,
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Image.asset(
-                    'assets/images/talent_bridge_logo.png',
-                    height: 28,
-                    errorBuilder: (_, __, ___) =>
-                        const Icon(Icons.account_balance, size: 28, color: kBrandGreen),
-                  ),
-                  const Spacer(),
-                ],
-              ),
-            ),
-
             // ---------- Body ----------
             Expanded(
               child: SingleChildScrollView(
@@ -75,7 +50,6 @@ class _CreditsState extends State<Credits> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    // ---- Hero row: big logo + "The Team" ----
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
@@ -84,8 +58,11 @@ class _CreditsState extends State<Credits> {
                             child: Image.asset(
                               'assets/images/talent_bridge_logo.png',
                               height: 120,
-                              errorBuilder: (_, __, ___) =>
-                                  const Icon(Icons.account_balance, size: 120, color: kBrandGreen),
+                              errorBuilder: (_, __, ___) => const Icon(
+                                Icons.account_balance,
+                                size: 120,
+                                color: kBrandGreen,
+                              ),
                             ),
                           ),
                         ),
@@ -93,7 +70,8 @@ class _CreditsState extends State<Credits> {
                         Expanded(
                           child: Text(
                             'The\nTeam',
-                            style: Theme.of(context).textTheme.headlineLarge?.copyWith(
+                            style: Theme.of(context).textTheme.headlineLarge
+                                ?.copyWith(
                                   color: kAmber,
                                   height: 1.0,
                                   fontWeight: FontWeight.w700,
@@ -129,7 +107,9 @@ class _CreditsState extends State<Credits> {
                                 borderRadius: BorderRadius.circular(22),
                               ),
                               elevation: 0,
-                              textStyle: const TextStyle(fontWeight: FontWeight.w600),
+                              textStyle: const TextStyle(
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                             child: const Text('Home'),
                           ),
@@ -150,7 +130,11 @@ class _CreditsState extends State<Credits> {
                         avatar = const CircleAvatar(
                           radius: 34,
                           backgroundColor: Color(0xFFE0E0E0),
-                          child: Icon(Icons.person, color: Colors.white, size: 28),
+                          child: Icon(
+                            Icons.person,
+                            color: Colors.white,
+                            size: 28,
+                          ),
                         );
                       } else {
                         avatar = CircleAvatar(
@@ -173,8 +157,9 @@ class _CreditsState extends State<Credits> {
                       return Padding(
                         padding: const EdgeInsets.symmetric(vertical: 14),
                         child: Row(
-                          mainAxisAlignment:
-                              even ? MainAxisAlignment.start : MainAxisAlignment.end,
+                          mainAxisAlignment: even
+                              ? MainAxisAlignment.start
+                              : MainAxisAlignment.end,
                           children: [
                             if (even) ...[
                               avatar,
@@ -193,7 +178,11 @@ class _CreditsState extends State<Credits> {
                     // (Optional) bottom decorative logo like your mock:
                     const SizedBox(height: 32),
                     const Center(
-                      child: Icon(Icons.account_balance, color: kBrandGreen, size: 28),
+                      child: Icon(
+                        Icons.account_balance,
+                        color: kBrandGreen,
+                        size: 28,
+                      ),
                     ),
                   ],
                 ),
