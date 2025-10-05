@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 
 import 'views/login/login.dart';
 import 'views/prototype_menu.dart';
@@ -43,6 +44,9 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       title: 'Talent Bridge',
       navigatorKey: navigatorKey, // Add the navigator key
+      navigatorObservers: [
+        FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
+      ],
       home: const PrototypeMenu(),
     );
   }
