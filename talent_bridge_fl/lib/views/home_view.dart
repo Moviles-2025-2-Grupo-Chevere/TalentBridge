@@ -18,52 +18,17 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
-  final _prototypeViews = {
-    'Login': Login(),
-    'Sign Up': Signup(),
-    'Main Feed': MainFeed(),
-    'Leader Feed': LeaderFeed(),
-    'My Profile': MyProfile(),
-    'User Profile': UserProfile(),
-    'Organization Profile': OrgProfile(),
-    'Project Detail': ProjectView(),
-    'Search': Search(),
-    'Credits': Credits(),
-  };
-
-  Widget? _currentView;
-
-  void updateWidget(Widget w) {
-    setState(() {
-      _currentView = w;
-    });
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _currentView = PrototypeViewList(
-      prototypeViews: _prototypeViews,
-      updateWidget: updateWidget,
-    );
-  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
         title: Image.asset(
-          'assets/images/MainAppIcon.png', // Replace with your image path
-          height: 40, // Adjust height as needed
+          'assets/images/MainAppIcon.png', 
+          height: 40, 
           fit: BoxFit.contain,
         ),
         actions: [
-          IconButton(
-            icon: Icon(Icons.arrow_back),
-            onPressed: () {
-              Navigator.pop(context);
-            },
-          ),
           IconButton(
             icon: Icon(Icons.menu),
             onPressed: () {
@@ -73,55 +38,22 @@ class _HomeViewState extends State<HomeView> {
         ],
       ),
       bottomNavigationBar: BottomNavigationBar(
-        type: BottomNavigationBarType.fixed, // Add this line
+        type: BottomNavigationBarType.fixed,
         items: [
           BottomNavigationBarItem(
             icon: Icon(Icons.add_home),
             label: 'Home',
           ),
           BottomNavigationBarItem(icon: Icon(Icons.search), label: 'Search'),
-          BottomNavigationBarItem(icon: Icon(Icons.menu), label: 'Menu'),
           BottomNavigationBarItem(
             icon: Icon(Icons.favorite_outline),
             label: 'Saved',
           ),
+          BottomNavigationBarItem(icon: Icon(Icons.menu), label: 'Menu'),
           // BottomNavigationBarItem(icon: Icon(Icons.code), label: 'Prototype'),
         ],
       ),
-      body: _currentView,
-    );
-  }
-}
-
-class PrototypeViewList extends StatelessWidget {
-  const PrototypeViewList({
-    super.key,
-    required this.prototypeViews,
-    required this.updateWidget,
-  });
-
-  final Map<String, Widget> prototypeViews;
-
-  final void Function(Widget w) updateWidget;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: [
-          ...prototypeViews.entries.map(
-            (entry) => ElevatedButton(
-              onPressed: () {
-                updateWidget(entry.value);
-              },
-              child: Text(entry.key),
-            ),
-          ),
-        ],
-      ),
+      body: MainFeed(),
     );
   }
 }
