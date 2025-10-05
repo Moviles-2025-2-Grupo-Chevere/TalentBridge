@@ -1,6 +1,59 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+class UserDocument {
+  final String id;
+  final String displayName;
+  final String email;
+  final String headline;
+  final bool isPublic;
+  final String linkedin;
+  final String location;
+  final String mobileNumber;
+  final String photoUrl;
+  final List<String> projects;
+  final List<String> skillsOrTopics;
+  final String description;
+  final String major;
+  final String lastPortfolioUpdateAt;
+
+  UserDocument({
+    required this.id,
+    required this.displayName,
+    required this.email,
+    required this.headline,
+    required this.isPublic,
+    required this.linkedin,
+    required this.location,
+    required this.mobileNumber,
+    required this.photoUrl,
+    required this.projects,
+    required this.skillsOrTopics,
+    required this.description,
+    required this.major,
+    required this.lastPortfolioUpdateAt,
+  });
+
+  factory UserDocument.fromMap(Map<String, dynamic> map) {
+    return UserDocument(
+      id: map['id'] ?? '',
+      displayName: map['displayName'] ?? '',
+      email: map['email'] ?? '',
+      headline: map['headline'] ?? '',
+      isPublic: map['isPublic'] ?? true,
+      linkedin: map['linkedin'] ?? '',
+      location: map['location'] ?? '',
+      mobileNumber: map['mobileNumber'] ?? '',
+      photoUrl: map['photoUrl'] ?? '',
+      projects: List<String>.from(map['projects'] ?? []),
+      skillsOrTopics: List<String>.from(map['skillsOrTopics'] ?? []),
+      description: map['description'] ?? '',
+      major: map['major'] ?? '',
+      lastPortfolioUpdateAt: map['lastPortfolioUpdateAt'] ?? '',
+    );
+  }
+}
+
 class FirebaseService {
   final _auth = FirebaseAuth.instance;
   final _db = FirebaseFirestore.instance;
@@ -47,6 +100,28 @@ class FirebaseService {
         SetOptions(merge: true),
       );
     }
+  }
+
+  // ---------------- USER DATA ----------------
+
+  Future<UserDocument?> getCurrentUserDocument() async {
+    final uid = currentUid();
+    if (uid == null) return null;
+
+    final docRef = _db.collection('users').doc(uid);
+    final snap = await docRef.get();
+
+    if (!snap.exists) return null;
+
+    return UserDocument.fromMap(snap.data()!);
+  }
+
+  Future<List<UserDocument>> getAllUsers() async {
+    final querySnapshot = await _db.collection('users').get();
+
+    return querySnapshot.docs
+        .map((doc) => UserDocument.fromMap(doc.data()))
+        .toList();
   }
 
   // ---------------- AUTH ----------------
