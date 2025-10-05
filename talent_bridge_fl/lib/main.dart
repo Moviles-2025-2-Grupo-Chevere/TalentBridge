@@ -43,7 +43,7 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       title: 'Talent Bridge',
       navigatorKey: navigatorKey, // Add the navigator key
-      home: const PrototypeMenu(),
+      home: const Login(),
     );
   }
 }
