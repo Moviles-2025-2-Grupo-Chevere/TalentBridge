@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 
 class UserDocument {
   final String id;
@@ -57,6 +58,7 @@ class UserDocument {
 class FirebaseService {
   final _auth = FirebaseAuth.instance;
   final _db = FirebaseFirestore.instance;
+  final _analytics = FirebaseAnalytics.instance;
 
   String? currentUid() => _auth.currentUser?.uid;
 
@@ -139,6 +141,8 @@ class FirebaseService {
       );
     }
 
+    await _analytics.logLogin(loginMethod: 'email');
+
     await logEvent('login', {});
   }
 
@@ -171,6 +175,8 @@ class FirebaseService {
       SetOptions(merge: true),
     );
 
+    await _analytics.logSignUp(signUpMethod: 'email');
+
     await logEvent('signup', {});
   }
 
@@ -196,6 +202,12 @@ class FirebaseService {
       },
       SetOptions(merge: true),
     );
+
+    await _analytics.logEvent(
+      name: 'portfolio_update',
+      parameters: {'user_id': uid},
+    );
+
     await logEvent('portfolio_update', {});
   }
 
@@ -210,5 +222,29 @@ class FirebaseService {
       'ts': FieldValue.serverTimestamp(),
       'meta': meta,
     });
+  }
+
+  // ---------- ANALYTICS ----------
+  /// Log custom analytics event to Firebase Analytics
+  Future<void> logAnalyticsEvent(
+    String name,
+    Map<String, Object> parameters,
+  ) async {
+    await _analytics.logEvent(name: name, parameters: parameters);
+  }
+
+  /// Set user properties for analytics
+  Future<void> setUserProperties({
+    required String userId,
+    String? userType,
+    String? plan,
+  }) async {
+    await _analytics.setUserId(id: userId);
+    if (userType != null) {
+      await _analytics.setUserProperty(name: 'user_type', value: userType);
+    }
+    if (plan != null) {
+      await _analytics.setUserProperty(name: 'plan', value: plan);
+    }
   }
 }
