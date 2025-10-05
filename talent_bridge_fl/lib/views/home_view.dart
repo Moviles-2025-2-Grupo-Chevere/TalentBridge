@@ -59,6 +59,7 @@ class _HomeViewState extends State<HomeView> {
       ),
       bottomNavigationBar: BottomNavigationBar(
         onTap: _selectPage,
+        currentIndex: _selectedPageIdx,
         type: BottomNavigationBarType.fixed,
         items: mainViews.map((i) => BottomNavigationBarItem(icon: i.icon, label: i.label)).toList(),
       ),
