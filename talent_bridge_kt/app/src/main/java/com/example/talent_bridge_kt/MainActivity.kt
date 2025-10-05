@@ -38,7 +38,6 @@ import com.example.talent_bridge_kt.data.repository.FirestoreSearchRepository
 import com.example.talent_bridge_kt.presentation.ui.screens.SearchViewModel
 import com.example.talent_bridge_kt.presentation.ui.screens.SearchViewModelFactory
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.material3.SnackbarHost
@@ -49,13 +48,14 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.viewmodel.initializer
 
 
 class MainActivity : ComponentActivity() {
 
-    private val viewmodel by viewModels<ConnectivityViewModel>(
-        factoryProducer = {
-            viewModelFactory {
+    private val viewmodel by viewModels<ConnectivityViewModel> {
+        viewModelFactory {
+            initializer {
                 ConnectivityViewModel(
                     connectivityObserver = AndroidConnectivityObserver(
                         context = applicationContext
@@ -63,7 +63,7 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
-    )
+    }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()

@@ -17,39 +17,24 @@ class AndroidConnectivityObserver(
     private val connectivityManager = context.getSystemService<ConnectivityManager>()!!
     override val isConnected: Flow<Boolean>
         get() = callbackFlow {
-            val callback = object : NetworkCallback(){
-
-                override fun onCapabilitiesChanged(
-                    network: Network,
-                    networkCapabilities: NetworkCapabilities
-                ) {
-                    super.onCapabilitiesChanged(network, networkCapabilities)
-                    val connected = networkCapabilities.hasCapability(
-                        NetworkCapabilities.NET_CAPABILITY_VALIDATED
-                    )
-                    trySend(connected)
+            val callback = object : NetworkCallback() {
+                override fun onCapabilitiesChanged(n: Network, c: NetworkCapabilities) {
+                    trySend(c.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED))
                 }
-
-                override fun onUnavailable() {
-                    super.onUnavailable()
-                    trySend(false)
-                }
-
-                override fun onLost(network: Network) {
-                    super.onLost(network)
-                    trySend(false)
-                }
-
-                override fun onAvailable(network: Network) {
-                    super.onAvailable(network)
-                    trySend(true)
-                }
+                override fun onUnavailable() { trySend(false) }
+                override fun onLost(network: Network) { trySend(false) }
+                override fun onAvailable(network: Network) { trySend(true) }
             }
 
-            connectivityManager.registerDefaultNetworkCallback(callback)
-            awaitClose(){
-                connectivityManager.unregisterNetworkCallback(callback)
+            try {
+                connectivityManager.registerDefaultNetworkCallback(callback)
+            } catch (e: SecurityException) {
+                trySend(false)
+                close(e)
+                return@callbackFlow
             }
+
+            awaitClose { connectivityManager.unregisterNetworkCallback(callback) }
         }
 
 }

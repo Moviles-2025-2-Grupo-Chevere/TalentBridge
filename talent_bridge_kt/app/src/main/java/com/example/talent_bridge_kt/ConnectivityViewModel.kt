@@ -6,16 +6,13 @@ import com.example.talent_bridge_kt.core.conectivity.ConectivityObserver
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.stateIn
 
-
 class ConnectivityViewModel(
     private val connectivityObserver: ConectivityObserver
-): ViewModel() {
+) : ViewModel() {
 
-    val isConnected = connectivityObserver
-        .isConnected
-        .stateIn(
-            viewModelScope,
-            SharingStarted.WhileSubscribed(5000L),
-            false
-        )
+    val isConnected = connectivityObserver.isConnected.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5000L),
+        false
+    )
 }
