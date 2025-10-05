@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:talent_bridge_fl/components/add_element_widget.dart';
 import 'package:talent_bridge_fl/components/yellow_text_box_widget.dart';
 import 'package:talent_bridge_fl/components/circular_image_widget.dart';
 
 class UserProfile extends StatelessWidget {
-  const UserProfile({Key? key}) : super(key: key);
+  const UserProfile({super.key});
 
   @override
   Widget build(BuildContext context) {
