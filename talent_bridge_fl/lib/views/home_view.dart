@@ -10,14 +10,14 @@ import 'package:talent_bridge_fl/views/search/search.dart';
 import 'package:talent_bridge_fl/views/signup/signup.dart';
 import 'package:talent_bridge_fl/views/user-profile/user_profile.dart';
 
-class PrototypeMenu extends StatefulWidget {
-  const PrototypeMenu({super.key});
+class HomeView extends StatefulWidget {
+  const HomeView({super.key});
 
   @override
-  State<PrototypeMenu> createState() => _PrototypeMenuState();
+  State<HomeView> createState() => _HomeViewState();
 }
 
-class _PrototypeMenuState extends State<PrototypeMenu> {
+class _HomeViewState extends State<HomeView> {
   final _prototypeViews = {
     'Login': Login(),
     'Sign Up': Signup(),

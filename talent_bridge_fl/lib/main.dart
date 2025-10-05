@@ -3,7 +3,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import 'views/login/login.dart';
-import 'views/prototype_menu.dart';
+import 'views/home_view.dart';
 import 'services/connectivity_service.dart';
 
 // Global navigator key
@@ -63,7 +63,7 @@ class AppGate extends StatelessWidget {
         }
 
         final user = snapshot.data;
-        return user == null ? const Login() : const PrototypeMenu();
+        return user == null ? const Login() : const HomeView();
       },
     );
   }
