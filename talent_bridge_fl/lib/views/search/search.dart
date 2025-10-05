@@ -53,69 +53,21 @@ class _SearchState extends State<Search> {
     final labelStyle =
         Theme.of(context).textTheme.bodyMedium?.copyWith(color: kAmber);
 
-    return Scaffold(
-      backgroundColor: kBg,
-      body: SafeArea(
+    return SafeArea(
         child: Column(
-          children: [
-            // ---------- Header ----------
-            Container(
-              height: 64,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              decoration: const BoxDecoration(
-                color: kBg,
-                boxShadow: [
-                  BoxShadow(
-                    color: kShadowCol,
-                    offset: Offset(0, 1),
-                    blurRadius: 4,
-                  ),
-                ],
-              ),
-              child: Row(
-                children: [
-                  Image.asset(
-                    'assets/images/talent_bridge_logo.png',
-                    height: 100,
-                    errorBuilder: (_, __, ___) => const Icon(
-                      Icons.account_balance,
-                      size: 28,
-                      color: kBrandGreen,
-                    ),
-                  ),
-                  const Spacer(),
-                  IconButton(
-                    icon: const Icon(Icons.account_circle_outlined),
-                    onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Perfil (pendiente)')),
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.menu),
-                    onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Menú (pendiente)')),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // ---------- Body ----------
+          children: [           
             Expanded(
               child: SingleChildScrollView(
                 padding: const EdgeInsets.fromLTRB(16, 12, 16, 24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Label “Buscar”
                     Text('Buscar', style: labelStyle),
                     const SizedBox(height: 8),
 
-                    // Fila: campo pill + botón de filtros (sin lupa)
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Campo de texto con borde pill y sombra
                         Expanded(
                           child: _shadowWrap(
                             TextField(
@@ -214,8 +166,8 @@ class _SearchState extends State<Search> {
             ),
           ],
         ),
-      ),
-    );
+      );
+  
   }
 }
 
