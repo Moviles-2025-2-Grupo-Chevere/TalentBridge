@@ -6,9 +6,12 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import kotlin.random.Random
+import java.text.SimpleDateFormat
+import java.util.*
 
 object AuthManager {
 
+    private const val TAG = "AuthManager"
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
     private val db = Firebase.firestore
 
@@ -20,6 +23,21 @@ object AuthManager {
 
     private fun randomNumericId(length: Int = 8): String =
         (1..length).joinToString("") { Random.nextInt(0, 10).toString() }
+
+
+    private fun addEvent(type: String, uid: String, onDone: (() -> Unit)? = null, onError: ((String) -> Unit)? = null) {
+        val eventDoc = mapOf(
+            "meta" to mapOf(
+                "uid" to uid,
+                "type" to type,
+                "ts" to FieldValue.serverTimestamp(),
+                "language" to "kt"
+            )
+        )
+        db.collection("events").add(eventDoc)
+            .addOnSuccessListener { onDone?.invoke() }
+            .addOnFailureListener { e -> onError?.invoke(e.message ?: "Error al guardar evento") }
+    }
 
     fun register(
         email: String,
@@ -37,7 +55,13 @@ object AuthManager {
                     email = email,
                     idDigits = idDigits,
                     isPublic = defaultIsPublic,
-                    onSuccess = onSuccess,
+                    onSuccess = {
+                        val uid = auth.currentUser?.uid
+                        if (uid != null) {
+                            addEvent(type = "signup", uid = uid)
+                        }
+                        onSuccess()
+                    },
                     onError = { msg -> onError("Cuenta creada pero falló el perfil: $msg") }
                 )
             }
@@ -58,19 +82,23 @@ object AuthManager {
         val numericId = randomNumericId(idDigits)
 
         val profile = hashMapOf(
+            "description" to "",
             "displayName" to displayName,
             "email" to email,
             "headline" to "",
             "id" to numericId,
             "isPublic" to isPublic,
+            "lastLoginAt" to FieldValue.serverTimestamp(),
+            "lastPortfolioUpdateAt" to "",
             "linkedin" to "",
             "location" to "",
+            "major" to "",
             "mobileNumber" to "",
             "photoUrl" to "",
             "projects" to emptyList<String>(),
             "skillsOrTopics" to emptyList<String>(),
-            "updateAt" to FieldValue.serverTimestamp(),
-            "description" to ""
+
+            
         )
 
         db.collection("users").document(uid).set(profile)
@@ -86,10 +114,14 @@ object AuthManager {
         onError: (String) -> Unit
     ) {
         auth.signInWithEmailAndPassword(email, password)
-            .addOnSuccessListener { onSuccess() }
-            .addOnFailureListener { e ->
-                onError(e.message ?: "Unknown error while log in")
+            .addOnSuccessListener {
+                val uid = auth.currentUser?.uid
+                if (uid != null) {
+                    addEvent(type = "login", uid = uid)
+                }
+                onSuccess()
             }
+            .addOnFailureListener { e -> onError(e.message ?: "Log in error") }
     }
 
     /**
