@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'views/login/login.dart';
 import 'services/connectivity_service.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 
 // Global navigator key
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -40,6 +41,9 @@ class _MyAppState extends State<MyApp> {
     return MaterialApp(
       title: 'Talent Bridge',
       navigatorKey: navigatorKey, // Add the navigator key
+      navigatorObservers: [
+        FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
+      ],
       home: const Login(),
     );
   }
