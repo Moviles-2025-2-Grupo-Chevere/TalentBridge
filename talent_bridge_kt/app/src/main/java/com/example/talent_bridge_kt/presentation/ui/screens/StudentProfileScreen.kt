@@ -123,9 +123,13 @@ fun StudentProfileScreen(
                 item {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
                         val avatarModel: Any = when (val s = uiState) {
-                            is ProfileUiState.Ready -> s.profile.avatarUrl ?: R.drawable.student1
+                            is ProfileUiState.Ready -> {
+                                val url = s.profile.avatarUrl.orEmpty()
+                                if (url.isNotBlank()) url else R.drawable.student1
+                            }
                             else -> R.drawable.student1
                         }
+
                         AsyncImage(
                             model = avatarModel,
                             contentDescription = "Avatar",
