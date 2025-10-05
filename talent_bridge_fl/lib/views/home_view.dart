@@ -35,7 +35,7 @@ class _HomeViewState extends State<HomeView> {
       ],
     ),
     MainViewItem(
-      title: 'Home',
+      title: 'Search',
       widget: Search(),
       icon: Icon(Icons.search),
       label: 'Search',
@@ -47,7 +47,7 @@ class _HomeViewState extends State<HomeView> {
     //   label: 'Saved',
     // ),
     MainViewItem(
-      title: 'Home',
+      title: 'My Profile',
       widget: MyProfile(),
       icon: Icon(Icons.person_outline),
       label: 'Profile',
@@ -70,18 +70,27 @@ class _HomeViewState extends State<HomeView> {
 
   @override
   Widget build(BuildContext context) {
-    final mainView = mainViews[_selectedPageIdx];
-    Widget activePage = mainView.widget;
+    final selectedView = mainViews[_selectedPageIdx];
+    Widget activePage = selectedView.widget;
 
     return Scaffold(
       backgroundColor: kBg,
       appBar: AppBar(
-        title: Image.asset(
-          'assets/images/MainAppIcon.png',
-          height: 40,
-          fit: BoxFit.contain,
+        title: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Image.asset(
+              'assets/images/MainAppIcon.png',
+              height: 40,
+              fit: BoxFit.contain,
+            ),
+            const SizedBox(
+              width: 8,
+            ),
+            Text(selectedView.title),
+          ],
         ),
-        actions: mainView.actions,
+        actions: selectedView.actions,
       ),
       bottomNavigationBar: BottomNavigationBar(
         onTap: _selectPage,
