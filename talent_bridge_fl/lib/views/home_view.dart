@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:talent_bridge_fl/components/profile_drawer.dart';
 import 'package:talent_bridge_fl/views/credits/credits.dart';
 import 'package:talent_bridge_fl/views/leader_feed/leader_feed.dart';
 import 'package:talent_bridge_fl/views/main-feed/main_feed.dart';
@@ -69,14 +70,8 @@ class _HomeViewState extends State<HomeView> {
         widget: MyProfile(),
         icon: Icon(Icons.person_outline),
         label: 'Profile',
-        actions: [
-          IconButton(
-            icon: Icon(Icons.menu),
-            onPressed: () {
-              print('Menu tapped');
-            },
-          ),
-        ],
+        actions: [],
+        drawer: ProfileDrawer(),
       ),
     ];
     final selectedView = mainViews[_selectedPageIdx];
