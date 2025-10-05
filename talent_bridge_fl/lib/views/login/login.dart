@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart'; // input formatters
 import 'package:firebase_auth/firebase_auth.dart'; // solo para capturar FirebaseAuthException (UX de errores)
-import 'package:talent_bridge_fl/views/main-feed/main_feed.dart';
+import 'package:talent_bridge_fl/views/home_view.dart';
 import 'package:talent_bridge_fl/views/signup/signup.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
 
@@ -161,9 +161,8 @@ class _LoginState extends State<Login> {
       if (!mounted) return;
 
       // Ir a MainFeed y limpiar el stack
-      Navigator.of(context).pushAndRemoveUntil(
-        MaterialPageRoute(builder: (_) => MainFeed()),
-        (route) => false,
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => HomeView())
       );
     } on FirebaseAuthException catch (e) {
       // Conservamos tu UX de errores con códigos específicos

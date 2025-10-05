@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:talent_bridge_fl/domain/project_entity.dart';
+import 'package:talent_bridge_fl/views/user-profile/user_profile.dart';
 
 class ProjectPost extends StatelessWidget {
   const ProjectPost({
@@ -24,11 +25,25 @@ class ProjectPost extends StatelessWidget {
               children: [
                 Padding(
                   padding: EdgeInsets.symmetric(vertical: 4, horizontal: 2),
-                  child: CircleAvatar(
-                    radius: 24,
-                    backgroundImage: profilePictureUrl != null
-                        ? AssetImage(profilePictureUrl)
-                        : null,
+                  child: InkWell(
+                    splashColor: Colors.white,
+                    onTap: () {
+                      Navigator.of(
+                        context,
+                      ).push(
+                        MaterialPageRoute(
+                          builder: (ctx) =>
+                              Scaffold(appBar: AppBar(), body: UserProfile()),
+                        ),
+                      );
+                    },
+                    customBorder: const CircleBorder(),
+                    child: CircleAvatar(
+                      radius: 24,
+                      backgroundImage: profilePictureUrl != null
+                          ? AssetImage(profilePictureUrl)
+                          : null,
+                    ),
                   ),
                 ),
                 Expanded(
