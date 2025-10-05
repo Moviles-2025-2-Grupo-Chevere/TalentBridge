@@ -42,9 +42,10 @@ class FakeProfileRepository : ProfileRepository {
     }
 
     override suspend fun uploadAvatar(localImage: Uri): Resource<String> {
-        delay(500)
-        val fakeUrl = "https://picsum.photos/seed/${localImage.hashCode()}/512"
-        current = current.copy(avatarUrl = fakeUrl)
-        return Resource.Success(fakeUrl)
+        delay(300)
+        val uriString = localImage.toString()          // <- usar la foto que tomaste
+        current = current.copy(avatarUrl = uriString)  // guardar en el perfil fake
+        return Resource.Success(uriString)
     }
+
 }
