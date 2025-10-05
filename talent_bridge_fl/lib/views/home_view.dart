@@ -9,6 +9,8 @@ import 'package:talent_bridge_fl/views/saved-projects/saved_projects.dart';
 import 'package:talent_bridge_fl/views/search/search.dart';
 import 'package:talent_bridge_fl/views/user-profile/user_profile.dart';
 
+const kBg = Color(0xFFFEF7E6);
+
 class HomeView extends StatefulWidget {
   const HomeView({super.key});
 
@@ -39,6 +41,7 @@ class _HomeViewState extends State<HomeView> {
     Widget activePage = mainViews[_selectedPageIdx].widget;
 
     return Scaffold(
+      backgroundColor: kBg,
       appBar: AppBar(
         title: Image.asset(
           'assets/images/MainAppIcon.png', 
