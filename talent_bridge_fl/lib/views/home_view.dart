@@ -60,18 +60,20 @@ class _HomeViewState extends State<HomeView> {
         label: 'Search',
         actions: [],
       ),
-      // MainViewItem(
-      //   widget: SavedProjects(),
-      //   icon: Icon(Icons.favorite_outline),
-      //   label: 'Saved',
-      // ),
       MainViewItem(
         title: 'My Profile',
         widget: MyProfile(),
         icon: Icon(Icons.person_outline),
         label: 'Profile',
         actions: [],
-        drawer: ProfileDrawer(),
+        drawer: ProfileDrawer(
+          onTapLogOut: () {},
+          onTapCredits: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(builder: (ctx) => Credits()),
+            );
+          },
+        ),
       ),
     ];
     final selectedView = mainViews[_selectedPageIdx];
