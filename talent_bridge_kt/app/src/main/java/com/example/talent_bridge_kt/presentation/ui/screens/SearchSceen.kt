@@ -11,7 +11,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,18 +26,28 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.talent_bridge_kt.R
+import com.example.talent_bridge_kt.domain.model.User
+import com.example.talent_bridge_kt.presentation.ui.screens.SearchViewModel
 import com.example.talent_bridge_kt.ui.theme.AccentYellow
 import com.example.talent_bridge_kt.ui.theme.CreamBackground
-// ... imports iguales, puedes quitar:
-// import androidx.compose.material.icons.filled.Settings
 
+/**
+ * Pantalla de búsqueda conectada al ViewModel.
+ * - Escribe habilidades/temas separados por coma (ej: "android,kotlin").
+ * - Botón Apply -> búsqueda modo ANY (coincide con alguna).
+ * - Botón ALL -> búsqueda modo ALL (deben coincidir todas).
+ * - Muestra loading, error y resultados.
+ */
 @Composable
 fun SearchScreen(
+    vm: SearchViewModel,
     onBack: () -> Unit = {}
 ) {
     var query by remember { mutableStateOf("") }
     val recents = listOf("Daniel Triviño", "ROBOCOL", "Proyectos Inteligencia Artificial")
+    val state = vm.uiState
 
     Surface(color = CreamBackground, modifier = Modifier.fillMaxSize()) {
         Column(
@@ -46,6 +55,7 @@ fun SearchScreen(
                 .fillMaxSize()
                 .padding(horizontal = 16.dp, vertical = 8.dp)
         ) {
+
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -59,10 +69,10 @@ fun SearchScreen(
                     contentScale = ContentScale.Fit
                 )
                 Spacer(Modifier.weight(1f))
-                IconButton(onClick = { /* perfil */ }) {
+                IconButton(onClick = { }) {
                     Icon(Icons.Filled.Person, contentDescription = "Profile", tint = Color.DarkGray)
                 }
-                IconButton(onClick = { onBack() }) {
+                IconButton(onClick = onBack) {
                     Icon(Icons.Filled.Menu, contentDescription = "Menu", tint = Color.DarkGray)
                 }
             }
@@ -70,12 +80,13 @@ fun SearchScreen(
             Spacer(Modifier.height(8.dp))
 
             Text(
-                text = "Buscar",
+                text = "Search",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Medium,
                 color = AccentYellow,
                 modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
             )
+
 
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -83,10 +94,13 @@ fun SearchScreen(
             ) {
                 OutlinedTextField(
                     value = query,
-                    onValueChange = { query = it },
+                    onValueChange = {
+                        query = it
+                        vm.onSkillsInput(it)
+                    },
                     shape = RoundedCornerShape(50),
                     singleLine = true,
-                    placeholder = { Text("Escribe aquí...") },
+                    placeholder = { Text("Escribe habilidades separadas por coma…") },
                     modifier = Modifier
                         .weight(1f)
                         .height(52.dp),
@@ -99,41 +113,88 @@ fun SearchScreen(
                     )
                 )
                 Spacer(Modifier.width(8.dp))
-
-                // ← Aquí usamos el icono dibujado
-                IconButton(onClick = { /* abrir filtros */ }) {
+                IconButton(onClick = { }) {
                     FilterIcon(size = 28.dp, color = Color.Gray)
                 }
             }
 
             Spacer(Modifier.height(12.dp))
 
-            Button(
-                onClick = { /* ejecutar búsqueda */ },
-                shape = RoundedCornerShape(50),
-                colors = ButtonDefaults.buttonColors(containerColor = AccentYellow),
-                modifier = Modifier
-                    .align(Alignment.CenterHorizontally)
-                    .height(46.dp)
-                    .width(140.dp),
-                elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
+
+            Row(
+                modifier = Modifier.align(Alignment.CenterHorizontally),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                Text("Aplicar", color = Color.White, fontSize = 16.sp)
+                Button(
+                    onClick = { vm.search("any") },
+                    shape = RoundedCornerShape(50),
+                    colors = ButtonDefaults.buttonColors(containerColor = AccentYellow),
+                    modifier = Modifier.height(46.dp).width(140.dp),
+                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
+                ) { Text("Apply", color = Color.White, fontSize = 16.sp) }
+
+                Spacer(Modifier.width(8.dp))
+
+
+                OutlinedButton(
+                    onClick = { vm.loadAll() },
+                    shape = RoundedCornerShape(50),
+                    modifier = Modifier.height(46.dp).width(120.dp)
+                ) { Text("View All") }
+
+
             }
 
-            Spacer(Modifier.height(28.dp))
-
-            Text(
-                "Recientes",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Medium,
-                color = AccentYellow,
-                modifier = Modifier.padding(bottom = 12.dp)
-            )
-
-            LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                items(recents) { item -> RecentItemRow(item) }
+            if (state.isLoading) {
+                Spacer(Modifier.height(12.dp))
+                LinearProgressIndicator(Modifier.fillMaxWidth())
             }
+            state.error?.let {
+                Spacer(Modifier.height(8.dp))
+                Text("Error: $it", color = MaterialTheme.colorScheme.error)
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            if (state.results.isNotEmpty()) {
+                Text(
+                    "Results",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = AccentYellow,
+                    modifier = Modifier.padding(bottom = 12.dp)
+                )
+                LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    items(state.results) { user -> ResultUserRow(user) }
+                }
+            }
+        }
+    }
+}
+
+
+
+@Composable
+private fun ResultUserRow(u: User) {
+    Row(
+        Modifier
+            .fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        AsyncImage(
+            model = u.photoUrl,
+            contentDescription = null,
+            modifier = Modifier
+                .size(48.dp)
+                .clip(CircleShape)
+        )
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(u.displayName, fontWeight = FontWeight.SemiBold)
+            if (u.email.isNotEmpty())
+                Text(u.email, style = MaterialTheme.typography.bodySmall)
+            if (u.skills.isNotEmpty())
+                Text(u.skills.take(6).joinToString(" · "), style = MaterialTheme.typography.bodySmall)
         }
     }
 }
@@ -162,36 +223,34 @@ private fun RecentItemRow(text: String) {
     }
 }
 
-/** Reloj (como icono de “reciente”) */
 @Composable
-private fun ClockIcon(
-    size: Dp,
-    color: Color,
-    stroke: Float = 2f,
-) {
+private fun ClockIcon(size: Dp, color: Color, stroke: Float = 2f) {
     val density = LocalDensity.current
     val strokePx = with(density) { stroke.dp.toPx() }
-
     Canvas(modifier = Modifier.size(size)) {
         val radius = size.toPx() / 2f
         val cx = size.toPx() / 2f
         val cy = size.toPx() / 2f
-
         drawCircle(
             color = color,
             radius = radius - strokePx / 2f,
             style = Stroke(width = strokePx, cap = StrokeCap.Round)
         )
-        drawLine(color, start = androidx.compose.ui.geometry.Offset(cx, cy),
+        drawLine(
+            color,
+            start = androidx.compose.ui.geometry.Offset(cx, cy),
             end = androidx.compose.ui.geometry.Offset(cx + radius * 0.35f, cy),
-            strokeWidth = strokePx, cap = StrokeCap.Round)
-        drawLine(color, start = androidx.compose.ui.geometry.Offset(cx, cy),
+            strokeWidth = strokePx, cap = StrokeCap.Round
+        )
+        drawLine(
+            color,
+            start = androidx.compose.ui.geometry.Offset(cx, cy),
             end = androidx.compose.ui.geometry.Offset(cx, cy - radius * 0.5f),
-            strokeWidth = strokePx, cap = StrokeCap.Round)
+            strokeWidth = strokePx, cap = StrokeCap.Round
+        )
     }
 }
 
-/** Icono de “filtros” con tres sliders dibujados */
 @Composable
 private fun FilterIcon(
     size: Dp = 24.dp,
@@ -202,24 +261,24 @@ private fun FilterIcon(
     val density = LocalDensity.current
     val stroke = with(density) { strokeWidth.dp.toPx() }
     val knob = with(density) { knobRadius.dp.toPx() }
-
     Canvas(modifier = Modifier.size(size)) {
         val w = size.toPx()
         val h = size.toPx()
         val rowH = h / 3f
 
         fun line(y: Float, xKnob: Float) {
-            drawLine(color, start = androidx.compose.ui.geometry.Offset(0f, y),
+            drawLine(
+                color,
+                start = androidx.compose.ui.geometry.Offset(0f, y),
                 end = androidx.compose.ui.geometry.Offset(w, y),
-                strokeWidth = stroke, cap = StrokeCap.Round)
-            drawCircle(color, radius = knob,
-                center = androidx.compose.ui.geometry.Offset(xKnob, y))
-            drawCircle(Color.White, radius = knob / 2f,
-                center = androidx.compose.ui.geometry.Offset(xKnob, y))
+                strokeWidth = stroke, cap = StrokeCap.Round
+            )
+            drawCircle(color, radius = knob, center = androidx.compose.ui.geometry.Offset(xKnob, y))
+            drawCircle(Color.White, radius = knob / 2f, center = androidx.compose.ui.geometry.Offset(xKnob, y))
         }
 
-        line(y = rowH * 0.5f, xKnob = w * 0.7f)  // arriba
-        line(y = rowH * 1.5f, xKnob = w * 0.3f)  // medio
-        line(y = rowH * 2.5f, xKnob = w * 0.5f)  // abajo
+        line(y = rowH * 0.5f, xKnob = w * 0.7f)
+        line(y = rowH * 1.5f, xKnob = w * 0.3f)
+        line(y = rowH * 2.5f, xKnob = w * 0.5f)
     }
 }

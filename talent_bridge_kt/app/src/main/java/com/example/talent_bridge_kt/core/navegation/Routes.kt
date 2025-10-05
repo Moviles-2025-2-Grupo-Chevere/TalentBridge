@@ -9,4 +9,13 @@ object Routes {
     const val SavedProjects = "saved_projects"
     const val Search = "search"
     const val StudentProfile = "student_profile"
+
+    const val SomeOneElseProfile ="someone_else_profile"
+
+    const val Credits = "credits"
+
+    const val Navegation = "navegation"
+
+    const val InitiativeDetail = "initiative_detail"
+
 }

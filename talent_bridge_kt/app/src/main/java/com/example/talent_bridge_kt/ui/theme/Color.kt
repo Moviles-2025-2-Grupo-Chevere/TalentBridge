@@ -4,7 +4,7 @@ import androidx.compose.ui.graphics.Color
 
 val CreamBackground = Color(0xFFFDFAE5)
 val TitleGreen      = Color(0xFFAABD8C)
-val AccentYellow    = Color(0xFFFFC300)
+val AccentYellow    = Color(0xFF3E6990)
 val LinkGreen       = Color(0xFF7FA085)
 
 val Purple80     = Color(0xFFD0BCFF)
