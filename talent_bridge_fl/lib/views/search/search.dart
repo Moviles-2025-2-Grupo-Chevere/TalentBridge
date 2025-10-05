@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:talent_bridge_fl/services/firebase_service.dart';
 
 // ---- Tokens ----
 const kBg = Color(0xFFFEF7E6); // cream
@@ -18,6 +19,11 @@ class Search extends StatefulWidget {
 class _SearchState extends State<Search> {
   // Search state
   final _queryCtrl = TextEditingController();
+  final _firebaseService = FirebaseService();
+
+  // User data
+  List<UserDocument> _allUsers = [];
+  UserDocument? _currentUser;
 
   // Fake “recent” items for the UI
   final _recents = const <String>[
@@ -29,8 +35,26 @@ class _SearchState extends State<Search> {
   @override
   void initState() {
     super.initState();
+    _loadUserData();
     // En caso de autofill/pegado después del build
     WidgetsBinding.instance.addPostFrameCallback((_) {});
+  }
+
+  Future<void> _loadUserData() async {
+    // Get all users
+    final users = await _firebaseService.getAllUsers();
+    setState(() {
+      _allUsers = users;
+      final uid = _firebaseService.currentUid();
+      if (uid != null) {
+        for (final u in _allUsers) {
+          if (u.id == uid) {
+            _currentUser = u;
+            break;
+          }
+        }
+      }
+    });
   }
 
   @override
@@ -66,6 +90,9 @@ class _SearchState extends State<Search> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Text(
+                      _currentUser != null ? _currentUser!.displayName : '?',
+                    ),
                     // Label “Buscar”
                     Text('Search', style: labelStyle),
                     const SizedBox(height: 8),
