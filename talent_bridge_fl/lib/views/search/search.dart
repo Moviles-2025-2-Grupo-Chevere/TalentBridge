@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:talent_bridge_fl/domain/user_entity.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
 
 // ---- Tokens ----
@@ -22,11 +23,11 @@ class _SearchState extends State<Search> {
   final _firebaseService = FirebaseService();
 
   // User data
-  List<UserDocument> _allUsers = [];
-  UserDocument? _currentUser;
+  List<UserEntity> _allUsers = [];
+  UserEntity? _currentUser;
 
   // Search results
-  List<UserDocument> _searchResults = [];
+  List<UserEntity> _searchResults = [];
 
   // Fake “recent” items for the UI
   final _recents = const <String>[

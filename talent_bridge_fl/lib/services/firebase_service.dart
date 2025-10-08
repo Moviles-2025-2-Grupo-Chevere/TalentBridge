@@ -6,59 +6,7 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_core;
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
-
-class UserDocument {
-  final String id;
-  final String displayName;
-  final String email;
-  final String headline;
-  final bool isPublic;
-  final String linkedin;
-  final String location;
-  final String mobileNumber;
-  final String photoUrl;
-  final List<String> projects;
-  final List<String> skillsOrTopics;
-  final String description;
-  final String major;
-  final String lastPortfolioUpdateAt;
-
-  UserDocument({
-    required this.id,
-    required this.displayName,
-    required this.email,
-    required this.headline,
-    required this.isPublic,
-    required this.linkedin,
-    required this.location,
-    required this.mobileNumber,
-    required this.photoUrl,
-    required this.projects,
-    required this.skillsOrTopics,
-    required this.description,
-    required this.major,
-    required this.lastPortfolioUpdateAt,
-  });
-
-  factory UserDocument.fromMap(Map<String, dynamic> map) {
-    return UserDocument(
-      id: map['id'] ?? '',
-      displayName: map['displayName'] ?? '',
-      email: map['email'] ?? '',
-      headline: map['headline'] ?? '',
-      isPublic: map['isPublic'] ?? true,
-      linkedin: map['linkedin'] ?? '',
-      location: map['location'] ?? '',
-      mobileNumber: map['mobileNumber'] ?? '',
-      photoUrl: map['photoUrl'] ?? '',
-      projects: List<String>.from(map['projects'] ?? []),
-      skillsOrTopics: List<String>.from(map['skillsOrTopics'] ?? []),
-      description: map['description'] ?? '',
-      major: map['major'] ?? '',
-      lastPortfolioUpdateAt: map['lastPortfolioUpdateAt'] ?? '',
-    );
-  }
-}
+import 'package:talent_bridge_fl/domain/user_entity.dart';
 
 class FirebaseService {
   final _auth = FirebaseAuth.instance;
@@ -78,7 +26,6 @@ class FirebaseService {
       "id": uid,
       "displayName": displayName,
       "email": email,
-
       // Defaults
       "headline": "",
       "isPublic": true,
@@ -112,7 +59,7 @@ class FirebaseService {
 
   // ---------------- USER DATA ----------------
 
-  Future<UserDocument?> getCurrentUserDocument() async {
+  Future<UserEntity?> getCurrentUserEntity() async {
     final uid = currentUid();
     if (uid == null) return null;
 
@@ -121,14 +68,14 @@ class FirebaseService {
 
     if (!snap.exists) return null;
 
-    return UserDocument.fromMap(snap.data()!);
+    return UserEntity.fromMap(snap.data()!);
   }
 
-  Future<List<UserDocument>> getAllUsers() async {
+  Future<List<UserEntity>> getAllUsers() async {
     final querySnapshot = await _db.collection('users').get();
 
     return querySnapshot.docs
-        .map((doc) => UserDocument.fromMap(doc.data()))
+        .map((doc) => UserEntity.fromMap(doc.data()))
         .toList();
   }
 
@@ -172,7 +119,7 @@ class FirebaseService {
     final uid = cred.user!.uid;
     await _ensureUserDoc(
       uid: uid,
-      displayName: safeName.isEmpty ? "" : safeName,
+      displayName: safeName,
       email: email,
     );
 

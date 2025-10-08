@@ -5,8 +5,11 @@ import 'package:image_picker/image_picker.dart';
 import 'package:talent_bridge_fl/components/add_element_widget.dart';
 import 'package:talent_bridge_fl/components/yellow_text_box_widget.dart';
 import 'package:talent_bridge_fl/components/circular_image_widget.dart';
+import 'package:talent_bridge_fl/domain/user_entity.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
 import 'package:talent_bridge_fl/services/profile_pic_storage.dart';
+
+const darkBlue = Color(0xFF3E6990);
 
 class MyProfile extends StatefulWidget {
   const MyProfile({super.key});
@@ -17,11 +20,24 @@ class MyProfile extends StatefulWidget {
 
 class _MyProfileState extends State<MyProfile> {
   String? _profileImagePath;
+  UserEntity? userEntity;
   final fb = FirebaseService();
 
   @override
   void initState() {
     super.initState();
+    getPfP();
+    getUserDocument();
+  }
+
+  Future<void> getUserDocument() async {
+    var user = await fb.getCurrentUserEntity();
+    setState(() {
+      userEntity = user;
+    });
+  }
+
+  void getPfP() {
     fb
         .getPFPUrl()
         .then((pfpUrl) {
@@ -41,7 +57,7 @@ class _MyProfileState extends State<MyProfile> {
       color: const Color.fromARGB(255, 255, 255, 255), // White background
       child: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0),
+          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -57,8 +73,8 @@ class _MyProfileState extends State<MyProfile> {
                     ),
                     const SizedBox(height: 16.0),
                     // Username
-                    const Text(
-                      'Casey Neistat',
+                    Text(
+                      userEntity?.displayName ?? '',
                       style: TextStyle(
                         fontSize: 18.0,
                         fontWeight: FontWeight.bold,
@@ -72,9 +88,9 @@ class _MyProfileState extends State<MyProfile> {
 
               // Contact section
               const Text(
-                'Contacto',
+                'Contact',
                 style: TextStyle(
-                  color: Color(0xFF3E6990),
+                  color: darkBlue,
                   fontSize: 18.0,
                   fontWeight: FontWeight.bold,
                 ),
@@ -83,13 +99,21 @@ class _MyProfileState extends State<MyProfile> {
               Center(
                 child: Column(
                   children: [
-                    _buildContactItem('Email:', 'usuario123@gmail.com'),
-                    _buildContactItem('LinkedIn:', 'usuario123'),
+                    _buildContactItem('Email:', userEntity?.email ?? ''),
                     _buildContactItem(
-                      'Number:',
-                      'Agregar número',
-                      isLink: true,
-                      linkColor: Colors.blue,
+                      'Linkedin',
+                      userEntity?.linkedin,
+                      fallback: 'Add linkedin',
+                    ),
+                    _buildContactItem(
+                      'Mobile Number',
+                      userEntity?.mobileNumber,
+                      fallback: 'Add mobile number',
+                    ),
+                    _buildContactItem(
+                      'Major:',
+                      userEntity?.major,
+                      fallback: 'Add major',
                     ),
                   ],
                 ),
@@ -98,61 +122,44 @@ class _MyProfileState extends State<MyProfile> {
 
               // Description section
               const Text(
-                'Tu Descripción',
+                'Your Description',
                 style: TextStyle(
-                  color: Color(0xFF3E6990),
+                  color: darkBlue,
                   fontSize: 18.0,
                   fontWeight: FontWeight.bold,
                 ),
               ),
               const SizedBox(height: 8.0),
-              const Text(
-                'Interesado en proyectos con paga con relación a la IA.',
-                style: TextStyle(fontSize: 14.0),
-              ),
-              const SizedBox(height: 8.0),
-              const Text(
-                'Experiencia previa:',
-                style: TextStyle(fontSize: 14.0),
-              ),
-              const Padding(
-                padding: EdgeInsets.only(left: 16.0),
-                child: Text('• Multiservi', style: TextStyle(fontSize: 14.0)),
-              ),
-              const SizedBox(height: 8.0),
-
-              Center(
-                child: Column(
-                  children: [
-                    _buildContactItem(
-                      'Carrera:',
-                      'Estudiante de Ing. Sistemas y Comp.',
+              (userEntity?.description ?? '').isNotEmpty
+                  ? Text(userEntity!.description!)
+                  : Center(
+                      child: TextButton(
+                        onPressed: () {},
+                        child: Text(
+                          'Add description',
+                          style: TextStyle(
+                            color: Colors.blue,
+                          ),
+                        ),
+                      ),
                     ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 24.0),
+              const SizedBox(height: 8.0),
 
-              // Flags section (skill tags)
               const Text(
                 'Mis Flags',
                 style: TextStyle(
-                  color: Color(0xFF3E6990),
+                  color: darkBlue,
                   fontSize: 18.0,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 12.0),
+              const SizedBox(height: 8.0),
               Wrap(
                 spacing: 8.0,
                 runSpacing: 8.0,
-                children: [
-                  YellowTextBoxWidget(text: 'Diseño', onTap: () {}),
-                  YellowTextBoxWidget(text: 'Dibujo', onTap: () {}),
-                  YellowTextBoxWidget(text: '2 Horas', onTap: () {}),
-                  YellowTextBoxWidget(text: 'Diseño', onTap: () {}),
-                  YellowTextBoxWidget(text: 'Diseño', onTap: () {}),
-                ],
+                children: (userEntity?.skillsOrTopics ?? [])
+                    .map((i) => YellowTextBoxWidget(text: i))
+                    .toList(),
               ),
               Center(
                 child: TextButton(
@@ -161,7 +168,6 @@ class _MyProfileState extends State<MyProfile> {
                     'Agregar flag',
                     style: TextStyle(
                       color: Colors.blue,
-                      decoration: TextDecoration.underline,
                     ),
                   ),
                 ),
@@ -197,7 +203,7 @@ class _MyProfileState extends State<MyProfile> {
               const Text(
                 'Mis Proyectos',
                 style: TextStyle(
-                  color: Color(0xFF3E6990),
+                  color: darkBlue,
                   fontSize: 18.0,
                   fontWeight: FontWeight.bold,
                 ),
@@ -248,10 +254,12 @@ class _MyProfileState extends State<MyProfile> {
   // Helper method to create contact information items
   Widget _buildContactItem(
     String label,
-    String value, {
+    String? value, {
+    String fallback = '',
     bool isLink = false,
     Color? linkColor,
   }) {
+    if (value == null || value.isEmpty) isLink = true;
     return Padding(
       padding: const EdgeInsets.only(bottom: 8.0),
       child: Center(
@@ -273,7 +281,7 @@ class _MyProfileState extends State<MyProfile> {
                       // Handle link tap
                     },
                     child: Text(
-                      value,
+                      fallback,
                       style: TextStyle(
                         color: linkColor ?? Colors.blue,
                         decoration: TextDecoration.underline,
@@ -282,7 +290,7 @@ class _MyProfileState extends State<MyProfile> {
                     ),
                   )
                 : Text(
-                    value,
+                    value!,
                     style: const TextStyle(fontSize: 14.0),
                   ),
           ],

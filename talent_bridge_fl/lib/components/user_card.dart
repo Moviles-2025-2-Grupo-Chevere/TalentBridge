@@ -8,7 +8,7 @@ class UserCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var profilePictureUrl = user.profilePictureUrl;
+    var profilePictureUrl = user.photoUrl;
     return Card(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
@@ -31,14 +31,14 @@ class UserCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        user.name,
+                        user.displayName,
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       Text(
-                        user.mainProgram,
+                        user.major ?? '',
                         style: TextStyle(fontWeight: FontWeight.w300),
                       ),
-                      Text(user.description),
+                      Text(user.description ?? ''),
                     ],
                   ),
                 ),
@@ -47,7 +47,7 @@ class UserCard extends StatelessWidget {
             Wrap(
               spacing: 4,
               children: [
-                ...user.skills.map(
+                ...(user.skillsOrTopics ?? []).map(
                   (v) => OutlinedButton(onPressed: () {}, child: Text(v)),
                 ),
               ],
