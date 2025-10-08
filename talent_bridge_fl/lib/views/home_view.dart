@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:talent_bridge_fl/components/profile_drawer.dart';
+import 'package:talent_bridge_fl/services/firebase_service.dart';
 import 'package:talent_bridge_fl/views/credits/credits.dart';
 import 'package:talent_bridge_fl/views/leader_feed/leader_feed.dart';
+import 'package:talent_bridge_fl/views/login/login.dart';
 import 'package:talent_bridge_fl/views/main-feed/main_feed.dart';
 import 'package:talent_bridge_fl/views/my-profile/my_profile.dart';
 // import 'package:talent_bridge_fl/views/project/project_view.dart';
@@ -18,6 +20,7 @@ class HomeView extends StatefulWidget {
 }
 
 class _HomeViewState extends State<HomeView> {
+  final _fb = FirebaseService();
   int _selectedPageIdx = 0;
 
   void _selectPage(int idx) {
@@ -67,7 +70,15 @@ class _HomeViewState extends State<HomeView> {
         label: 'Profile',
         actions: [],
         drawer: ProfileDrawer(
-          onTapLogOut: () {},
+          onTapLogOut: () async {
+            await _fb.signOut();
+            if (context.mounted) {
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (_) => Login()),
+                (_) => false,
+              );
+            }
+          },
           onTapCredits: () {
             Navigator.of(context).push(
               MaterialPageRoute(builder: (ctx) => Credits()),
