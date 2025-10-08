@@ -1,6 +1,11 @@
+import 'dart:io';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_auth/firebase_auth.dart' as firebase_core;
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:image_picker/image_picker.dart';
 
 class UserDocument {
   final String id;
@@ -58,6 +63,7 @@ class UserDocument {
 class FirebaseService {
   final _auth = FirebaseAuth.instance;
   final _db = FirebaseFirestore.instance;
+  final _storage = FirebaseStorage.instance;
   final _analytics = FirebaseAnalytics.instance;
 
   String? currentUid() => _auth.currentUser?.uid;
@@ -245,6 +251,38 @@ class FirebaseService {
     }
     if (plan != null) {
       await _analytics.setUserProperty(name: 'plan', value: plan);
+    }
+  }
+
+  Future<TaskSnapshot?> uploadPFP(File image) async {
+    var uid = _auth.currentUser?.uid;
+    if (uid == null) return null;
+    var ref = _storage.ref().child('profile_pictures/$uid');
+    try {
+      return await ref.putFile(image);
+    } on firebase_core.FirebaseException catch (e) {
+      // ...
+      rethrow;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<String?> getPFPUrl() async {
+    var uid = _auth.currentUser?.uid;
+    if (uid == null) return null;
+    var ref = _storage.ref().child('profile_pictures/$uid');
+    try {
+      var url = await ref.getDownloadURL();
+      return url;
+    } on FirebaseException catch (e) {
+      if (e.code == 'object-not-found') {
+        print('File does not exist');
+        return null;
+      }
+      rethrow;
+    } catch (e) {
+      rethrow;
     }
   }
 }

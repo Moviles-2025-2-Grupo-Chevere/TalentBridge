@@ -1,8 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:talent_bridge_fl/components/add_element_widget.dart';
 import 'package:talent_bridge_fl/components/yellow_text_box_widget.dart';
 import 'package:talent_bridge_fl/components/circular_image_widget.dart';
+import 'package:talent_bridge_fl/services/firebase_service.dart';
 import 'package:talent_bridge_fl/services/profile_pic_storage.dart';
 
 class MyProfile extends StatefulWidget {
@@ -14,12 +17,22 @@ class MyProfile extends StatefulWidget {
 
 class _MyProfileState extends State<MyProfile> {
   String? _profileImagePath;
+  final fb = FirebaseService();
 
   @override
   void initState() {
     super.initState();
-    // Load saved profile image path
-    _profileImagePath = ProfileStorage.getProfileImagePath();
+    fb
+        .getPFPUrl()
+        .then((pfpUrl) {
+          setState(() {
+            _profileImagePath = pfpUrl;
+          });
+          print('Obtained Image Url');
+        })
+        .catchError((e) {
+          _profileImagePath = null;
+        });
   }
 
   @override
@@ -38,8 +51,7 @@ class _MyProfileState extends State<MyProfile> {
                   children: [
                     // Profile image
                     CircularImageWidget(
-                      imageUrl:
-                          _profileImagePath ?? 'assets/images/my_profile.jpg',
+                      imageUrl: _profileImagePath,
                       size: 120.0,
                       onTap: _showTakePhotoDialog,
                     ),
@@ -320,6 +332,25 @@ class _MyProfileState extends State<MyProfile> {
       );
 
       if (image != null && mounted) {
+        fb
+            .uploadPFP(File(image.path))
+            .then((sn) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Profile picture uploaded!')),
+                );
+              }
+            })
+            .catchError((_) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Error uploading profile picture :('),
+                  ),
+                );
+              }
+            });
+
         setState(() {
           _profileImagePath = image.path;
         });
