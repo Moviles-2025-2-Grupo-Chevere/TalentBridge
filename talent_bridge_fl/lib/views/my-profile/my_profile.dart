@@ -99,20 +99,20 @@ class _MyProfileState extends State<MyProfile> {
               Center(
                 child: Column(
                   children: [
-                    _buildContactItem('Email:', userEntity?.email ?? ''),
-                    _buildContactItem(
-                      'Linkedin',
-                      userEntity?.linkedin,
+                    ContactItem(label: 'Email', value: userEntity?.email ?? ''),
+                    ContactItem(
+                      label: 'Linkedin',
+                      value: userEntity?.linkedin,
                       fallback: 'Add linkedin',
                     ),
-                    _buildContactItem(
-                      'Mobile Number',
-                      userEntity?.mobileNumber,
+                    ContactItem(
+                      label: 'Mobile Number',
+                      value: userEntity?.mobileNumber,
                       fallback: 'Add mobile number',
                     ),
-                    _buildContactItem(
-                      'Major:',
-                      userEntity?.major,
+                    ContactItem(
+                      label: 'Major',
+                      value: userEntity?.major,
                       fallback: 'Add major',
                     ),
                   ],
@@ -233,53 +233,6 @@ class _MyProfileState extends State<MyProfile> {
     );
   }
 
-  Widget _buildContactItem(
-    String label,
-    String? value, {
-    String fallback = '',
-    bool isLink = false,
-    Color? linkColor,
-  }) {
-    if (value == null || value.isEmpty) isLink = true;
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              label,
-              style: const TextStyle(
-                color: Colors.green,
-                fontSize: 14.0,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 4.0),
-            isLink
-                ? InkWell(
-                    onTap: () {
-                      // Handle link tap
-                    },
-                    child: Text(
-                      fallback,
-                      style: TextStyle(
-                        color: linkColor ?? Colors.blue,
-                        decoration: TextDecoration.underline,
-                        fontSize: 14.0,
-                      ),
-                    ),
-                  )
-                : Text(
-                    value!,
-                    style: const TextStyle(fontSize: 14.0),
-                  ),
-          ],
-        ),
-      ),
-    );
-  }
-
   // Show dialog to confirm taking a profile picture
   void _showTakePhotoDialog() {
     showDialog(
@@ -369,6 +322,66 @@ class _MyProfileState extends State<MyProfile> {
           ],
         );
       },
+    );
+  }
+}
+
+class ContactItem extends StatelessWidget {
+  const ContactItem({
+    super.key,
+    required this.label,
+    this.value,
+    this.fallback = '',
+    this.isLink = false,
+    this.linkColor,
+  });
+
+  final String label;
+  final String? value;
+  final String fallback;
+  final bool isLink;
+  final Color? linkColor;
+
+  @override
+  Widget build(BuildContext context) {
+    bool displayLink = isLink;
+    if ((value ?? '').isEmpty) displayLink = true;
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                color: Colors.green,
+                fontSize: 14.0,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+            const SizedBox(height: 4.0),
+            displayLink
+                ? InkWell(
+                    onTap: () {
+                      // Handle link tap
+                    },
+                    child: Text(
+                      fallback,
+                      style: TextStyle(
+                        color: linkColor ?? Colors.blue,
+                        decoration: TextDecoration.underline,
+                        fontSize: 14.0,
+                      ),
+                    ),
+                  )
+                : Text(
+                    value!,
+                    style: const TextStyle(fontSize: 14.0),
+                  ),
+          ],
+        ),
+      ),
     );
   }
 }
