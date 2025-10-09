@@ -8,6 +8,7 @@ import 'package:talent_bridge_fl/components/circular_image_widget.dart';
 import 'package:talent_bridge_fl/domain/user_entity.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
 import 'package:talent_bridge_fl/services/profile_pic_storage.dart';
+import 'package:talent_bridge_fl/views/add_project/add_project.dart';
 
 const darkBlue = Color(0xFF3E6990);
 
@@ -49,6 +50,109 @@ class _MyProfileState extends State<MyProfile> {
         .catchError((e) {
           _profileImagePath = null;
         });
+  }
+
+  // Show dialog to confirm taking a profile picture
+  void _showTakePhotoDialog() {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Take Profile Picture'),
+          content: const Text('Do you want to take a new profile picture?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Cancel
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _takePhoto(); // Accept
+              },
+              child: const Text('Accept'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  // Take photo using system camera
+  Future<void> _takePhoto() async {
+    try {
+      final ImagePicker picker = ImagePicker();
+
+      // Use the device's camera app
+      final XFile? image = await picker.pickImage(
+        source: ImageSource.camera,
+        imageQuality: 85, // Compress to 85% quality
+        preferredCameraDevice: CameraDevice.front, // Start with front camera
+      );
+
+      if (image != null && mounted) {
+        fb
+            .uploadPFP(File(image.path))
+            .then((sn) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('Profile picture uploaded!')),
+                );
+              }
+            })
+            .catchError((_) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Error uploading profile picture :('),
+                  ),
+                );
+              }
+            });
+
+        setState(() {
+          _profileImagePath = image.path;
+        });
+        // Save to storage
+        ProfileStorage.saveProfileImagePath(image.path);
+      }
+    } catch (e) {
+      _showErrorDialog('Error accessing camera: $e');
+    }
+  }
+
+  // Show error dialog
+  void _showErrorDialog(String message) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Error'),
+          content: Text(message),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('OK'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _openAddProjectOverlay() {
+    showModalBottomSheet(
+      useSafeArea: true,
+      isScrollControlled: true,
+      context: context,
+      builder: (_) => AddProject(
+        onAddProject: () {},
+      ),
+    );
   }
 
   @override
@@ -221,7 +325,7 @@ class _MyProfileState extends State<MyProfile> {
                         ),
                       ),
                     const SizedBox(height: 16.0),
-                    SquareAddButton(onTap: () {}),
+                    SquareAddButton(onTap: _openAddProjectOverlay),
                   ],
                 ),
               ),
@@ -230,98 +334,6 @@ class _MyProfileState extends State<MyProfile> {
           ),
         ),
       ),
-    );
-  }
-
-  // Show dialog to confirm taking a profile picture
-  void _showTakePhotoDialog() {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Take Profile Picture'),
-          content: const Text('Do you want to take a new profile picture?'),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop(); // Cancel
-              },
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-                _takePhoto(); // Accept
-              },
-              child: const Text('Accept'),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  // Take photo using system camera
-  Future<void> _takePhoto() async {
-    try {
-      final ImagePicker picker = ImagePicker();
-
-      // Use the device's camera app
-      final XFile? image = await picker.pickImage(
-        source: ImageSource.camera,
-        imageQuality: 85, // Compress to 85% quality
-        preferredCameraDevice: CameraDevice.front, // Start with front camera
-      );
-
-      if (image != null && mounted) {
-        fb
-            .uploadPFP(File(image.path))
-            .then((sn) {
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Profile picture uploaded!')),
-                );
-              }
-            })
-            .catchError((_) {
-              if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Error uploading profile picture :('),
-                  ),
-                );
-              }
-            });
-
-        setState(() {
-          _profileImagePath = image.path;
-        });
-        // Save to storage
-        ProfileStorage.saveProfileImagePath(image.path);
-      }
-    } catch (e) {
-      _showErrorDialog('Error accessing camera: $e');
-    }
-  }
-
-  // Show error dialog
-  void _showErrorDialog(String message) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Error'),
-          content: Text(message),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).pop();
-              },
-              child: const Text('OK'),
-            ),
-          ],
-        );
-      },
     );
   }
 }
