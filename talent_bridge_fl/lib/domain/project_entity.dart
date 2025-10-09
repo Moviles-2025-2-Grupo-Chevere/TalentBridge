@@ -40,7 +40,7 @@ class ProjectEntity {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      'createdAt': createdAt.toIso8601String(),
+      'createdAt': Timestamp.fromDate(createdAt),
       'createdById': createdById,
       'title': title,
       'description': description,
