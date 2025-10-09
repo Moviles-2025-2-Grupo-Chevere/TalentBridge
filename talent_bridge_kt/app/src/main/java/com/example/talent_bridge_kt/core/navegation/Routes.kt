@@ -17,5 +17,5 @@ object Routes {
     const val Navegation = "navegation"
 
     const val InitiativeDetail = "initiative_detail"
-
+    const val LateralMenu = "lateral_menu"
 }

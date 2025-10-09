@@ -9,13 +9,17 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.FavoriteBorder
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -32,6 +36,7 @@ import com.example.talent_bridge_kt.domain.model.User
 import com.example.talent_bridge_kt.presentation.ui.screens.SearchViewModel
 import com.example.talent_bridge_kt.ui.theme.AccentYellow
 import com.example.talent_bridge_kt.ui.theme.CreamBackground
+import com.example.talent_bridge_kt.ui.theme.TitleGreen
 
 /**
  * Pantalla de búsqueda conectada al ViewModel.
@@ -43,7 +48,12 @@ import com.example.talent_bridge_kt.ui.theme.CreamBackground
 @Composable
 fun SearchScreen(
     vm: SearchViewModel,
-    onBack: () -> Unit = {}
+    onBack: () -> Unit = {},
+    onHome: () -> Unit = {},
+    onSearch: () -> Unit = {},
+    onFav: () -> Unit = {},
+    onProfile: () -> Unit = {}
+
 ) {
     var query by remember { mutableStateOf("") }
     val recents = listOf("Daniel Triviño", "ROBOCOL", "Proyectos Inteligencia Artificial")
@@ -59,7 +69,7 @@ fun SearchScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 4.dp, bottom = 8.dp),
+                    .padding(top = 4.dp, bottom = 8.dp) ,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Image(
@@ -168,6 +178,14 @@ fun SearchScreen(
                     items(state.results) { user -> ResultUserRow(user) }
                 }
             }
+            Spacer(Modifier.height(150.dp))
+            // Menú inferior fijo
+            BottomBarCustom(
+                onHome = onHome,
+                onSearch = onSearch,
+                onProfile = onProfile,
+                onFav = onFav
+            )
         }
     }
 }
@@ -280,5 +298,34 @@ private fun FilterIcon(
         line(y = rowH * 0.5f, xKnob = w * 0.7f)
         line(y = rowH * 1.5f, xKnob = w * 0.3f)
         line(y = rowH * 2.5f, xKnob = w * 0.5f)
+    }
+}
+
+
+@Composable
+private fun BottomBarCustom(
+    onHome: () -> Unit,
+    onSearch: () -> Unit,
+    onProfile: () -> Unit,
+    onFav: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(64.dp)
+            .shadow(2.dp)
+            .background(CreamBackground)
+            .padding(horizontal = 8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxSize(),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            IconButton(onClick = onHome)  { Icon(Icons.Filled.Home,  contentDescription = "Home",  tint = TitleGreen) }
+            IconButton(onClick = onSearch){ Icon(Icons.Filled.Search,contentDescription = "Search",tint = TitleGreen) }
+            IconButton(onClick = onProfile)  { Icon(Icons.Filled.Person,  contentDescription = "Profile",  tint = TitleGreen) }
+            IconButton(onClick = onFav)   { Icon(Icons.Filled.FavoriteBorder, contentDescription = "Fav", tint = TitleGreen) }
+        }
     }
 }

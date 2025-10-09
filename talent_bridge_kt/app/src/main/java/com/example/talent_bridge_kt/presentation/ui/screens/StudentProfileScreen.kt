@@ -58,6 +58,7 @@ fun StudentProfileScreen(
     onAddPortfolio: () -> Unit = {},
     onAddProject: () -> Unit = {},
     onBack: () -> Unit = {}
+
 ) {
     // --------- estado de edición y campos básicos ---------
     var email by remember { mutableStateOf("lucianaperez@gmail.com") }

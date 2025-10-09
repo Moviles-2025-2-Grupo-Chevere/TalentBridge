@@ -24,10 +24,16 @@ import com.example.talent_bridge_kt.ui.theme.AccentYellow
 import com.example.talent_bridge_kt.ui.theme.CreamBackground
 import com.example.talent_bridge_kt.ui.theme.TitleGreen
 import com.example.talent_bridge_kt.data.AuthManager
+import com.example.talent_bridge_kt.domain.analytics.AnalyticsTracker
+import com.example.talent_bridge_kt.data.analytics.FirebaseAnalyticsTracker
+
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import java.text.SimpleDateFormat
 import java.util.*
+// En cualquier parte con contexto (Activity/Compose):
+import com.google.firebase.analytics.ktx.analytics
+
 
 
 
@@ -35,6 +41,7 @@ import java.util.*
 fun LoginScreen(modifier: Modifier = Modifier,  onCreateAccount: () -> Unit = {},
                 onStudentFeed: () -> Unit = {}) {
     //States
+    val tracker: AnalyticsTracker = remember { FirebaseAnalyticsTracker() }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
@@ -58,10 +65,19 @@ fun LoginScreen(modifier: Modifier = Modifier,  onCreateAccount: () -> Unit = {}
             password = password,
             onSuccess = {
                 isLoading = false
+                tracker.login("email")
+                tracker.identify(userId = email.trim(), role = "student")
                 onStudentFeed()
             },
             onError = { msg ->
                 isLoading = false
+                tracker.event(
+                    name = "login_error",
+                    params = mapOf(
+                        "method" to "email",
+                        "message" to msg.take(120)
+                    )
+                )
                 showToast(
                     when {
                         msg.contains("password is invalid", ignoreCase = true) -> "Incorrect password"

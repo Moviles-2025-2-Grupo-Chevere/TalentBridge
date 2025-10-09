@@ -100,7 +100,7 @@ class MainActivity : ComponentActivity() {
                         composable(Routes.Login) {
                             LoginScreen(
                                 onCreateAccount = { navController.navigate(Routes.CreateAccount) },
-                                onStudentFeed = { navController.navigate(Routes.Navegation) }
+                                onStudentFeed = { navController.navigate(Routes.StudentFeed) },
                             )
                         }
                         composable(Routes.CreateAccount) {
@@ -138,7 +138,6 @@ class MainActivity : ComponentActivity() {
                             )
                         }
 
-
                         composable(Routes.Search) {
                             val repo = FirestoreSearchRepository(FirebaseFirestore.getInstance())
                             val vm: SearchViewModel = viewModel(
@@ -146,13 +145,17 @@ class MainActivity : ComponentActivity() {
                             )
                             SearchScreen(
                                 vm = vm,
-                                onBack = { navController.popBackStack() }
-                            )
+                                onBack = { navController.popBackStack() },
+                                onSearch = { navController.navigate(Routes.Search)},
+                                onProfile = { navController.navigate(Routes.StudentProfile)},
+                                onHome = { navController.navigate(Routes.StudentFeed)},
+
+                                )
                         }
 
                         composable(Routes.StudentProfile) {
                             StudentProfileScreen(
-                                onBack = { navController.popBackStack() }
+                                onBack = { navController.popBackStack() },
                             )
                         }
                         composable(Routes.SomeOneElseProfile) {
@@ -167,7 +170,11 @@ class MainActivity : ComponentActivity() {
                         }
                         composable(Routes.StudentFeed) {
                             StudentFeedScreen(
-                                onBack = { navController.popBackStack() }
+                                onBack = { navController.popBackStack() },
+                                onSomeOneElseProfile = { navController.navigate(Routes.SomeOneElseProfile) },
+                                onExploreStudents = { navController.navigate(Routes.LeaderFeed) },
+                                onSearch = { navController.navigate(Routes.Search)},
+                                onProfile = { navController.navigate(Routes.StudentProfile)},
                             )
                         }
                         composable(Routes.InitiativeDetail) {
@@ -175,7 +182,6 @@ class MainActivity : ComponentActivity() {
                                 onBack = { navController.popBackStack() }
                             )
                         }
-
                     }
                 }
                 if (showNoNetDialog) {

@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -50,7 +51,11 @@ fun StudentFeedScreen(
     onSearch: () -> Unit = {},
     onFav: () -> Unit = {},
     // Navegación desde el pop-up (opcional)
-    onGoToApplications: () -> Unit = {}
+    onGoToApplications: () -> Unit = {},
+    onSomeOneElseProfile: () -> Unit = {},
+    onExploreStudents: () -> Unit = {},
+    onProfile: () -> Unit = {}
+
 ) {
     var showSubmitted by remember { mutableStateOf(false) }
 
@@ -58,7 +63,7 @@ fun StudentFeedScreen(
         Column(Modifier.fillMaxSize()) {
 
             // Encabezado fijo (logo + back + menú)
-            TopBarCustom(height = 56.dp, onBack = onBack, onMenu = onOpenMenu)
+            TopBarCustom(height = 56.dp, onBack = onBack, onMenu = onExploreStudents)
 
             // Contenido
             LazyColumn(
@@ -90,7 +95,8 @@ fun StudentFeedScreen(
                         description = "Esperamos una disponibilidad de 2 horas semanales.",
                         tags = listOf("Diseño", "Dibujo", "2 Horas"),
                         imageRes = R.drawable.robocol,
-                        onApplyClick = { showSubmitted = true }
+                        onApplyClick = { showSubmitted = true },
+                        onSomeOneElseProfile = onSomeOneElseProfile
                     )
                 }
 
@@ -103,7 +109,9 @@ fun StudentFeedScreen(
                         description = "Esperamos una disponibilidad de 2 horas semanales.",
                         tags = listOf("Diseño", "Dibujo", "2 Horas"),
                         imageRes = R.drawable.relaja,
-                        onApplyClick = { showSubmitted = true }
+                        onApplyClick = { showSubmitted = true },
+                        onSomeOneElseProfile = onSomeOneElseProfile
+
                     )
                 }
 
@@ -116,7 +124,8 @@ fun StudentFeedScreen(
                         description = "Esperamos una disponibilidad de 2 horas semanales.",
                         tags = listOf("Diseño", "Dibujo", "2 Horas"),
                         imageRes = null,
-                        onApplyClick = { showSubmitted = true }
+                        onApplyClick = { showSubmitted = true },
+                        onSomeOneElseProfile = onSomeOneElseProfile
                     )
                 }
 
@@ -127,7 +136,7 @@ fun StudentFeedScreen(
             BottomBarCustom(
                 onHome = onHome,
                 onSearch = onSearch,
-                onMenu = onOpenMenu,
+                onProfile = onProfile,
                 onFav = onFav
             )
         }
@@ -155,7 +164,9 @@ private fun ProjectCardSimple(
     description: String,
     tags: List<String>,
     imageRes: Int?,                   // puede ser null
-    onApplyClick: () -> Unit
+    onApplyClick: () -> Unit,
+    onSomeOneElseProfile: () -> Unit
+
 ) {
     Column(
         modifier = Modifier
@@ -170,7 +181,7 @@ private fun ProjectCardSimple(
             Image(
                 painter = painterResource(id = R.drawable.iniciativa),
                 contentDescription = "iniciativa",
-                modifier = Modifier.size(28.dp),
+                modifier = Modifier.size(28.dp) .clickable { onSomeOneElseProfile() },
                 contentScale = ContentScale.Crop
             )
             Spacer(Modifier.width(8.dp))
@@ -368,7 +379,7 @@ private fun TopBarCustom(
 private fun BottomBarCustom(
     onHome: () -> Unit,
     onSearch: () -> Unit,
-    onMenu: () -> Unit,
+    onProfile: () -> Unit,
     onFav: () -> Unit
 ) {
     Box(
@@ -386,7 +397,7 @@ private fun BottomBarCustom(
         ) {
             IconButton(onClick = onHome)  { Icon(Icons.Filled.Home,  contentDescription = "Home",  tint = TitleGreen) }
             IconButton(onClick = onSearch){ Icon(Icons.Filled.Search,contentDescription = "Search",tint = TitleGreen) }
-            IconButton(onClick = onMenu)  { Icon(Icons.Filled.Menu,  contentDescription = "Menu",  tint = TitleGreen) }
+            IconButton(onClick = onProfile)  { Icon(Icons.Filled.Person,  contentDescription = "Profile",  tint = TitleGreen) }
             IconButton(onClick = onFav)   { Icon(Icons.Filled.FavoriteBorder, contentDescription = "Fav", tint = TitleGreen) }
         }
     }
