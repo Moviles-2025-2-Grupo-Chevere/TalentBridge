@@ -18,4 +18,15 @@ class ProjectEntity {
   final String description;
   final List<String> skills;
   final String? imgUrl;
+
+  Map<String, dynamic> toMap() {
+    return {
+      'createdAt': createdAt.toIso8601String(),
+      'createdById': createdById,
+      'title': title,
+      'description': description,
+      'skills': List<String>.from(skills),
+      'imgUrl': imgUrl,
+    };
+  }
 }
