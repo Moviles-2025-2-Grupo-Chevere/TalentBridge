@@ -4,7 +4,7 @@ class ProjectEntity {
   ProjectEntity({
     required this.createdAt,
     required this.createdById,
-    required this.createdBy,
+    this.createdBy,
     required this.title,
     required this.description,
     required this.skills,
