@@ -18,7 +18,7 @@ class ProjectService {
         title: 'Looking for designers!',
         description:
             'People interested in graphic design. We hope for an availability of 2 weekly hours.',
-        skills: ['Design', 'Drawing', '2 hours'],
+        skills: ['Design', 'Drawing', 'UI/UX Design'],
         imgUrl: dummyImgRoute,
       ),
       ProjectEntity(
