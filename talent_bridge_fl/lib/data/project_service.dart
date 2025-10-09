@@ -1,8 +1,21 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:talent_bridge_fl/data/user_service.dart';
 import 'package:talent_bridge_fl/domain/project_entity.dart';
 import 'package:talent_bridge_fl/domain/user_entity.dart';
 
 class ProjectService {
+  final _db = FirebaseFirestore.instance;
+
+  createProject(ProjectEntity project) async {
+    final docRef = FirebaseFirestore.instance
+        .collection("users")
+        .doc(project.createdById);
+    await docRef.update({
+      'projects': FieldValue.arrayUnion([project.toMap()]),
+    });
+  }
+
   getProjects() {
     var assetsimages = 'assets/images';
     var dummyImgRoute = '$assetsimages/dummy_post_img.jpeg';

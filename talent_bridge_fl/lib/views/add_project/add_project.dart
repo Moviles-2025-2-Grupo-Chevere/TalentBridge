@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:talent_bridge_fl/data/project_service.dart';
 import 'package:talent_bridge_fl/domain/project_entity.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
 
@@ -15,6 +16,7 @@ class AddProject extends StatefulWidget {
 
 class _AddProjectState extends State<AddProject> {
   final firebaseService = FirebaseService();
+  final projectService = ProjectService();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
 

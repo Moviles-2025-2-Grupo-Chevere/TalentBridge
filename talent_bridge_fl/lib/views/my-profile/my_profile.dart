@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:talent_bridge_fl/components/add_element_widget.dart';
 import 'package:talent_bridge_fl/components/yellow_text_box_widget.dart';
 import 'package:talent_bridge_fl/components/circular_image_widget.dart';
+import 'package:talent_bridge_fl/data/project_service.dart';
 import 'package:talent_bridge_fl/domain/project_entity.dart';
 import 'package:talent_bridge_fl/domain/user_entity.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
@@ -24,6 +25,7 @@ class _MyProfileState extends State<MyProfile> {
   String? _profileImagePath;
   UserEntity? userEntity;
   final fb = FirebaseService();
+  final projectService = ProjectService();
 
   @override
   void initState() {
@@ -145,7 +147,9 @@ class _MyProfileState extends State<MyProfile> {
     );
   }
 
-  void _onSubmitProject(ProjectEntity project) {}
+  void _onSubmitProject(ProjectEntity project) {
+    projectService.createProject(project);
+  }
 
   void _openAddProjectOverlay() {
     showModalBottomSheet(
