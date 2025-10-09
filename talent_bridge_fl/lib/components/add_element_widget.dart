@@ -42,38 +42,40 @@ class AddElementWidget extends StatelessWidget {
         ),
         const SizedBox(height: 8.0),
         // Plus icon container
-        InkWell(
-          onTap: onTap,
-          child: Container(
-            width: 80.0,
-            height: 80.0,
-            decoration: BoxDecoration(
-              color: const Color.fromARGB(255, 177, 174, 174),
-              borderRadius: BorderRadius.circular(10.0),
-            ),
-            child: Center(
-              child: Icon(
-                Icons.add,
-                color: iconColor,
-                size: iconSize,
-              ),
-            ),
-          ),
-        ),
+        SquareAddButton(onTap: onTap),
         const SizedBox(height: 8.0),
-        // "Agregar link" text
-        InkWell(
-          onTap: onTap,
-          child: Text(
-            linkText,
-            style: TextStyle(
-              color: linkTextColor,
-              decoration: TextDecoration.underline,
-              fontSize: 14.0,
-            ),
+        Text(
+          linkText,
+          style: TextStyle(
+            color: linkTextColor,
+            fontSize: 14.0,
           ),
         ),
       ],
+    );
+  }
+}
+
+class SquareAddButton extends StatelessWidget {
+  const SquareAddButton({
+    super.key,
+    required this.onTap,
+  });
+
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return IconButton.filled(
+      onPressed: onTap,
+      icon: Icon(Icons.add),
+      style: ButtonStyle(
+        shape: WidgetStateProperty.all<RoundedRectangleBorder>(
+          RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+      ),
     );
   }
 }

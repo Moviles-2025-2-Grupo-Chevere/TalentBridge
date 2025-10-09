@@ -212,34 +212,16 @@ class _MyProfileState extends State<MyProfile> {
               Center(
                 child: Column(
                   children: [
-                    Text(
-                      'No tienes proyectos activos.',
-                      style: TextStyle(
-                        fontSize: 14.0,
-                        color: Colors.grey[600],
+                    if ((userEntity?.projects ?? []).isEmpty)
+                      Text(
+                        'No tienes proyectos activos.',
+                        style: TextStyle(
+                          fontSize: 14.0,
+                          color: Colors.grey[600],
+                        ),
                       ),
-                    ),
                     const SizedBox(height: 16.0),
-                    InkWell(
-                      onTap: () {
-                        // Add project action
-                      },
-                      child: Container(
-                        width: 80.0,
-                        height: 80.0,
-                        decoration: BoxDecoration(
-                          color: const Color.fromARGB(255, 185, 184, 184),
-                          borderRadius: BorderRadius.circular(10.0),
-                        ),
-                        child: const Center(
-                          child: Icon(
-                            Icons.add,
-                            color: Colors.grey,
-                            size: 40.0,
-                          ),
-                        ),
-                      ),
-                    ),
+                    SquareAddButton(onTap: () {}),
                   ],
                 ),
               ),
@@ -251,7 +233,6 @@ class _MyProfileState extends State<MyProfile> {
     );
   }
 
-  // Helper method to create contact information items
   Widget _buildContactItem(
     String label,
     String? value, {
