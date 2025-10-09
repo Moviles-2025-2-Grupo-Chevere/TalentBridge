@@ -1,3 +1,5 @@
+import 'package:talent_bridge_fl/domain/project_entity.dart';
+
 class UserEntity {
   final String id;
   final String displayName;
@@ -8,7 +10,9 @@ class UserEntity {
   final String? location;
   final String? mobileNumber;
   final String? photoUrl;
-  final List<String>? projects;
+  final List<ProjectEntity>? projects;
+  final List<String>? applications;
+  final List<String>? acceptedProjects;
   final List<String>? skillsOrTopics;
   final String? description;
   final String? major;
@@ -25,6 +29,8 @@ class UserEntity {
     this.mobileNumber,
     this.photoUrl,
     this.projects,
+    this.applications,
+    this.acceptedProjects,
     this.skillsOrTopics,
     this.description,
     this.major,
@@ -32,6 +38,7 @@ class UserEntity {
   });
 
   factory UserEntity.fromMap(Map<String, dynamic> map) {
+    final mapProjects = map['projects'] as List<dynamic>? ?? [];
     return UserEntity(
       id: map['id'] ?? '',
       displayName: map['displayName'] ?? '',
@@ -42,7 +49,11 @@ class UserEntity {
       location: map['location'] ?? '',
       mobileNumber: map['mobileNumber'] ?? '',
       photoUrl: map['photoUrl'] ?? '',
-      projects: List<String>.from(map['projects'] ?? []),
+      projects: List<ProjectEntity>.from(
+        mapProjects.map((i) => ProjectEntity.fromMap(i)),
+      ), //CHECK TO MAP
+      applications: List<String>.from(map['applications'] ?? []),
+      acceptedProjects: List<String>.from(map['acceptedProjects'] ?? []),
       skillsOrTopics: List<String>.from(map['skillsOrTopics'] ?? []),
       description: map['description'] ?? '',
       major: map['major'] ?? '',

@@ -12,6 +12,7 @@ class ProjectService {
 
     var projects = [
       ProjectEntity(
+        id: "1",
         createdAt: DateTime.now(),
         createdById: users[0].id,
         createdBy: users[0],
@@ -22,6 +23,7 @@ class ProjectService {
         imgUrl: dummyImgRoute,
       ),
       ProjectEntity(
+        id: "2",
         createdById: users[0].id,
         createdAt: DateTime.now().subtract(Duration(days: 1)),
         createdBy: users[1],
@@ -31,6 +33,7 @@ class ProjectService {
         skills: ['Flutter', 'Dart', 'API Integration', 'State Management'],
       ),
       ProjectEntity(
+        id: "3",
         createdById: users[0].id,
         createdAt: DateTime.now().subtract(Duration(days: 2)),
         createdBy: users[2],
@@ -40,6 +43,7 @@ class ProjectService {
         skills: ['React', 'Node.js', 'JavaScript', 'MongoDB', 'Remote'],
       ),
       ProjectEntity(
+        id: "4",
         createdById: users[0].id,
         createdAt: DateTime.now().subtract(Duration(days: 3)),
         createdBy: users[3],
@@ -49,6 +53,7 @@ class ProjectService {
         skills: ['Python', 'Machine Learning', 'Data Analysis', 'Research'],
       ),
       ProjectEntity(
+        id: "5",
         createdById: users[0].id,
         createdAt: DateTime.now().subtract(Duration(days: 4)),
         createdBy: users[4],
@@ -58,6 +63,7 @@ class ProjectService {
         skills: ['Unity', 'C#', '3D Modeling', 'Game Design', 'Creative'],
       ),
       ProjectEntity(
+        id: "5",
         createdById: users[0].id,
         createdAt: DateTime.now().subtract(Duration(days: 5)),
         createdBy: users[5],
