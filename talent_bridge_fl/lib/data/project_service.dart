@@ -13,6 +13,7 @@ class ProjectService {
     var projects = [
       ProjectEntity(
         createdAt: DateTime.now(),
+        createdById: users[0].id,
         createdBy: users[0],
         title: 'Looking for designers!',
         description:
@@ -21,6 +22,7 @@ class ProjectService {
         imgUrl: dummyImgRoute,
       ),
       ProjectEntity(
+        createdById: users[0].id,
         createdAt: DateTime.now().subtract(Duration(days: 1)),
         createdBy: users[1],
         title: 'Mobile App Development Team',
@@ -29,6 +31,7 @@ class ProjectService {
         skills: ['Flutter', 'Dart', 'API Integration', 'State Management'],
       ),
       ProjectEntity(
+        createdById: users[0].id,
         createdAt: DateTime.now().subtract(Duration(days: 2)),
         createdBy: users[2],
         title: 'Web Development for Startup',
@@ -37,6 +40,7 @@ class ProjectService {
         skills: ['React', 'Node.js', 'JavaScript', 'MongoDB', 'Remote'],
       ),
       ProjectEntity(
+        createdById: users[0].id,
         createdAt: DateTime.now().subtract(Duration(days: 3)),
         createdBy: users[3],
         title: 'Data Science Research Project',
@@ -45,6 +49,7 @@ class ProjectService {
         skills: ['Python', 'Machine Learning', 'Data Analysis', 'Research'],
       ),
       ProjectEntity(
+        createdById: users[0].id,
         createdAt: DateTime.now().subtract(Duration(days: 4)),
         createdBy: users[4],
         title: 'Game Development Studio',
@@ -53,6 +58,7 @@ class ProjectService {
         skills: ['Unity', 'C#', '3D Modeling', 'Game Design', 'Creative'],
       ),
       ProjectEntity(
+        createdById: users[0].id,
         createdAt: DateTime.now().subtract(Duration(days: 5)),
         createdBy: users[5],
         title: 'AI Chatbot Development',

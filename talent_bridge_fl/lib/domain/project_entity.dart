@@ -3,6 +3,7 @@ import 'package:talent_bridge_fl/domain/user_entity.dart';
 class ProjectEntity {
   ProjectEntity({
     required this.createdAt,
+    required this.createdById,
     required this.createdBy,
     required this.title,
     required this.description,
@@ -11,7 +12,8 @@ class ProjectEntity {
   });
 
   final DateTime createdAt;
-  final UserEntity createdBy;
+  final String createdById;
+  final UserEntity? createdBy;
   final String title;
   final String description;
   final List<String> skills;

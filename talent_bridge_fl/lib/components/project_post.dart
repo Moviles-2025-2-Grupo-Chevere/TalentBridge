@@ -14,7 +14,7 @@ class ProjectPost extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    var profilePictureUrl = project.createdBy.photoUrl;
+    var profilePictureUrl = project.createdBy?.photoUrl;
     return Card(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
@@ -55,7 +55,7 @@ class ProjectPost extends StatelessWidget {
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       Text(
-                        "${project.createdBy.displayName} · 5m",
+                        "${project.createdBy?.displayName ?? '?'} · 5m",
                         style: TextStyle(fontWeight: FontWeight.w300),
                       ),
                       Text(project.description),
