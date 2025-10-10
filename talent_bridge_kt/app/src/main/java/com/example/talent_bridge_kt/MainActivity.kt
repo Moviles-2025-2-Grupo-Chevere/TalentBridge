@@ -50,6 +50,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewmodel.initializer
 import com.example.talent_bridge_kt.presentation.ui.components.HomeWithDrawer
+import androidx.compose.runtime.*
+import androidx.navigation.compose.currentBackStackEntryAsState
+import com.example.talent_bridge_kt.data.AnalyticsManager
+import kotlin.system.measureTimeMillis
+
 
 
 
@@ -91,6 +96,29 @@ class MainActivity : ComponentActivity() {
                 }
 
                 val navController = rememberNavController()
+
+                var currentRoute by remember { mutableStateOf<String?>(null) }
+                var screenStartMs by remember { mutableStateOf(0L) }
+
+                val backStackEntry by navController.currentBackStackEntryAsState()
+
+                LaunchedEffect(backStackEntry) {
+                    val newRoute = backStackEntry?.destination?.route ?: return@LaunchedEffect
+                    val now = System.currentTimeMillis()
+
+                    currentRoute?.let { prev ->
+                        val duration = now - screenStartMs
+                        if (duration > 0) {
+                            AnalyticsManager.logScreenDuration(prev, duration)
+                        }
+                    }
+
+                    currentRoute = newRoute
+                    screenStartMs = now
+
+                    AnalyticsManager.logScreenView(newRoute)
+                }
+
                 Scaffold(Modifier.fillMaxSize(),
                     snackbarHost = { SnackbarHost(snack) }
                 ) { inner ->
@@ -224,6 +252,19 @@ class MainActivity : ComponentActivity() {
                         }
                     )
                 }
+                DisposableEffect(Unit) {
+                    onDispose {
+                        val now = System.currentTimeMillis()
+                        currentRoute?.let { route ->
+                            val duration = now - screenStartMs
+                            if (duration > 0) {
+                                AnalyticsManager.logScreenDuration(route, duration)
+                            }
+                        }
+                    }
+                }
+
+
             }
         }
     }
