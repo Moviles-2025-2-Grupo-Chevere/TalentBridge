@@ -319,16 +319,18 @@ class _MyProfileState extends State<MyProfile> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const SizedBox(height: 8.0),
               Center(
                 child: Column(
                   children: [
                     if ((userEntity?.projects ?? []).isEmpty)
-                      Text(
-                        'No tienes proyectos activos.',
-                        style: TextStyle(
-                          fontSize: 14.0,
-                          color: Colors.grey[600],
+                      Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(
+                          'No tienes proyectos activos.',
+                          style: TextStyle(
+                            fontSize: 14.0,
+                            color: Colors.grey[600],
+                          ),
                         ),
                       ),
                     const SizedBox(height: 16.0),
@@ -336,9 +338,65 @@ class _MyProfileState extends State<MyProfile> {
                   ],
                 ),
               ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: (userEntity?.projects ?? [])
+                    .map(
+                      (i) => ProjectSummary(
+                        project: i,
+                      ),
+                    )
+                    .toList(),
+              ),
               const SizedBox(height: 40.0),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class ProjectSummary extends StatelessWidget {
+  const ProjectSummary({
+    super.key,
+    required this.project,
+  });
+
+  final ProjectEntity project;
+
+  @override
+  Widget build(BuildContext context) {
+    return Card(
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          children: [
+            Row(
+              children: [
+                Text(project.title),
+                Spacer(),
+                Icon(Icons.person),
+                SizedBox(width: 8),
+                Text('4'), // TODO remove hardcode
+              ],
+            ),
+            SizedBox(
+              height: 8,
+            ),
+            Wrap(
+              crossAxisAlignment: WrapCrossAlignment.center,
+              spacing: 4,
+              children: [
+                ...project.skills
+                    .sublist(0, 2)
+                    .map(
+                      (v) => OutlinedButton(onPressed: () {}, child: Text(v)),
+                    ),
+                if (project.skills.length > 2) Text('...'),
+              ],
+            ),
+          ],
         ),
       ),
     );
