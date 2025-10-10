@@ -57,7 +57,8 @@ fun StudentProfileScreen(
     onAddCv: () -> Unit = {},
     onAddPortfolio: () -> Unit = {},
     onAddProject: () -> Unit = {},
-    onBack: () -> Unit = {}
+    onBack: () -> Unit = {},
+    onOpenDrawer: () -> Unit = {}
 
 ) {
     // --------- estado de edición y campos básicos ---------
@@ -112,7 +113,8 @@ fun StudentProfileScreen(
             TopBarCustom(
                 height = 64.dp,
                 onBack = onBack,
-                onMenu = { }
+                onMenu = { },
+                onDrawer = onOpenDrawer
             )
 
             LazyColumn(
@@ -433,7 +435,7 @@ private fun ProjectCard(
 
 
 @Composable
-private fun TopBarCustom(height: Dp, onBack: () -> Unit, onMenu: () -> Unit) { /* igual a tu versión */
+private fun TopBarCustom(height: Dp, onBack: () -> Unit, onMenu: () -> Unit, onDrawer: () -> Unit) { /* igual a tu versión */
     Box(
         modifier = Modifier.fillMaxWidth().height(height).shadow(2.dp).background(CreamBackground).padding(horizontal = 8.dp)
     ) {
@@ -448,6 +450,11 @@ private fun TopBarCustom(height: Dp, onBack: () -> Unit, onMenu: () -> Unit) { /
             IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = TitleGreen) }
             Spacer(Modifier.width(4.dp))
             IconButton(onClick = onMenu) { Icon(Icons.Filled.Menu, contentDescription = "Menu", tint = TitleGreen) }
+            Spacer(Modifier.width(4.dp))
+            IconButton(onClick = onDrawer) {
+                Icon(Icons.Filled.MoreVert, contentDescription = "Open drawer", tint = TitleGreen)
+            }
+            Spacer(Modifier.width(4.dp))
         }
     }
 }

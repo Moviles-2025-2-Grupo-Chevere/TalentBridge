@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -48,6 +49,7 @@ fun SomeElseProfileScreen(
     onBottomSearch: () -> Unit = {},
     onBottomMenu: () -> Unit = {},
     onBottomFav: () -> Unit = {},
+    onOpenDrawer: () -> Unit = {}
 ) {
     // Datos demo
     val avatar = R.drawable.student // reemplaza por tu drawable de avatar
@@ -67,7 +69,8 @@ fun SomeElseProfileScreen(
             TopBarCustom(
                 height = 100.dp,
                 onBack = onBack,
-                onMenu=onBottomMenu
+                onMenu=onBottomMenu,
+                onDrawer= onOpenDrawer
             )
 
             Column(
@@ -167,7 +170,8 @@ fun SomeElseProfileScreen(
 private fun TopBarCustom(
     height: Dp,
     onBack: () -> Unit,
-    onMenu: () -> Unit
+    onMenu: () -> Unit,
+    onDrawer: () -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -206,6 +210,11 @@ private fun TopBarCustom(
             IconButton(onClick = onMenu) {
                 Icon(Icons.Filled.Menu, contentDescription = "Menu", tint = TitleGreen)
             }
+            Spacer(Modifier.width(4.dp))
+            IconButton(onClick = onDrawer) {
+                Icon(Icons.Filled.MoreVert, contentDescription = "Open drawer", tint = TitleGreen)
+            }
+            Spacer(Modifier.width(4.dp))
         }
 
     }

@@ -8,10 +8,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.MenuOpen
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
@@ -46,6 +48,7 @@ import com.example.talent_bridge_kt.ui.theme.TitleGreen
 fun StudentFeedScreen(
     onBack: () -> Unit = {},
     onOpenMenu: () -> Unit = {},
+    onOpenDrawer: () -> Unit = {},
     // Bottom bar
     onHome: () -> Unit = {},
     onSearch: () -> Unit = {},
@@ -63,7 +66,7 @@ fun StudentFeedScreen(
         Column(Modifier.fillMaxSize()) {
 
             // Encabezado fijo (logo + back + menú)
-            TopBarCustom(height = 56.dp, onBack = onBack, onMenu = onExploreStudents)
+            TopBarCustom(height = 56.dp, onBack = onBack, onMenu = onExploreStudents, onDrawer = onOpenDrawer)
 
             // Contenido
             LazyColumn(
@@ -333,7 +336,8 @@ private fun ApplicationSubmittedDialog(
 private fun TopBarCustom(
     height: Dp,
     onBack: () -> Unit,
-    onMenu: () -> Unit
+    onMenu: () -> Unit,
+    onDrawer: () -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -370,6 +374,10 @@ private fun TopBarCustom(
             Spacer(Modifier.width(4.dp))
             IconButton(onClick = onMenu) {
                 Icon(Icons.Filled.Menu, contentDescription = "Menu", tint = TitleGreen)
+            }
+            Spacer(Modifier.width(4.dp))
+            IconButton(onClick = onDrawer) {
+                Icon(Icons.Filled.MoreVert, contentDescription = "Open drawer", tint = TitleGreen)
             }
         }
     }

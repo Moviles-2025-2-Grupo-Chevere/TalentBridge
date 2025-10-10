@@ -11,6 +11,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -36,6 +37,7 @@ import com.example.talent_bridge_kt.ui.theme.TitleGreen
 fun SavedProjectsScreen(
     onBack: () -> Unit = {},
     onOpenMenu: () -> Unit = {},
+    onOpenDrawer: () -> Unit = {},
     // bottom bar
     onHome: () -> Unit = {},
     onSearch: () -> Unit = {},
@@ -44,7 +46,7 @@ fun SavedProjectsScreen(
     Surface(color = Color.White, modifier = Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
 
-            TopBarCustom(height = 56.dp, onBack = onBack, onMenu = onOpenMenu)
+            TopBarCustom(height = 56.dp, onBack = onBack, onMenu = onOpenMenu, onDrawer = onOpenDrawer)
 
             LazyColumn(
                 modifier = Modifier
@@ -204,7 +206,8 @@ private fun ChipTag(text: String) {
 private fun TopBarCustom(
     height: Dp,
     onBack: () -> Unit,
-    onMenu: () -> Unit
+    onMenu: () -> Unit,
+    onDrawer: () -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -242,6 +245,11 @@ private fun TopBarCustom(
             IconButton(onClick = onMenu) {
                 Icon(Icons.Filled.Menu, contentDescription = "Menu", tint = TitleGreen)
             }
+            Spacer(Modifier.width(4.dp))
+            IconButton(onClick = onDrawer) {
+                Icon(Icons.Filled.MoreVert, contentDescription = "Open drawer", tint = TitleGreen)
+            }
+            Spacer(Modifier.width(4.dp))
         }
 
     }

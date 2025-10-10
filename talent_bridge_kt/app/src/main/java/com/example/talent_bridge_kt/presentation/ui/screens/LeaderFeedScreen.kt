@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -39,6 +40,7 @@ import com.example.talent_bridge_kt.ui.theme.AccentYellow
 import com.example.talent_bridge_kt.ui.theme.CreamBackground
 import com.example.talent_bridge_kt.ui.theme.LinkGreen
 import com.example.talent_bridge_kt.ui.theme.TitleGreen
+import kotlinx.coroutines.sync.Mutex
 
 /* ======================= Pantalla ======================= */
 
@@ -46,6 +48,7 @@ import com.example.talent_bridge_kt.ui.theme.TitleGreen
 fun LeaderFeedScreen(
     onBack: () -> Unit = {},
     onOpenMenu: () -> Unit = {},
+    onOpenDrawer: () -> Unit = {},
     // bottom bar
     onHome: () -> Unit = {},
     onSearch: () -> Unit = {},
@@ -54,7 +57,7 @@ fun LeaderFeedScreen(
     Surface(color = Color.White, modifier = Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
 
-            TopBarCustom(height = 100.dp, onBack = onBack, onMenu = onOpenMenu)
+            TopBarCustom(height = 100.dp, onBack = onBack, onMenu = onOpenMenu, onDrawer = onOpenDrawer)
 
             LazyColumn(
                 modifier = Modifier
@@ -266,7 +269,8 @@ private fun StudentCardSimple(
 private fun TopBarCustom(
     height: Dp,
     onBack: () -> Unit,
-    onMenu: () -> Unit
+    onMenu: () -> Unit,
+    onDrawer: () -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -304,6 +308,11 @@ private fun TopBarCustom(
             IconButton(onClick = onMenu) {
                 Icon(Icons.Filled.Menu, contentDescription = "Menu", tint = TitleGreen)
             }
+            Spacer(Modifier.width(4.dp))
+            IconButton(onClick = onDrawer) {
+                Icon(Icons.Filled.MoreVert, contentDescription = "Open drawer", tint = TitleGreen)
+            }
+            Spacer(Modifier.width(4.dp))
         }
     }
 }

@@ -49,6 +49,8 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewmodel.initializer
+import com.example.talent_bridge_kt.presentation.ui.components.HomeWithDrawer
+
 
 
 class MainActivity : ComponentActivity() {
@@ -123,45 +125,64 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         composable(Routes.InitiativeProfile) {
-                            InitiativeProfileSceen(
-                                onBack = { navController.popBackStack() }
-                            )
+                            HomeWithDrawer(navController = navController) { openDrawer ->
+                                InitiativeProfileSceen(
+                                    onBack = { navController.popBackStack() },
+                                    onOpenDrawer = { openDrawer() }
+                                )
+                            }
                         }
                         composable(Routes.LeaderFeed) {
-                            LeaderFeedScreen(
-                                onBack = { navController.popBackStack() }
-                            )
+                            HomeWithDrawer(navController = navController) { openDrawer ->
+                                LeaderFeedScreen(
+                                    onBack = { navController.popBackStack() },
+                                    onOpenDrawer = { openDrawer() }
+
+                                )
+                            }
                         }
                         composable(Routes.SavedProjects) {
-                            SavedProjectsScreen(
-                                onBack = { navController.popBackStack() }
-                            )
+                            HomeWithDrawer(navController = navController) { openDrawer ->
+                                SavedProjectsScreen(
+                                    onBack = { navController.popBackStack() },
+                                    onOpenDrawer = { openDrawer() }
+                                )
+                            }
                         }
 
                         composable(Routes.Search) {
+
                             val repo = FirestoreSearchRepository(FirebaseFirestore.getInstance())
                             val vm: SearchViewModel = viewModel(
                                 factory = SearchViewModelFactory(repo)
                             )
-                            SearchScreen(
-                                vm = vm,
-                                onBack = { navController.popBackStack() },
-                                onSearch = { navController.navigate(Routes.Search)},
-                                onProfile = { navController.navigate(Routes.StudentProfile)},
-                                onHome = { navController.navigate(Routes.StudentFeed)},
+                                SearchScreen(
+                                    vm = vm,
+                                    onBack = { navController.popBackStack() },
+                                    onSearch = { navController.navigate(Routes.Search) },
+                                    onProfile = { navController.navigate(Routes.StudentProfile) },
+                                    onHome = { navController.navigate(Routes.StudentFeed) },
+
 
                                 )
-                        }
+                            }
+
 
                         composable(Routes.StudentProfile) {
-                            StudentProfileScreen(
-                                onBack = { navController.popBackStack() },
-                            )
+                            HomeWithDrawer(navController = navController) { openDrawer ->
+                                StudentProfileScreen(
+                                    onBack = { navController.popBackStack() },
+                                    onOpenDrawer = { openDrawer() }
+                                )
+                            }
                         }
                         composable(Routes.SomeOneElseProfile) {
-                            SomeElseProfileScreen(
-                                onBack = { navController.popBackStack() }
-                            )
+                            HomeWithDrawer(navController = navController) { openDrawer ->
+                                SomeElseProfileScreen(
+                                    onBack = { navController.popBackStack() },
+                                    onOpenDrawer = { openDrawer() }
+                                )
+                            }
                         }
                         composable(Routes.Credits) {
                             CreditsScreen(
@@ -169,18 +190,25 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         composable(Routes.StudentFeed) {
-                            StudentFeedScreen(
-                                onBack = { navController.popBackStack() },
-                                onSomeOneElseProfile = { navController.navigate(Routes.SomeOneElseProfile) },
-                                onExploreStudents = { navController.navigate(Routes.LeaderFeed) },
-                                onSearch = { navController.navigate(Routes.Search)},
-                                onProfile = { navController.navigate(Routes.StudentProfile)},
-                            )
+                            HomeWithDrawer(navController = navController) { openDrawer ->
+                                StudentFeedScreen(
+                                    onBack = { navController.popBackStack() },
+                                    onSomeOneElseProfile = { navController.navigate(Routes.SomeOneElseProfile) },
+                                    onExploreStudents = { navController.navigate(Routes.LeaderFeed) },
+                                    onSearch = { navController.navigate(Routes.Search) },
+                                    onProfile = { navController.navigate(Routes.StudentProfile) },
+
+                                    onOpenDrawer = { openDrawer() }
+                                )
+                            }
                         }
                         composable(Routes.InitiativeDetail) {
-                            InitiativeDetailScreen(
-                                onBack = { navController.popBackStack() }
-                            )
+                            HomeWithDrawer(navController = navController) { openDrawer ->
+                                InitiativeDetailScreen(
+                                    onBack = { navController.popBackStack() },
+                                    onOpenDrawer = { openDrawer() }
+                                )
+                            }
                         }
                     }
                 }

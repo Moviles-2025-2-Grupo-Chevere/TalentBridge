@@ -54,6 +54,7 @@ fun SearchScreen(
     onFav: () -> Unit = {},
     onProfile: () -> Unit = {}
 
+
 ) {
     var query by remember { mutableStateOf("") }
     val recents = listOf("Daniel Triviño", "ROBOCOL", "Proyectos Inteligencia Artificial")
