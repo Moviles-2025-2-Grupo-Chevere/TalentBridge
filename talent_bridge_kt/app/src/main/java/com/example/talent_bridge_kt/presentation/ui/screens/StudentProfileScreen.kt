@@ -34,7 +34,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.talent_bridge_kt.R
-import com.example.talent_bridge_kt.data.fake.FakeProfileRepository
+import com.example.talent_bridge_kt.data.firebase.FirebaseProfileRepository
 import com.example.talent_bridge_kt.domain.model.Project
 import com.example.talent_bridge_kt.domain.usecase.GetProfileUseCase
 import com.example.talent_bridge_kt.domain.usecase.UpdateProfileUseCase
@@ -77,7 +77,8 @@ fun StudentProfileScreen(
     var pDesc by remember { mutableStateOf("") }
     var pSkills by remember { mutableStateOf("") }
 
-    val repo = remember { FakeProfileRepository() }
+    val repo = remember { FirebaseProfileRepository() }
+
     val vm = remember {
         ProfileViewModel(
             getProfile = GetProfileUseCase(repo),
@@ -86,14 +87,19 @@ fun StudentProfileScreen(
         )
     }
     val uiState by vm.uiState.collectAsState()
+    LaunchedEffect(Unit) {
+        vm.load()
+    }
 
     LaunchedEffect(uiState) {
+        if (isEditing) return@LaunchedEffect
         val p = (uiState as? ProfileUiState.Ready)?.profile ?: return@LaunchedEffect
         email = p.email
         linkedin = p.linkedin.orEmpty()
         number = p.phone
         bio = p.bio ?: bio
     }
+
 
     // --------- cámara ---------
     val context = LocalContext.current
@@ -150,8 +156,8 @@ fun StudentProfileScreen(
                         Spacer(Modifier.height(10.dp))
                         Text(
                             text = when (val s = uiState) {
-                                is ProfileUiState.Ready -> s.profile.name.ifBlank { "Luciana Perez" }
-                                else -> "Luciana Perez"
+                                is ProfileUiState.Ready -> s.profile.name.ifBlank { "" }
+                                else -> ""
                             },
                             fontSize = 18.sp, color = TitleGreen, fontWeight = FontWeight.SemiBold,
                             maxLines = 1, overflow = TextOverflow.Ellipsis

@@ -12,5 +12,7 @@ data class Profile(
     val avatarUrl: String? = null,
     val tags: List<String> = emptyList(),
     val bio: String? = null,
-    val projects: List<Project> = emptyList()
+    val projects: List<Project> = emptyList(),
+    val projectsUpdatedAt: Long? = null
+
 )

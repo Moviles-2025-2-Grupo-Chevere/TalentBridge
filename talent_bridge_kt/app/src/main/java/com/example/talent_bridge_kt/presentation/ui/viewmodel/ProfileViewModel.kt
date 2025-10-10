@@ -12,6 +12,7 @@ import com.example.talent_bridge_kt.domain.util.Resource
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+import com.example.talent_bridge_kt.data.analytics.ProfileAnalytics
 
 sealed class ProfileUiState {
     data object Loading : ProfileUiState()
@@ -28,8 +29,16 @@ class ProfileViewModel(
     private val _uiState = MutableStateFlow<ProfileUiState>(ProfileUiState.Loading)
     val uiState: StateFlow<ProfileUiState> = _uiState
 
-    init { refresh() }
-
+    fun load() = viewModelScope.launch {
+        _uiState.value = ProfileUiState.Loading
+        when (val res = getProfile()) {
+            is Resource.Success -> {
+                _uiState.value = ProfileUiState.Ready(res.data)
+                ProfileAnalytics.pushUserProperties(res.data)   // <- AQUÍ
+            }
+            is Resource.Error   -> _uiState.value = ProfileUiState.Error(res.message)
+        }
+    }
     fun refresh() = viewModelScope.launch {
         _uiState.value = ProfileUiState.Loading
         when (val res = getProfile()) {
@@ -51,11 +60,21 @@ class ProfileViewModel(
     }
 
     fun update(profile: Profile) = viewModelScope.launch {
+        val before = (uiState.value as? ProfileUiState.Ready)?.profile
+        val projectsChanged = before?.projects != profile.projects
+
         when (val res = updateProfile(profile)) {
-            is Resource.Success -> _uiState.value = ProfileUiState.Ready(res.data, "Saved")
-            is Resource.Error   -> _uiState.value = ProfileUiState.Error(res.message)
+            is Resource.Success -> {
+                _uiState.value = ProfileUiState.Ready(res.data, "Saved")
+                if (projectsChanged) {
+                    com.example.talent_bridge_kt.data.analytics.ProfileAnalytics
+                        .logProjectsUpdated(res.data.projects.size)
+                }
+            }
+            is Resource.Error -> _uiState.value = ProfileUiState.Error(res.message)
         }
     }
+
 
     fun addTag(tag: String) {
         val cur = (uiState.value as? ProfileUiState.Ready)?.profile ?: return

@@ -26,6 +26,10 @@ import com.example.talent_bridge_kt.ui.theme.TitleGreen
 import com.example.talent_bridge_kt.data.AuthManager
 import com.example.talent_bridge_kt.domain.analytics.AnalyticsTracker
 import com.example.talent_bridge_kt.data.analytics.FirebaseAnalyticsTracker
+import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.launch
+import com.example.talent_bridge_kt.core.session.SessionStore
+import com.google.firebase.auth.FirebaseAuth
 
 import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
@@ -47,7 +51,8 @@ fun LoginScreen(modifier: Modifier = Modifier,  onCreateAccount: () -> Unit = {}
     var isLoading by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
-
+    val session = remember { SessionStore(context) }
+    val scope = rememberCoroutineScope()
     fun isValidEmail(value: String) =
         android.util.Patterns.EMAIL_ADDRESS.matcher(value).matches()
     fun isValidPassword(value: String) = value.length >= 6
@@ -68,6 +73,12 @@ fun LoginScreen(modifier: Modifier = Modifier,  onCreateAccount: () -> Unit = {}
                 tracker.login("email")
                 tracker.identify(userId = email.trim(), role = "student")
                 onStudentFeed()
+                val userId = FirebaseAuth.getInstance().currentUser?.uid ?: email.trim()
+
+                scope.launch {
+                    session.save(userId = userId, email = email.trim(), token = null)
+                }
+
             },
             onError = { msg ->
                 isLoading = false
