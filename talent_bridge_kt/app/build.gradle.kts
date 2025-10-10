@@ -61,6 +61,7 @@ dependencies {
     implementation("com.google.firebase:firebase-firestore-ktx")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
     implementation("io.coil-kt:coil-compose:2.7.0")
+
     val nav_version = "2.9.4"
 
     implementation("androidx.navigation:navigation-compose:$nav_version")
@@ -74,5 +75,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1")
 
     implementation("com.google.firebase:firebase-analytics-ktx")
+    implementation ("androidx.datastore:datastore-preferences:1.1.1")
+
 
 }
