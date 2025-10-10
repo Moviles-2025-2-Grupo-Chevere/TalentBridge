@@ -236,7 +236,13 @@ class FirebaseService {
     await logEvent('login', {});
   }
 
-  Future<void> signOut() => _auth.signOut();
+  Future<void> signOut() async {
+    _auth.signOut();
+    _analytics.logEvent(
+      name: 'sign_out',
+      parameters: {'uid': currentUid() ?? '?'},
+    );
+  }
 
   Future<void> signUp({
     required String email,

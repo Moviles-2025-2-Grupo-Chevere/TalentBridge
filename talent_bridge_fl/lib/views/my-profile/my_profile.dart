@@ -99,14 +99,14 @@ class _MyProfileState extends State<MyProfile> {
         fb
             .uploadPFP(File(image.path))
             .then((sn) {
-              if (context.mounted) {
+              if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('Profile picture uploaded!')),
                 );
               }
             })
             .catchError((_) {
-              if (context.mounted) {
+              if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text('Error uploading profile picture :('),

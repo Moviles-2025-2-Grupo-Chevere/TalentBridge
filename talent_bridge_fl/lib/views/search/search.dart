@@ -28,6 +28,7 @@ class _SearchState extends State<Search> {
 
   // Search results
   List<UserEntity> _searchResults = [];
+  Map<UserEntity, double> _userScores = {};
 
   // Fake “recent” items for the UI
   final _recents = const <String>[
@@ -80,7 +81,10 @@ class _SearchState extends State<Search> {
       return;
     }
     final projects = _currentUser?.projects ?? [];
-    final skills = projects.expand((i) => i.skills).toList();
+    final skills = projects
+        .expand((i) => i.skills)
+        .map((j) => j.toLowerCase())
+        .toList();
     final frequencies = skills.fold<Map<String, int>>(
       {},
       (map, item) => map..update(item, (v) => v + 1, ifAbsent: () => 1),
@@ -89,21 +93,23 @@ class _SearchState extends State<Search> {
     final filteredUsers = _allUsers
         .where((u) => u.displayName.toLowerCase().contains(q))
         .toList();
-    final scores = filteredUsers.fold<Map<UserEntity, double>>(
-      {},
-      (map, item) => map
-        ..update(item, (v) {
-          double score = 0;
-          for (var element in item.skillsOrTopics ?? [] as List<String>) {
-            score += weights[element] ?? 0;
-          }
-          return score;
-        }, ifAbsent: () => 0),
-    );
-    filteredUsers.sort((a, b) => scores[a]!.compareTo(scores[b]!));
+    print('users: $filteredUsers');
+    final Map<UserEntity, double> scores = {};
+    for (var u in filteredUsers) {
+      double score = 0;
+      var uSkills = (u.skillsOrTopics ?? []).map((i) => i.toLowerCase());
+      for (var skill in uSkills) {
+        score += weights[skill] ?? 0;
+      }
+      scores[u] = score;
+    }
+    filteredUsers.sort((a, b) => -scores[a]!.compareTo(scores[b]!));
     setState(() {
+      _userScores = scores;
       _searchResults = filteredUsers;
     });
+    print(scores);
+    print(weights);
   }
 
   void _applySearch() {
@@ -185,7 +191,10 @@ class _SearchState extends State<Search> {
                     Text('Results', style: labelStyle),
                     const SizedBox(height: 12),
                     ..._searchResults.map(
-                      (user) => SearchCard(title: user.displayName),
+                      (user) => SearchCard(
+                        title: user.displayName,
+                        score: _userScores[user],
+                      ),
                     ),
                     const SizedBox(height: 24),
                   ],
@@ -196,7 +205,10 @@ class _SearchState extends State<Search> {
 
                   // Lista de recientes (icono reloj + tarjeta pill)
                   ..._recents.map(
-                    (title) => SearchCard(title: title),
+                    (title) => SearchCard(
+                      title: title,
+                      isRecent: true,
+                    ),
                   ),
                 ],
               ),
@@ -212,9 +224,13 @@ class SearchCard extends StatelessWidget {
   const SearchCard({
     super.key,
     required this.title,
+    this.score,
+    this.isRecent = false,
   });
 
   final String title;
+  final bool isRecent;
+  final double? score;
 
   @override
   Widget build(BuildContext context) {
@@ -223,10 +239,11 @@ class SearchCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.access_time,
-            color: Colors.black45,
-          ),
+          if (isRecent)
+            const Icon(
+              Icons.access_time,
+              color: Colors.black45,
+            ),
           const SizedBox(width: 8),
           Expanded(
             child: Material(
@@ -268,6 +285,8 @@ class SearchCard extends StatelessWidget {
                           ),
                         ),
                       ),
+                      if (score != null)
+                        Expanded(child: Text(score!.toStringAsPrecision(3))),
                     ],
                   ),
                 ),
