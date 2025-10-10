@@ -39,6 +39,8 @@ class FirebaseService {
       "description": "",
       "major": "",
       "lastPortfolioUpdateAt": "",
+      "applications": <String>[],
+      "acceptedProjects": <String>[],
     };
   }
 

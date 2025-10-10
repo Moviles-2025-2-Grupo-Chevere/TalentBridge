@@ -1,5 +1,7 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:talent_bridge_fl/domain/project_entity.dart';
+import 'package:talent_bridge_fl/services/firebase_service.dart';
 import 'package:talent_bridge_fl/views/user-profile/user_profile.dart';
 
 class ProjectPost extends StatelessWidget {
@@ -10,11 +12,12 @@ class ProjectPost extends StatelessWidget {
   });
 
   final ProjectEntity project;
-  final void Function() showApplyModal;
+  final void Function(String, String) showApplyModal;
 
   @override
   Widget build(BuildContext context) {
     var profilePictureUrl = project.createdBy?.photoUrl;
+    final _firebaseService = FirebaseService();
     return Card(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
@@ -78,7 +81,13 @@ class ProjectPost extends StatelessWidget {
               children: [
                 TextButton(onPressed: () {}, child: Text('Comentarios')),
                 TextButton(onPressed: () {}, child: Text('Guardar')),
-                TextButton(onPressed: showApplyModal, child: Text('Aplicar')),
+                TextButton(
+                  onPressed: () {
+                    final currentUserId = _firebaseService.currentUid() ?? "";
+                    showApplyModal(currentUserId, project.id ?? "");
+                  },
+                  child: Text('Aplicar'),
+                ),
               ],
             ),
           ],
