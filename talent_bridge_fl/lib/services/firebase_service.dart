@@ -161,6 +161,61 @@ class FirebaseService {
     }
   }
 
+  /// Accept a user's application to a project
+  Future<void> acceptProject({
+    required String userId,
+    required String projectId,
+  }) async {
+    try {
+      // First, get the project to retrieve its skills
+      ProjectEntity? project;
+      final projects = await getAllProjects();
+      project = projects.firstWhere(
+        (p) => p.id == projectId,
+        orElse: () => throw Exception('Project not found'),
+      );
+
+      // 1. Update user document - remove from applications, add to acceptedProjects
+      final userRef = _db.collection('users').doc(userId);
+      await userRef.update({
+        'applications': FieldValue.arrayRemove([projectId]),
+        'acceptedProjects': FieldValue.arrayUnion([projectId]),
+      });
+
+      // 2. Create new document in acceptedProjects collection
+      await _db.collection('acceptedProjects').add({
+        'acceptedDate': FieldValue.serverTimestamp(),
+        'project_id': projectId,
+        'user_id': userId,
+        'skills': project.skills,
+      });
+
+      // 3. Log analytics event
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      await _analytics.logEvent(
+        name: 'project_accepted',
+        parameters: {
+          'timestamp': timestamp,
+          'user_id': userId,
+          'project_id': projectId,
+          'skills': project.skills.join(
+            ',',
+          ), // Convert list to string for analytics
+        },
+      );
+
+      // 4. Log to events collection
+      await logEvent('project_accepted', {
+        'project_id': projectId,
+        'user_id': userId,
+        'skills': project.skills,
+      });
+    } catch (e) {
+      print('Error accepting project: $e');
+      rethrow;
+    }
+  }
+
   // ---------------- AUTH ----------------
 
   Future<void> signIn(String email, String pass) async {

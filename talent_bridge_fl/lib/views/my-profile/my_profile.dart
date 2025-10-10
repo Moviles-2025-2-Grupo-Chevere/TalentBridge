@@ -440,8 +440,50 @@ class ProjectSummary extends StatelessWidget {
                                         ),
                                       ),
                                       ElevatedButton(
-                                        onPressed: () {
-                                          // Accept logic will go here
+                                        onPressed: () async {
+                                          try {
+                                            // Show loading indicator
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'Accepting application...',
+                                                ),
+                                              ),
+                                            );
+
+                                            // Call accept method with applicant's ID and project ID
+                                            await firebaseService.acceptProject(
+                                              userId: applicant['id'] ?? '',
+                                              projectId: project.id ?? '',
+                                            );
+
+                                            // Show success message
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'Application accepted successfully!',
+                                                ),
+                                              ),
+                                            );
+
+                                            // Close the dialog
+                                            Navigator.of(context).pop();
+                                          } catch (e) {
+                                            // Show error message
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'Error accepting application: $e',
+                                                ),
+                                              ),
+                                            );
+                                          }
                                         },
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor: Colors.green,
