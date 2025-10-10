@@ -205,7 +205,10 @@ class _SearchState extends State<Search> {
 
                   // Lista de recientes (icono reloj + tarjeta pill)
                   ..._recents.map(
-                    (title) => SearchCard(title: title),
+                    (title) => SearchCard(
+                      title: title,
+                      isRecent: true,
+                    ),
                   ),
                 ],
               ),
@@ -222,9 +225,11 @@ class SearchCard extends StatelessWidget {
     super.key,
     required this.title,
     this.score,
+    this.isRecent = false,
   });
 
   final String title;
+  final bool isRecent;
   final double? score;
 
   @override
@@ -234,10 +239,11 @@ class SearchCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          const Icon(
-            Icons.access_time,
-            color: Colors.black45,
-          ),
+          if (isRecent)
+            const Icon(
+              Icons.access_time,
+              color: Colors.black45,
+            ),
           const SizedBox(width: 8),
           Expanded(
             child: Material(
