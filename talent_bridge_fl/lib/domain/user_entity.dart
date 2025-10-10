@@ -48,7 +48,7 @@ class UserEntity {
       linkedin: map['linkedin'] ?? '',
       location: map['location'] ?? '',
       mobileNumber: map['mobileNumber'] ?? '',
-      photoUrl: map['photoUrl'] ?? '',
+      photoUrl: map['photoUrl'] ?? 'assets/images/gumball.jpg',
       projects: List<ProjectEntity>.from(
         mapProjects.map((i) => ProjectEntity.fromMap(i)),
       ), //CHECK TO MAP

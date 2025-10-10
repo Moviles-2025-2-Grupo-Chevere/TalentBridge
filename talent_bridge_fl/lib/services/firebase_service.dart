@@ -6,6 +6,7 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_core;
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:talent_bridge_fl/domain/project_entity.dart';
 import 'package:talent_bridge_fl/domain/user_entity.dart';
 
 class FirebaseService {
@@ -77,6 +78,46 @@ class FirebaseService {
     return querySnapshot.docs
         .map((doc) => UserEntity.fromMap(doc.data()))
         .toList();
+  }
+
+  Future<List<ProjectEntity>> getAllProjects() async {
+    final querySnapshot = await _db.collection('users').get();
+
+    List<ProjectEntity> allProjects = [];
+
+    for (var doc in querySnapshot.docs) {
+      final userData = doc.data();
+
+      // Check if projects field exists and is a list
+      if (userData.containsKey('projects') && userData['projects'] is List) {
+        final projectsList = userData['projects'] as List;
+
+        for (var projectData in projectsList) {
+          // Skip if not a map
+          if (projectData is! Map<String, dynamic>) continue;
+
+          Map<String, dynamic> projectMap = Map<String, dynamic>.from(
+            projectData,
+          );
+
+          // Ensure createdById exists
+          if (!projectMap.containsKey('createdById') ||
+              projectMap['createdById'] == null ||
+              projectMap['createdById'] == '') {
+            projectMap['createdById'] = doc.id;
+          }
+
+          try {
+            final project = ProjectEntity.fromMap(projectMap);
+            allProjects.add(project);
+          } catch (e) {
+            print('Error parsing project for user ${doc.id}: $e');
+          }
+        }
+      }
+    }
+
+    return allProjects;
   }
 
   // ---------------- AUTH ----------------

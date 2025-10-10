@@ -3,9 +3,13 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:talent_bridge_fl/data/user_service.dart';
 import 'package:talent_bridge_fl/domain/project_entity.dart';
 import 'package:talent_bridge_fl/domain/user_entity.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:talent_bridge_fl/services/firebase_service.dart';
 
 class ProjectService {
   final _db = FirebaseFirestore.instance;
+  final _analytics = FirebaseAnalytics.instance;
+  final _firebaseService = FirebaseService();
 
   createProject(ProjectEntity project) async {
     final docRef = FirebaseFirestore.instance
@@ -14,13 +18,24 @@ class ProjectService {
     await docRef.update({
       'projects': FieldValue.arrayUnion([project.toMap()]),
     });
+    await _analytics.logEvent(
+      name: "create_project",
+      parameters: {
+        "createdById": project.createdById,
+        "title": project.title,
+        "skills": project.skills,
+        "id": project.id ?? "",
+      },
+    );
   }
 
-  getProjects() {
+  Future<List<ProjectEntity>> getProjects() async {
     var assetsimages = 'assets/images';
     var dummyImgRoute = '$assetsimages/dummy_post_img.jpeg';
     final userService = UserService();
     final users = userService.getUsers();
+    //final users = await _firebaseService.getAllUsers();
+    //print('Fetched ${users.length} users from FirebaseService');
     //talent_bridge_fl/assets/images/dummy_post_img.jpeg
 
     var projects = [

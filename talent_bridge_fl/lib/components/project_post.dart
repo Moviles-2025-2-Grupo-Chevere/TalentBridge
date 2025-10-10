@@ -42,7 +42,7 @@ class ProjectPost extends StatelessWidget {
                       radius: 24,
                       backgroundImage: profilePictureUrl != null
                           ? AssetImage(profilePictureUrl)
-                          : null,
+                          : AssetImage('assets/images/gumball.jpg'),
                     ),
                   ),
                 ),
@@ -55,7 +55,7 @@ class ProjectPost extends StatelessWidget {
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       Text(
-                        "${project.createdBy?.displayName ?? '?'} · 5m",
+                        "${project.createdBy?.displayName ?? 'Project Manager'} · 5m",
                         style: TextStyle(fontWeight: FontWeight.w300),
                       ),
                       Text(project.description),
