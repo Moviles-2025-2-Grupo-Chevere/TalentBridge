@@ -79,10 +79,30 @@ class _SearchState extends State<Search> {
       });
       return;
     }
+    final projects = _currentUser?.projects ?? [];
+    final skills = projects.expand((i) => i.skills).toList();
+    final frequencies = skills.fold<Map<String, int>>(
+      {},
+      (map, item) => map..update(item, (v) => v + 1, ifAbsent: () => 1),
+    );
+    final weights = frequencies.map((s, i) => MapEntry(s, i / skills.length));
+    final filteredUsers = _allUsers
+        .where((u) => u.displayName.toLowerCase().contains(q))
+        .toList();
+    final scores = filteredUsers.fold<Map<UserEntity, double>>(
+      {},
+      (map, item) => map
+        ..update(item, (v) {
+          double score = 0;
+          for (var element in item.skillsOrTopics ?? [] as List<String>) {
+            score += weights[element] ?? 0;
+          }
+          return score;
+        }, ifAbsent: () => 0),
+    );
+    filteredUsers.sort((a, b) => scores[a]!.compareTo(scores[b]!));
     setState(() {
-      _searchResults = _allUsers
-          .where((u) => u.displayName.toLowerCase().contains(q))
-          .toList();
+      _searchResults = filteredUsers;
     });
   }
 
