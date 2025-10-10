@@ -19,11 +19,16 @@ class _AddProjectState extends State<AddProject> {
   final projectService = ProjectService();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
+  final _skillsController = TextEditingController();
 
   void _submitData() {
     final title = _titleController.text;
     final description = _descriptionController.text;
-    final skills = ['manco', 'xd'];
+    final skills = _skillsController.text
+        .split(',')
+        .map((skill) => skill.trim())
+        .where((skill) => skill.isNotEmpty)
+        .toList();
     final uid = firebaseService.currentUid();
 
     if (title.isEmpty || uid == null) {
@@ -93,8 +98,10 @@ class _AddProjectState extends State<AddProject> {
               descriptionField,
               SizedBox(height: 16),
               TextField(
+                controller: _skillsController,
                 decoration: const InputDecoration(
                   label: Text('Skills'),
+                  hintText: 'Enter skills separated by commas',
                 ),
               ),
               SizedBox(height: 16),
