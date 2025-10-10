@@ -378,7 +378,7 @@ class ProjectSummary extends StatelessWidget {
                 Spacer(),
                 Icon(Icons.person),
                 SizedBox(width: 8),
-                Text('4'), // TODO remove hardcode
+                Text('2'), // TODO remove hardcode
               ],
             ),
             SizedBox(

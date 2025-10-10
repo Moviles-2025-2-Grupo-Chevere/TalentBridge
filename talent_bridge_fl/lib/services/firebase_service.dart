@@ -133,6 +133,34 @@ class FirebaseService {
     });
   }
 
+  Future<List<Map<String, String>>> getUsersAppliedToProject({
+    required String projectId,
+  }) async {
+    try {
+      // Query for users where applications array contains the projectId
+      final querySnapshot = await _db
+          .collection('users')
+          .where('applications', arrayContains: projectId)
+          .get();
+
+      // Map results to a list of user IDs and names
+      List<Map<String, String>> applicants = [];
+
+      for (var doc in querySnapshot.docs) {
+        final userData = doc.data();
+        applicants.add({
+          'id': doc.id,
+          'name': userData['displayName'] ?? 'Unnamed User',
+        });
+      }
+
+      return applicants;
+    } catch (e) {
+      print('Error getting applicants for project $projectId: $e');
+      return [];
+    }
+  }
+
   // ---------------- AUTH ----------------
 
   Future<void> signIn(String email, String pass) async {
