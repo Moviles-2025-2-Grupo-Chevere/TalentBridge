@@ -367,36 +367,150 @@ class ProjectSummary extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Row(
-              children: [
-                Text(project.title),
-                Spacer(),
-                Icon(Icons.person),
-                SizedBox(width: 8),
-                Text('2'), // TODO remove hardcode
-              ],
-            ),
-            SizedBox(
-              height: 8,
-            ),
-            Wrap(
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: 4,
-              children: [
-                ...project.skills
-                    .sublist(0, 2)
-                    .map(
-                      (v) => OutlinedButton(onPressed: () {}, child: Text(v)),
+    final firebaseService = FirebaseService();
+
+    return InkWell(
+      onTap: () {
+        // Show applicants modal when project is clicked
+        showDialog(
+          context: context,
+          builder: (BuildContext context) {
+            return Dialog(
+              child: FutureBuilder<List<Map<String, String>>>(
+                future: firebaseService.getUsersAppliedToProject(
+                  projectId: project.id ?? '',
+                ),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Padding(
+                      padding: EdgeInsets.all(20.0),
+                      child: Center(child: CircularProgressIndicator()),
+                    );
+                  } else if (snapshot.hasError) {
+                    return Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Text(
+                        'Error loading applicants: ${snapshot.error}',
+                      ),
+                    );
+                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Padding(
+                      padding: EdgeInsets.all(20.0),
+                      child: Text('No applicants found for this project.'),
+                    );
+                  }
+
+                  return Container(
+                    constraints: BoxConstraints(maxHeight: 400),
+                    padding: EdgeInsets.all(16),
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          'Applicants for ${project.title}',
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                        SizedBox(height: 16),
+                        Flexible(
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: snapshot.data!.length,
+                            itemBuilder: (context, index) {
+                              final applicant = snapshot.data![index];
+                              return Card(
+                                margin: EdgeInsets.only(bottom: 8),
+                                child: Padding(
+                                  padding: EdgeInsets.all(8),
+                                  child: Row(
+                                    children: [
+                                      CircleAvatar(
+                                        child: Text(
+                                          applicant['name']?.substring(0, 1) ??
+                                              '?',
+                                        ),
+                                      ),
+                                      SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          applicant['name'] ?? 'Unknown',
+                                        ),
+                                      ),
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          // Accept logic will go here
+                                        },
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.green,
+                                        ),
+                                        child: Text('A'),
+                                      ),
+                                      SizedBox(width: 8),
+                                      ElevatedButton(
+                                        onPressed: () {
+                                          // Reject logic will go here
+                                        },
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.red,
+                                        ),
+                                        child: Text('R'),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                        SizedBox(height: 8),
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: Text('Close'),
+                        ),
+                      ],
                     ),
-                if (project.skills.length > 2) Text('...'),
-              ],
-            ),
-          ],
+                  );
+                },
+              ),
+            );
+          },
+        );
+      },
+      child: Card(
+        child: Padding(
+          padding: EdgeInsets.all(16),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Text(project.title),
+                  Spacer(),
+                  Icon(Icons.person),
+                  SizedBox(width: 8),
+                  Text('2'), // TODO remove hardcode
+                ],
+              ),
+              SizedBox(height: 8),
+              Wrap(
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: 4,
+                children: [
+                  ...project.skills
+                      .sublist(
+                        0,
+                        project.skills.length > 2 ? 2 : project.skills.length,
+                      )
+                      .map(
+                        (v) => OutlinedButton(onPressed: () {}, child: Text(v)),
+                      ),
+                  if (project.skills.length > 2) Text('...'),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
