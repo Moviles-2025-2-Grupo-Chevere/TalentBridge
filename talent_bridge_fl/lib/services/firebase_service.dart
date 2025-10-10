@@ -80,6 +80,7 @@ class FirebaseService {
         .toList();
   }
 
+  // ---------------- PROJECTS ----------------
   Future<List<ProjectEntity>> getAllProjects() async {
     final querySnapshot = await _db.collection('users').get();
 
@@ -118,6 +119,16 @@ class FirebaseService {
     }
 
     return allProjects;
+  }
+
+  Future<void> addProjectToApplications({
+    required String userId,
+    required String projectId,
+  }) async {
+    final docRef = _db.collection('users').doc(userId);
+    await docRef.update({
+      'applications': FieldValue.arrayUnion([projectId]),
+    });
   }
 
   // ---------------- AUTH ----------------
