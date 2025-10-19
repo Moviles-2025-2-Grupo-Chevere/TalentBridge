@@ -8,7 +8,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.MenuOpen
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Home
@@ -18,6 +17,7 @@ import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
@@ -36,14 +36,14 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.talent_bridge_kt.R
+import com.example.talent_bridge_kt.presentation.ui.viewmodel.ProjectsViewModel
 import com.example.talent_bridge_kt.ui.theme.AccentYellow
 import com.example.talent_bridge_kt.ui.theme.CreamBackground
-import com.example.talent_bridge_kt.ui.theme.LinkGreen
 import com.example.talent_bridge_kt.ui.theme.TitleGreen
+import androidx.lifecycle.viewmodel.compose.viewModel
+import java.util.concurrent.TimeUnit
+import androidx.compose.foundation.lazy.items
 
-/* =========================================================================
- * ExploreProjectsScreen – con header, cards, bottom bar y pop-up de “Aplicar”
- * ========================================================================= */
 @Composable
 fun StudentFeedScreen(
     onBack: () -> Unit = {},
@@ -58,17 +58,24 @@ fun StudentFeedScreen(
     onSomeOneElseProfile: () -> Unit = {},
     onExploreStudents: () -> Unit = {},
     onProfile: () -> Unit = {}
-
 ) {
+    val vm: ProjectsViewModel = viewModel()
+    val projects by vm.projects.collectAsState()
+    val loading by vm.loading.collectAsState()
+    val error by vm.error.collectAsState()
+
     var showSubmitted by remember { mutableStateOf(false) }
 
     Surface(color = Color.White, modifier = Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
 
-            // Encabezado fijo (logo + back + menú)
-            TopBarCustom(height = 56.dp, onBack = onBack, onMenu = onExploreStudents, onDrawer = onOpenDrawer)
+            TopBarCustom(
+                height = 56.dp,
+                onBack = onBack,
+                onMenu = onExploreStudents,
+                onDrawer = onOpenDrawer
+            )
 
-            // Contenido
             LazyColumn(
                 modifier = Modifier
                     .weight(1f)
@@ -89,53 +96,58 @@ fun StudentFeedScreen(
                     )
                 }
 
-                // Card 1
-                item {
-                    ProjectCardSimple(
-                        time = "1 · 5m",
-                        title = "Buscamos Diseñadores",
-                        subtitle = "Personas interesadas en el diseño gráfico.",
-                        description = "Esperamos una disponibilidad de 2 horas semanales.",
-                        tags = listOf("Diseño", "Dibujo", "2 Horas"),
-                        imageRes = R.drawable.robocol,
-                        onApplyClick = { showSubmitted = true },
-                        onSomeOneElseProfile = onSomeOneElseProfile
-                    )
+                // Estado: Loading
+                if (loading) {
+                    item {
+                        Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator()
+                        }
+                    }
                 }
 
-                // Card 2
-                item {
-                    ProjectCardSimple(
-                        time = "2 · 10m",
-                        title = "Buscamos Diseñadores",
-                        subtitle = "Personas interesadas en el diseño gráfico.",
-                        description = "Esperamos una disponibilidad de 2 horas semanales.",
-                        tags = listOf("Diseño", "Dibujo", "2 Horas"),
-                        imageRes = R.drawable.relaja,
-                        onApplyClick = { showSubmitted = true },
-                        onSomeOneElseProfile = onSomeOneElseProfile
-
-                    )
+                // Estado: Error
+                if (error != null) {
+                    item {
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text("Failed to load: $error", color = Color.Red)
+                            Spacer(Modifier.height(8.dp))
+                            OutlinedButton(onClick = { vm.refresh() }) {
+                                Text("Retry")
+                            }
+                        }
+                    }
                 }
 
-                // Card 3 (sin imagen)
-                item {
-                    ProjectCardSimple(
-                        time = "hoy",
-                        title = "Concurso Villains",
-                        subtitle = "Afiche para feria 2025",
-                        description = "Esperamos una disponibilidad de 2 horas semanales.",
-                        tags = listOf("Diseño", "Dibujo", "2 Horas"),
-                        imageRes = null,
-                        onApplyClick = { showSubmitted = true },
-                        onSomeOneElseProfile = onSomeOneElseProfile
-                    )
+                // Estado: Lista OK
+                if (!loading && error == null) {
+                    items(projects, key = { it.id }) { p ->
+                        ProjectCardSimple(
+                            time = p.createdAt?.let { prettySince(it.toDate().time) } ?: "—",
+                            title = p.title,
+                            subtitle = p.subtitle ?: "",
+                            description = p.description,
+                            tags = p.skills,
+                            imageRes = null, // Si luego guardas URL, cámbialo por AsyncImage con p.imgUrl
+                            onApplyClick = { showSubmitted = true },
+                            onSomeOneElseProfile = onSomeOneElseProfile
+                        )
+                    }
+
+                    if (projects.isEmpty()) {
+                        item {
+                            Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+                                Text("No projects yet.")
+                            }
+                        }
+                    }
                 }
 
                 item { Spacer(Modifier.height(8.dp)) }
             }
 
-            // Menú inferior fijo
             BottomBarCustom(
                 onHome = onHome,
                 onSearch = onSearch,
@@ -145,7 +157,6 @@ fun StudentFeedScreen(
         }
     }
 
-    // Pop-up “Application Submitted!”
     if (showSubmitted) {
         ApplicationSubmittedDialog(
             onMyApplications = {
@@ -156,6 +167,26 @@ fun StudentFeedScreen(
         )
     }
 }
+
+/* ============================ Helpers ============================ */
+
+// Muestra "5m", "2h", "3d" desde el millis indicado
+private fun prettySince(thenMs: Long): String {
+    val diff = System.currentTimeMillis() - thenMs
+    val min = TimeUnit.MILLISECONDS.toMinutes(diff)
+    val hrs = TimeUnit.MILLISECONDS.toHours(diff)
+    val days = TimeUnit.MILLISECONDS.toDays(diff)
+    return when {
+        min < 1 -> "now"
+        min < 60 -> "${min}m"
+        hrs < 24 -> "${hrs}h"
+        else -> "${days}d"
+    }
+}
+
+/* ============================ (tus componentes existentes) ============================ */
+/* ProjectCardSimple, ApplicationSubmittedDialog, TopBarCustom, BottomBarCustom
+   — déjalos como los tienes. No necesitan cambios para pintar datos del repo. */
 
 /* ============================ COMPONENTES ============================ */
 
