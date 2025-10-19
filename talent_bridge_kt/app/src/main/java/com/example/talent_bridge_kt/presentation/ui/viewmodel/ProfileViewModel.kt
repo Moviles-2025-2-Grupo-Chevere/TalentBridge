@@ -66,6 +66,8 @@ class ProfileViewModel(
         when (val res = updateProfile(profile)) {
             is Resource.Success -> {
                 _uiState.value = ProfileUiState.Ready(res.data, "Saved")
+                ProfileAnalytics.pushUserProperties(res.data)
+                ProfileAnalytics.logProfileSaved(res.data)
                 if (projectsChanged) {
                     com.example.talent_bridge_kt.data.analytics.ProfileAnalytics
                         .logProjectsUpdated(res.data.projects.size)
