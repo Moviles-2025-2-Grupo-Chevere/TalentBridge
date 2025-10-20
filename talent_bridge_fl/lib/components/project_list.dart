@@ -77,7 +77,7 @@ class _ProjectListState extends State<ProjectList> {
     }
   }
 
-  Future<void> onRemoveProject(ProjectEntity project) async {
+  Future<void> onRemoveProjectFromFavorites(ProjectEntity project) async {
     var scaffoldMessenger = ScaffoldMessenger.of(context);
     try {
       await dbService.removeSavedProject(project.id!);
@@ -125,7 +125,7 @@ class _ProjectListState extends State<ProjectList> {
     );
   }
 
-  void showRemoveModal(ProjectEntity p) {
+  void showRemoveFromFavoritesModal(ProjectEntity p) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -141,11 +141,11 @@ class _ProjectListState extends State<ProjectList> {
           ),
           FilledButton.icon(
             onPressed: () {
-              onRemoveProject(p);
+              onRemoveProjectFromFavorites(p);
               Navigator.of(context).pop();
             },
             label: Text("Remove"),
-            icon: Icon(Icons.save),
+            icon: Icon(Icons.remove),
           ),
         ],
       ),
@@ -164,10 +164,15 @@ class _ProjectListState extends State<ProjectList> {
       itemCount: projects.length,
       itemBuilder: (ctx, index) => Dismissible(
         key: ValueKey(projects[index]),
-        onDismissed: (direction) {},
+        onDismissed: (direction) {
+          if (direction == DismissDirection.endToStart &&
+              projects[index].isFavorite) {
+            onRemoveProjectFromFavorites(projects[index]);
+          }
+        },
         child: ProjectPost(
           project: projects[index],
-          showRemoveModal: showRemoveModal,
+          showRemoveModal: showRemoveFromFavoritesModal,
           showSaveModal: showSaveModal,
           showApplyModal: (String userId, String projectId) {
             showDialog(
