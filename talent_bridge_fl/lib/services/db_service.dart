@@ -6,6 +6,8 @@ import 'package:talent_bridge_fl/domain/project_entity.dart';
 class DbService {
   const DbService();
 
+  final projectTable = 'projects';
+
   Future<void> onCreateDB(Database db, int version) {
     return db.execute(
       '''
@@ -35,7 +37,20 @@ class DbService {
   Future<void> insertSavedProject(ProjectEntity p) async {
     final db = await _getDB();
     try {
-      await db.insert('projects', p.toLocalDbMap(true));
+      await db.insert(projectTable, p.toLocalDbMap(true));
+    } catch (e) {
+      throw Error();
+    }
+  }
+
+  Future<List<ProjectEntity>> getSavedProjects() async {
+    final db = await _getDB();
+    try {
+      return (await db.query(projectTable, where: "is_favorite = 1"))
+          .map(
+            (e) => ProjectEntity.fromLocalDbMap(e),
+          )
+          .toList();
     } catch (e) {
       throw Error();
     }

@@ -48,6 +48,41 @@ class ProjectEntity {
     );
   }
 
+  factory ProjectEntity.fromLocalDbMap(Map<String, dynamic> map) {
+    DateTime? createdAtDate;
+    try {
+      final createdAtRaw = map['created_at'];
+      if (createdAtRaw is String && createdAtRaw.isNotEmpty) {
+        createdAtDate = DateTime.tryParse(createdAtRaw);
+      }
+    } catch (e) {
+      print('Error parsing created_at: $e');
+    }
+
+    List<String> parsedSkills = [];
+    try {
+      final skillsRaw = map['skills'];
+      if (skillsRaw is String && skillsRaw.isNotEmpty) {
+        final decoded = jsonDecode(skillsRaw);
+        if (decoded is List) {
+          parsedSkills = decoded.map((e) => e.toString()).toList();
+        }
+      }
+    } catch (e) {
+      print('Error parsing skills from local DB map: $e');
+    }
+
+    return ProjectEntity(
+      id: map['id'] ?? '',
+      createdAt: createdAtDate,
+      createdById: map['created_by_id'] ?? '',
+      title: map['title'] ?? '',
+      description: map['description'] ?? '',
+      skills: parsedSkills,
+      imgUrl: map['img_url'] ?? 'assets/images/dummy_post_img.jpeg',
+    );
+  }
+
   Map<String, dynamic> toMap() {
     return {
       'id': id,
