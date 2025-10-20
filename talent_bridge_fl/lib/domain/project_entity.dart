@@ -15,6 +15,7 @@ class ProjectEntity {
   final String description;
   final List<String> skills;
   final String? imgUrl;
+  final bool isFavorite;
 
   ProjectEntity({
     String? id,
@@ -25,6 +26,7 @@ class ProjectEntity {
     required this.description,
     required this.skills,
     this.imgUrl,
+    this.isFavorite = false,
   }) : id = id ?? _uuid.v4().toString();
 
   factory ProjectEntity.fromMap(Map<String, dynamic> map) {
@@ -80,6 +82,7 @@ class ProjectEntity {
       description: map['description'] ?? '',
       skills: parsedSkills,
       imgUrl: map['img_url'] ?? 'assets/images/dummy_post_img.jpeg',
+      isFavorite: map['is_favorite'] == 1,
     );
   }
 

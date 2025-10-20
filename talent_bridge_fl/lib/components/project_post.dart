@@ -36,6 +36,29 @@ class ProjectPost extends StatelessWidget {
     }
   }
 
+  Future<void> onRemoveProject(BuildContext context) async {
+    try {
+      await dbService.removeSavedProject(project.id!);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(
+          SnackBar(content: Text('Project removed from favorites')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(
+          SnackBar(content: Text('Error removing project from favorites')),
+        );
+      }
+    }
+  }
+
   void showSaveModal(BuildContext context) {
     showDialog(
       context: context,
@@ -56,6 +79,33 @@ class ProjectPost extends StatelessWidget {
               Navigator.of(context).pop();
             },
             label: Text("Save"),
+            icon: Icon(Icons.save),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void showRemoveModal(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Remove project"),
+        content: Text("Remove this project from your favorites?"),
+        actions: [
+          OutlinedButton.icon(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            label: Text("Cancel"),
+            icon: Icon(Icons.cancel),
+          ),
+          FilledButton.icon(
+            onPressed: () {
+              onRemoveProject(context);
+              Navigator.of(context).pop();
+            },
+            label: Text("Remove"),
             icon: Icon(Icons.save),
           ),
         ],
@@ -128,17 +178,23 @@ class ProjectPost extends StatelessWidget {
             Wrap(
               spacing: 4,
               children: [
-                TextButton(onPressed: () {}, child: Text('Comentarios')),
-                TextButton(
-                  onPressed: () => showSaveModal(context),
-                  child: Text('Guardar'),
-                ),
+                TextButton(onPressed: () {}, child: Text('Comments')),
+                if (!project.isFavorite)
+                  TextButton(
+                    onPressed: () => showSaveModal(context),
+                    child: Text('Save'),
+                  ),
+                if (project.isFavorite)
+                  TextButton(
+                    onPressed: () => showRemoveModal(context),
+                    child: Text('Remove'),
+                  ),
                 TextButton(
                   onPressed: () {
                     final currentUserId = firebaseService.currentUid() ?? "";
                     showApplyModal(currentUserId, project.id ?? "");
                   },
-                  child: Text('Aplicar'),
+                  child: Text('Apply'),
                 ),
               ],
             ),

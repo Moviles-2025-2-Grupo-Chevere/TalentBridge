@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:sqflite/sqflite.dart' as sql;
 import 'package:sqflite/sqlite_api.dart';
 import 'package:path/path.dart' as path;
@@ -38,6 +40,24 @@ class DbService {
     final db = await _getDB();
     try {
       await db.insert(projectTable, p.toLocalDbMap(true));
+    } catch (e) {
+      throw Error();
+    }
+  }
+
+  Future<void> removeSavedProject(String pId) async {
+    final db = await _getDB();
+    print("Deleting project with id $pId");
+    try {
+      final result = await db.delete(
+        projectTable,
+        where: "id = ?",
+        whereArgs: [pId],
+      );
+      if (result != 1) {
+        print("Project was not deleted");
+        throw Error();
+      }
     } catch (e) {
       throw Error();
     }
