@@ -358,6 +358,7 @@ class FirebaseService {
     }
   }
 
+  // ---------- CV Upload and View ----------
   /// Upload multiple CV files for a user
   Future<List<TaskSnapshot>> uploadMultipleCVs(List<File> files) async {
     final uid = _auth.currentUser?.uid;
@@ -390,6 +391,31 @@ class FirebaseService {
     } catch (e) {
       print('Error uploading CVs: $e');
       rethrow;
+    }
+  }
+
+  // Get a list of all CV download URLs for the current user
+  Future<List<String>> getCVUrls() async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) return [];
+
+    try {
+      final ListResult result = await _storage.ref().child('cv/$uid').listAll();
+
+      // Get download URLs for all items
+      final List<Future<String>> urlFutures = result.items
+          .map((ref) => ref.getDownloadURL())
+          .toList();
+      return await Future.wait(urlFutures);
+    } on FirebaseException catch (e) {
+      if (e.code == 'object-not-found') {
+        print('No CVs found for user');
+        return [];
+      }
+      rethrow;
+    } catch (e) {
+      print('Error getting CV URLs: $e');
+      return [];
     }
   }
 

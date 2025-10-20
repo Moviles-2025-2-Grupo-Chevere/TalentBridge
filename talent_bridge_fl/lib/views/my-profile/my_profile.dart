@@ -13,6 +13,7 @@ import 'package:talent_bridge_fl/services/profile_pic_storage.dart';
 import 'package:talent_bridge_fl/views/add_project/add_project.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 const darkBlue = Color(0xFF3E6990);
 
@@ -169,6 +170,135 @@ class _MyProfileState extends State<MyProfile> {
           content: Text('Error uploading CVs: $e'),
           backgroundColor: Colors.red,
         ),
+      );
+    }
+  }
+
+  // Get a list of all CV download URLs for the current user
+  void _viewUploadedCVs() async {
+    try {
+      // Show loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(height: 16),
+              Text('Loading your CVs...'),
+            ],
+          ),
+        ),
+      );
+
+      // Get CV URLs
+      final List<String> cvUrls = await fb.getCVUrls();
+
+      // Close loading dialog
+      if (!mounted) return;
+      Navigator.of(context).pop();
+
+      if (cvUrls.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('You have no CVs uploaded yet')),
+        );
+        return;
+      }
+
+      // Show list of CVs
+      showDialog(
+        context: context,
+        builder: (context) => AlertDialog(
+          title: const Text('Your CVs'),
+          content: SizedBox(
+            width: double.maxFinite,
+            child: ListView.builder(
+              shrinkWrap: true,
+              itemCount: cvUrls.length,
+              itemBuilder: (context, index) {
+                return ListTile(
+                  leading: const Icon(Icons.picture_as_pdf),
+                  title: Text('CV ${index + 1}'),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.open_in_new),
+                        onPressed: () {
+                          _openPdf(cvUrls[index]);
+                        },
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete),
+                        onPressed: () {
+                          _deletePdf(cvUrls[index], index);
+                          Navigator.pop(context); // Close dialog after delete
+                          _viewUploadedCVs(); // Refresh the list
+                        },
+                      ),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _pickAndUploadCVs();
+              },
+              child: const Text('Upload More'),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.of(context).pop(); // Close loading dialog if open
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error loading CVs: $e')),
+      );
+    }
+  }
+
+  // Open PDF using URL launcher
+  Future<void> _openPdf(String url) async {
+    try {
+      final Uri pdfUrl = Uri.parse(url);
+      if (!await launchUrl(pdfUrl, mode: LaunchMode.externalApplication)) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open PDF')),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error opening PDF: $e')),
+      );
+    }
+  }
+
+  // Delete PDF from Firebase Storage
+  Future<void> _deletePdf(String url, int index) async {
+    try {
+      // Extract the storage reference from the URL
+      final ref = FirebaseStorage.instance.refFromURL(url);
+      await ref.delete();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('CV ${index + 1} deleted successfully')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error deleting CV: $e')),
       );
     }
   }
