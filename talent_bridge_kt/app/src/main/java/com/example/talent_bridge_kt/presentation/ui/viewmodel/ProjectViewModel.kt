@@ -7,10 +7,11 @@ import com.example.talent_bridge_kt.data.local.entities.ProjectEntity
 import com.example.talent_bridge_kt.data.repository.FirestoreProjectsRepository
 import com.example.talent_bridge_kt.data.repository.ProjectRepository
 import com.example.talent_bridge_kt.domain.model.Project
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
-import com.google.firebase.Timestamp
 
 class ProjectsViewModel(
     app: Application,
@@ -18,12 +19,15 @@ class ProjectsViewModel(
     private val localRepo: ProjectRepository = ProjectRepository(app)
 ) : AndroidViewModel(app) {
 
-    // --- Firestore data ---
-    val projects = MutableStateFlow<List<Project>>(emptyList())
-    val loading = MutableStateFlow(false)
-    val error = MutableStateFlow<String?>(null)
+    // Usuario actual (si no hay sesión, usa "guest")
+    private val userId: String = FirebaseAuth.getInstance().currentUser?.uid ?: "guest"
 
-    // --- Local favorites ---
+    // Firestore
+    val projects = MutableStateFlow<List<Project>>(emptyList())
+    val loading  = MutableStateFlow(false)
+    val error    = MutableStateFlow<String?>(null)
+
+    // Room (favoritos del usuario)
     private val _savedProjects = MutableStateFlow<List<ProjectEntity>>(emptyList())
     val savedProjects: StateFlow<List<ProjectEntity>> = _savedProjects
 
@@ -32,7 +36,7 @@ class ProjectsViewModel(
         loadSavedProjects()
     }
 
-    // 🔥 Fetch from Firestore
+    /* -------- Firestore -------- */
     fun refresh() = viewModelScope.launch {
         loading.value = true
         error.value = null
@@ -45,49 +49,52 @@ class ProjectsViewModel(
         }
     }
 
-    // 💾 Load saved (local) projects
+    /* ---------- Room ----------- */
     fun loadSavedProjects() {
         viewModelScope.launch {
-            _savedProjects.value = localRepo.getSavedProjects()
+            localRepo.getSavedProjects(userId).collectLatest { list ->
+                _savedProjects.value = list
+            }
         }
     }
 
     fun toggleFavorite(project: Project) {
         viewModelScope.launch {
-            val entity = project.toEntity()
-            if (localRepo.isProjectSaved(project.id)) {
-                localRepo.removeProject(project.id)
+            val entity = project.toEntity(userId)
+            if (localRepo.isProjectSaved(project.id, userId)) {
+                localRepo.removeProject(project.id, userId)
             } else {
                 localRepo.saveProject(entity)
             }
-            loadSavedProjects()
+            // collectLatest actualizará _savedProjects automáticamente
         }
     }
 
-    suspend fun isFavorite(projectId: String): Boolean {
-        return localRepo.isProjectSaved(projectId)
-    }
+    suspend fun isFavorite(projectId: String): Boolean =
+        localRepo.isProjectSaved(projectId, userId)
 
-    // 🔄 Extension mapper to convert Project → ProjectEntity
-    private fun Project.toEntity() = ProjectEntity(
+    /* --------- Mappers ---------- */
+    private fun Project.toEntity(userId: String) = ProjectEntity(
         id = id,
         title = title,
         subtitle = subtitle,
         description = description,
-        skills = skills.joinToString(","), // lista como texto
+        skills = skills.joinToString(","), // CSV
         imgUrl = imgUrl,
         createdAt = createdAt?.toDate()?.toString(),
-        createdById = createdById
+        createdById = createdById,
+        userId = userId
     )
-    // (Opcional) Mapper inverso si más adelante quieres pintar los guardados como Project
+
+    // (opcional) para reusar UI con entities
     private fun ProjectEntity.toDomain() = Project(
         id = id,
         title = title,
         subtitle = subtitle,
         description = description,
-        skills = if (skills.isNullOrBlank()) emptyList() else skills.split(","),
+        skills = if (skills.isBlank()) emptyList() else skills.split(",").map { it.trim() },
         imgUrl = imgUrl,
-        createdAt = null, // si quieres, parsea el String a Date y llévalo a Timestamp
+        createdAt = null,
         createdById = createdById
     )
 }

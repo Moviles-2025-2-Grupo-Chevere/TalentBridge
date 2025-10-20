@@ -307,7 +307,7 @@ private fun ProjectCardSimple(
                     containerColor = Color.White,
                     contentColor = TitleGreen
                 )
-            ) { Text("Save", fontSize = 12.sp) }
+            ) { Text("Comments", fontSize = 12.sp) }
 
             OutlinedButton(
                 onClick = onApplyClick,

@@ -5,6 +5,7 @@ import androidx.room.Room
 import com.example.talent_bridge_kt.data.local.AppDatabase
 import com.example.talent_bridge_kt.data.local.entities.ProjectEntity
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.withContext
 
 class ProjectRepository(context: Context) {
@@ -13,7 +14,10 @@ class ProjectRepository(context: Context) {
         context.applicationContext,
         AppDatabase::class.java,
         "projects_db"
-    ).build()
+    )
+        // Útil en desarrollo tras cambiar el schema; quítalo si agregas migraciones
+        .fallbackToDestructiveMigration()
+        .build()
 
     private val projectDao = db.projectDao()
 
@@ -21,15 +25,13 @@ class ProjectRepository(context: Context) {
         projectDao.insert(project)
     }
 
-    suspend fun removeProject(id: String) = withContext(Dispatchers.IO) {
-        projectDao.deleteById(id)
+    suspend fun removeProject(id: String, userId: String) = withContext(Dispatchers.IO) {
+        projectDao.deleteById(id, userId)
     }
 
-    suspend fun getSavedProjects(): List<ProjectEntity> = withContext(Dispatchers.IO) {
-        projectDao.getAll()
-    }
+    fun getSavedProjects(userId: String): Flow<List<ProjectEntity>> =
+        projectDao.getAllForUser(userId)
 
-    suspend fun isProjectSaved(id: String): Boolean = withContext(Dispatchers.IO) {
-        projectDao.findById(id) != null
-    }
+    suspend fun isProjectSaved(id: String, userId: String): Boolean =
+        withContext(Dispatchers.IO) { projectDao.findById(id, userId) != null }
 }

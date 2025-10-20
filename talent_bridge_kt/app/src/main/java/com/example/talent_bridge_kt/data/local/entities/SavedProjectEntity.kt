@@ -13,4 +13,6 @@ data class ProjectEntity(
     val imgUrl: String?,
     val createdAt: String?,
     val createdById: String,
+    val userId: String
+,
 )
