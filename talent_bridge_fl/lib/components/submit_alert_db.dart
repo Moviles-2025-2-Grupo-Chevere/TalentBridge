@@ -6,11 +6,11 @@ class SubmitAlertDb extends StatelessWidget {
   final Function onConfirm;
 
   const SubmitAlertDb({
-    Key? key,
+    super.key,
     required this.userId,
     required this.projectId,
     required this.onConfirm,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
