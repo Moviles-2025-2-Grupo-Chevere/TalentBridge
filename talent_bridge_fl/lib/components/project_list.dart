@@ -5,13 +5,44 @@ import 'package:talent_bridge_fl/domain/project_entity.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
 
 class ProjectList extends StatelessWidget {
-  const ProjectList({super.key, required this.projects});
+  ProjectList({super.key, required this.projects});
+  final firebaseService = FirebaseService();
 
   final List<ProjectEntity> projects;
 
+  void submitProjectApplication(
+    BuildContext context,
+    String userId,
+    String projectId,
+  ) async {
+    try {
+      await firebaseService.addProjectToApplications(
+        userId: userId,
+        projectId: projectId,
+      );
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Application submitted successfully!'),
+          ),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error submitting application: $e'),
+          ),
+        );
+      }
+    }
+    if (context.mounted) {
+      Navigator.of(context).pop();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final firebaseService = FirebaseService();
     return ListView.builder(
       itemCount: projects.length,
       itemBuilder: (ctx, index) => Dismissible(
@@ -19,35 +50,18 @@ class ProjectList extends StatelessWidget {
         onDismissed: (direction) {},
         child: ProjectPost(
           project: projects[index],
+          onSaveProject: () {
+            print("Project saved!!");
+          },
           showApplyModal: (String userId, String projectId) {
             showDialog(
               context: context,
-              builder: (BuildContext context) {
-                return SubmitAlertDb(
-                  userId: userId,
-                  projectId: projectId,
-                  onConfirm: () async {
-                    try {
-                      await firebaseService.addProjectToApplications(
-                        userId: userId,
-                        projectId: projectId,
-                      );
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Application submitted successfully!'),
-                        ),
-                      );
-                    } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Error submitting application: $e'),
-                        ),
-                      );
-                    }
-                    Navigator.of(context).pop(); // Close the dialog
-                  },
-                );
-              },
+              builder: (BuildContext dialogContext) => SubmitAlertDb(
+                userId: userId,
+                projectId: projectId,
+                onConfirm: () =>
+                    submitProjectApplication(context, userId, projectId),
+              ),
             );
           },
         ),

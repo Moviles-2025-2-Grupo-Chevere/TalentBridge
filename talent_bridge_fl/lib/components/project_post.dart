@@ -1,4 +1,3 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:talent_bridge_fl/domain/project_entity.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
@@ -9,15 +8,39 @@ class ProjectPost extends StatelessWidget {
     super.key,
     required this.project,
     required this.showApplyModal,
+    required this.onSaveProject,
   });
 
   final ProjectEntity project;
   final void Function(String, String) showApplyModal;
+  final void Function() onSaveProject;
+
+  void showSaveModal(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Save project"),
+        content: Text("Save this project in your favorites?"),
+        actions: [
+          OutlinedButton.icon(
+            onPressed: () {},
+            label: Text("Cancel"),
+            icon: Icon(Icons.cancel),
+          ),
+          FilledButton.icon(
+            onPressed: () {},
+            label: Text("Save"),
+            icon: Icon(Icons.save),
+          ),
+        ],
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final firebaseService = FirebaseService();
     var profilePictureUrl = project.createdBy?.photoUrl;
-    final _firebaseService = FirebaseService();
     return Card(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
@@ -80,10 +103,13 @@ class ProjectPost extends StatelessWidget {
               spacing: 4,
               children: [
                 TextButton(onPressed: () {}, child: Text('Comentarios')),
-                TextButton(onPressed: () {}, child: Text('Guardar')),
+                TextButton(
+                  onPressed: () => showSaveModal(context),
+                  child: Text('Guardar'),
+                ),
                 TextButton(
                   onPressed: () {
-                    final currentUserId = _firebaseService.currentUid() ?? "";
+                    final currentUserId = firebaseService.currentUid() ?? "";
                     showApplyModal(currentUserId, project.id ?? "");
                   },
                   child: Text('Aplicar'),
