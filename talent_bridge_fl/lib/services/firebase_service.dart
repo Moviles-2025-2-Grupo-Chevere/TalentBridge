@@ -358,16 +358,37 @@ class FirebaseService {
     }
   }
 
-  Future<TaskSnapshot?> uploadCV(File image) async {
-    var uid = _auth.currentUser?.uid;
-    if (uid == null) return null;
-    var ref = _storage.ref().child('cv/$uid');
+  /// Upload multiple CV files for a user
+  Future<List<TaskSnapshot>> uploadMultipleCVs(List<File> files) async {
+    final uid = _auth.currentUser?.uid;
+    if (uid == null) return [];
+
+    // Create a list of futures for all uploads
+    final List<Future<TaskSnapshot>> uploadFutures = [];
+
+    // Create unique filenames for each document
+    for (int i = 0; i < files.length; i++) {
+      final File file = files[i];
+      final filename = '${DateTime.now().millisecondsSinceEpoch}_$i.pdf';
+      final ref = _storage.ref().child('cv/$uid/$filename');
+
+      // Add the upload task to our list
+      uploadFutures.add(ref.putFile(file));
+    }
+
     try {
-      return await ref.putFile(image);
-    } on firebase_core.FirebaseException catch (e) {
-      // ...
-      rethrow;
+      // Wait for all uploads to complete in parallel
+      final results = await Future.wait(uploadFutures);
+
+      // Log the upload event
+      await logEvent('cv_upload', {
+        'count': files.length,
+        'timestamp': DateTime.now().toIso8601String(),
+      });
+
+      return results;
     } catch (e) {
+      print('Error uploading CVs: $e');
       rethrow;
     }
   }
