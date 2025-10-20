@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:talent_bridge_fl/domain/project_entity.dart';
+import 'package:talent_bridge_fl/services/db_service.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
 import 'package:talent_bridge_fl/views/user-profile/user_profile.dart';
 
@@ -8,12 +9,32 @@ class ProjectPost extends StatelessWidget {
     super.key,
     required this.project,
     required this.showApplyModal,
-    required this.onSaveProject,
   });
 
   final ProjectEntity project;
   final void Function(String, String) showApplyModal;
-  final void Function() onSaveProject;
+  final dbService = const DbService();
+
+  Future<void> onSaveProject(BuildContext context) async {
+    try {
+      await dbService.insertSavedProject(project);
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Project saved as favorite')));
+      }
+    } catch (e) {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).clearSnackBars();
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(
+          SnackBar(content: Text('Error saving project to favorites')),
+        );
+      }
+    }
+  }
 
   void showSaveModal(BuildContext context) {
     showDialog(
@@ -23,12 +44,17 @@ class ProjectPost extends StatelessWidget {
         content: Text("Save this project in your favorites?"),
         actions: [
           OutlinedButton.icon(
-            onPressed: () {},
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
             label: Text("Cancel"),
             icon: Icon(Icons.cancel),
           ),
           FilledButton.icon(
-            onPressed: () {},
+            onPressed: () {
+              onSaveProject(context);
+              Navigator.of(context).pop();
+            },
             label: Text("Save"),
             icon: Icon(Icons.save),
           ),

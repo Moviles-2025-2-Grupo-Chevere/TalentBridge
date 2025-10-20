@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:talent_bridge_fl/domain/user_entity.dart';
 import 'package:uuid/uuid.dart';
@@ -55,6 +57,19 @@ class ProjectEntity {
       'description': description,
       'skills': List<String>.from(skills),
       'imgUrl': imgUrl,
+    };
+  }
+
+  Map<String, dynamic> toLocalDbMap(bool isFavorite) {
+    return {
+      'id': id,
+      'created_at': createdAt?.toIso8601String(),
+      'created_by_id': createdById,
+      'title': title,
+      'description': description,
+      'skills': jsonEncode(skills),
+      'img_url': imgUrl,
+      'is_favorite': isFavorite ? 1 : 0,
     };
   }
 }

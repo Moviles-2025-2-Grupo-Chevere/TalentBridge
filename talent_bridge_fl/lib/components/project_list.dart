@@ -50,9 +50,6 @@ class ProjectList extends StatelessWidget {
         onDismissed: (direction) {},
         child: ProjectPost(
           project: projects[index],
-          onSaveProject: () {
-            print("Project saved!!");
-          },
           showApplyModal: (String userId, String projectId) {
             showDialog(
               context: context,
