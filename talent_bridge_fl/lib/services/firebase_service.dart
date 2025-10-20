@@ -358,6 +358,20 @@ class FirebaseService {
     }
   }
 
+  Future<TaskSnapshot?> uploadCV(File image) async {
+    var uid = _auth.currentUser?.uid;
+    if (uid == null) return null;
+    var ref = _storage.ref().child('cv/$uid');
+    try {
+      return await ref.putFile(image);
+    } on firebase_core.FirebaseException catch (e) {
+      // ...
+      rethrow;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
   Future<String?> getPFPUrl() async {
     var uid = _auth.currentUser?.uid;
     if (uid == null) return null;
