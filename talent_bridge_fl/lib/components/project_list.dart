@@ -4,11 +4,18 @@ import 'package:talent_bridge_fl/components/submit_alert_db.dart';
 import 'package:talent_bridge_fl/domain/project_entity.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
 
-class ProjectList extends StatelessWidget {
-  ProjectList({super.key, required this.projects});
-  final firebaseService = FirebaseService();
+class ProjectList extends StatefulWidget {
+  const ProjectList({super.key, required this.projects});
 
   final List<ProjectEntity> projects;
+
+  @override
+  State<ProjectList> createState() => _ProjectListState();
+}
+
+class _ProjectListState extends State<ProjectList> {
+  final firebaseService = FirebaseService();
+  late final List<ProjectEntity> projects;
 
   void submitProjectApplication(
     BuildContext context,
@@ -41,6 +48,18 @@ class ProjectList extends StatelessWidget {
     }
   }
 
+  void removeFromList(ProjectEntity p) {
+    setState(() {
+      projects.removeWhere((element) => element.id == p.id);
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    projects = widget.projects;
+  }
+
   @override
   Widget build(BuildContext context) {
     return ListView.builder(
@@ -50,6 +69,7 @@ class ProjectList extends StatelessWidget {
         onDismissed: (direction) {},
         child: ProjectPost(
           project: projects[index],
+          removeFromList: removeFromList,
           showApplyModal: (String userId, String projectId) {
             showDialog(
               context: context,

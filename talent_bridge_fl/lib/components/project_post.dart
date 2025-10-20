@@ -9,27 +9,28 @@ class ProjectPost extends StatelessWidget {
     super.key,
     required this.project,
     required this.showApplyModal,
+    required this.removeFromList,
   });
 
   final ProjectEntity project;
   final void Function(String, String) showApplyModal;
+  final void Function(ProjectEntity) removeFromList;
   final dbService = const DbService();
 
   Future<void> onSaveProject(BuildContext context) async {
+    var scaffoldMessenger = ScaffoldMessenger.of(context);
     try {
       await dbService.insertSavedProject(project);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).clearSnackBars();
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text('Project saved as favorite')));
+        scaffoldMessenger.clearSnackBars();
+        scaffoldMessenger.showSnackBar(
+          SnackBar(content: Text('Project saved as favorite')),
+        );
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).clearSnackBars();
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(
+        scaffoldMessenger.clearSnackBars();
+        scaffoldMessenger.showSnackBar(
           SnackBar(content: Text('Error saving project to favorites')),
         );
       }
@@ -37,22 +38,20 @@ class ProjectPost extends StatelessWidget {
   }
 
   Future<void> onRemoveProject(BuildContext context) async {
+    var scaffoldMessenger = ScaffoldMessenger.of(context);
     try {
       await dbService.removeSavedProject(project.id!);
+      removeFromList(project);
       if (context.mounted) {
-        ScaffoldMessenger.of(context).clearSnackBars();
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(
+        scaffoldMessenger.clearSnackBars();
+        scaffoldMessenger.showSnackBar(
           SnackBar(content: Text('Project removed from favorites')),
         );
       }
     } catch (e) {
       if (context.mounted) {
-        ScaffoldMessenger.of(context).clearSnackBars();
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(
+        scaffoldMessenger.clearSnackBars();
+        scaffoldMessenger.showSnackBar(
           SnackBar(content: Text('Error removing project from favorites')),
         );
       }
