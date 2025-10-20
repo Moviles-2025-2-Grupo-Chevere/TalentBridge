@@ -88,6 +88,7 @@ class _MyProfileState extends State<MyProfile> {
   // Handle PDF selection and upload
   Future<void> _pickAndUploadCVs() async {
     try {
+      print('Picking PDF files...');
       // Pick multiple PDF files
       FilePickerResult? result = await FilePicker.platform.pickFiles(
         type: FileType.custom,
@@ -381,9 +382,7 @@ class _MyProfileState extends State<MyProfile> {
                   Expanded(
                     child: AddElementWidget(
                       title: 'Agregar CV',
-                      onTap: () {
-                        // Add CV action
-                      },
+                      onTap: _pickAndUploadCVs,
                     ),
                   ),
                   const SizedBox(width: 16.0),
