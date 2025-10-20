@@ -510,9 +510,23 @@ class _MyProfileState extends State<MyProfile> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
-                    child: AddElementWidget(
-                      title: 'Agregar CV',
-                      onTap: _pickAndUploadCVs,
+                    child: Column(
+                      children: [
+                        AddElementWidget(
+                          title: 'Agregar CV',
+                          onTap: _pickAndUploadCVs,
+                        ),
+                        const SizedBox(height: 8),
+                        TextButton(
+                          onPressed: _viewUploadedCVs,
+                          child: const Text(
+                            'View My CVs',
+                            style: TextStyle(
+                              color: Colors.blue,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   const SizedBox(width: 16.0),
