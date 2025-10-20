@@ -6,6 +6,7 @@ import 'package:talent_bridge_fl/views/leader_feed/leader_feed.dart';
 import 'package:talent_bridge_fl/views/login/login.dart';
 import 'package:talent_bridge_fl/views/main-feed/main_feed.dart';
 import 'package:talent_bridge_fl/views/my-profile/my_profile.dart';
+import 'package:talent_bridge_fl/views/saved-projects/saved_projects.dart';
 // import 'package:talent_bridge_fl/views/project/project_view.dart';
 // import 'package:talent_bridge_fl/views/saved-projects/saved_projects.dart';
 import 'package:talent_bridge_fl/views/search/search.dart';
@@ -38,6 +39,23 @@ class _HomeViewState extends State<HomeView> {
         icon: Icon(Icons.home_outlined),
         label: "Home",
         actions: [
+          IconButton(
+            icon: Icon(Icons.bookmark_outline),
+            onPressed: () {
+              Navigator.of(
+                context,
+              ).push(
+                MaterialPageRoute(
+                  builder: (ctx) => Scaffold(
+                    appBar: AppBar(
+                      title: Text('Saved Projects'),
+                    ),
+                    body: SavedProjects(),
+                  ),
+                ),
+              );
+            },
+          ),
           IconButton(
             icon: Icon(Icons.people_outline),
             onPressed: () {
