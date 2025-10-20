@@ -36,9 +36,11 @@ class _MyProfileState extends State<MyProfile> {
 
   Future<void> getUserDocument() async {
     var user = await fb.getCurrentUserEntity();
-    setState(() {
-      userEntity = user;
-    });
+    if (context.mounted) {
+      setState(() {
+        userEntity = user;
+      });
+    }
   }
 
   void getPfP() {
