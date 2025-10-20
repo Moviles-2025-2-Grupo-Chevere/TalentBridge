@@ -11,6 +11,8 @@ import 'package:talent_bridge_fl/domain/user_entity.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
 import 'package:talent_bridge_fl/services/profile_pic_storage.dart';
 import 'package:talent_bridge_fl/views/add_project/add_project.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 
 const darkBlue = Color(0xFF3E6990);
 
@@ -81,6 +83,93 @@ class _MyProfileState extends State<MyProfile> {
         );
       },
     );
+  }
+
+  // Handle PDF selection and upload
+  Future<void> _pickAndUploadCVs() async {
+    try {
+      // Pick multiple PDF files
+      FilePickerResult? result = await FilePicker.platform.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
+        allowMultiple: true,
+      );
+
+      if (result == null || result.files.isEmpty) {
+        // User canceled the picker
+        return;
+      }
+
+      // Show a loading indicator
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Preparing to upload PDFs...')),
+      );
+
+      // Convert PlatformFile objects to File objects
+      final List<File> files = result.paths
+          .where((path) => path != null)
+          .map((path) => File(path!))
+          .toList();
+
+      if (files.isEmpty) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('No valid files selected')),
+        );
+        return;
+      }
+
+      // Show upload progress dialog
+      if (!mounted) return;
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: const Text('Uploading CVs'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const CircularProgressIndicator(),
+                const SizedBox(height: 16),
+                Text('Uploading ${files.length} file(s)...'),
+              ],
+            ),
+          );
+        },
+      );
+
+      // Upload files concurrently
+      final List<TaskSnapshot> results = await fb.uploadMultipleCVs(files);
+
+      // Close the progress dialog
+      if (!mounted) return;
+      Navigator.of(context).pop();
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Successfully uploaded ${results.length} CVs'),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      // Update portfolio timestamp
+      await fb.updateLastPortfolioUpdate();
+    } catch (e) {
+      // Close the progress dialog if it's open
+      if (!mounted) return;
+      Navigator.of(context).pop();
+
+      // Show error message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error uploading CVs: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   // Take photo using system camera
