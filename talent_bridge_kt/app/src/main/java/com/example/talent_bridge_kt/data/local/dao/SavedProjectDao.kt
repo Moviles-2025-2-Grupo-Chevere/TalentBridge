@@ -1,29 +1,23 @@
-// data/local/dao/SavedProjectDao.kt
 package com.example.talent_bridge_kt.data.local.dao
 
-import androidx.room.Dao
-import androidx.room.Delete
-import androidx.room.Insert
-import androidx.room.OnConflictStrategy
-import androidx.room.Query
-import com.example.talent_bridge_kt.data.local.entity.SavedProjectEntity
-import kotlinx.coroutines.flow.Flow
+import androidx.room.*
+import com.example.talent_bridge_kt.data.local.entities.ProjectEntity
 
 @Dao
-interface SavedProjectDao {
+interface ProjectDao {
+
+    @Query("SELECT * FROM saved_projects")
+    suspend fun getAll(): List<ProjectEntity>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
-    suspend fun upsert(entity: SavedProjectEntity)
+    suspend fun insert(project: ProjectEntity)
 
-    @Query("DELETE FROM saved_projects WHERE id = :projectId")
-    suspend fun deleteById(projectId: String)
+    @Delete
+    suspend fun delete(project: ProjectEntity)
 
-    @Query("SELECT * FROM saved_projects ORDER BY createdAtMs DESC NULLS LAST, title ASC")
-    fun getAll(): Flow<List<SavedProjectEntity>>
+    @Query("DELETE FROM saved_projects WHERE id = :id")
+    suspend fun deleteById(id: String)
 
-    @Query("SELECT id FROM saved_projects")
-    fun getAllIds(): Flow<List<String>>
-
-    @Query("SELECT EXISTS(SELECT 1 FROM saved_projects WHERE id = :projectId)")
-    fun isSaved(projectId: String): Flow<Boolean>
+    @Query("SELECT * FROM saved_projects WHERE id = :id LIMIT 1")
+    suspend fun findById(id: String): ProjectEntity?
 }

@@ -1,10 +1,12 @@
 package com.example.talent_bridge_kt.presentation.ui.screens
 
+import android.app.Application
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -13,23 +15,48 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.*
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Surface
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.collectAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.talent_bridge_kt.R
+import com.example.talent_bridge_kt.data.local.entities.ProjectEntity
+import com.example.talent_bridge_kt.domain.model.Project
+import com.example.talent_bridge_kt.presentation.ui.viewmodel.ProjectsViewModel
 import com.example.talent_bridge_kt.ui.theme.AccentYellow
 import com.example.talent_bridge_kt.ui.theme.CreamBackground
 import com.example.talent_bridge_kt.ui.theme.LinkGreen
 import com.example.talent_bridge_kt.ui.theme.TitleGreen
+
+/* ======================= Factory para el ViewModel ======================= */
+
+private fun savedVmFactory(app: Application) =
+    object : ViewModelProvider.Factory {
+        @Suppress("UNCHECKED_CAST")
+        override fun <T : ViewModel> create(modelClass: Class<T>): T {
+            return ProjectsViewModel(app) as T
+        }
+    }
 
 /* ======================= Pantalla ======================= */
 
@@ -43,10 +70,25 @@ fun SavedProjectsScreen(
     onSearch: () -> Unit = {},
     onFav: () -> Unit = {},
 ) {
+    // Obtener VM con Application (igual que en tu feed)
+    val context = LocalContext.current
+    val vm: ProjectsViewModel = viewModel(
+        factory = savedVmFactory(context.applicationContext as Application)
+    )
+
+    // Observa los guardados desde Room
+    val savedList by vm.savedProjects.collectAsState()
+    val nonEmptySaved = remember(savedList) { savedList.isNotEmpty() }
+
     Surface(color = Color.White, modifier = Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
 
-            TopBarCustom(height = 56.dp, onBack = onBack, onMenu = onOpenMenu, onDrawer = onOpenDrawer)
+            TopBarCustom(
+                height = 56.dp,
+                onBack = onBack,
+                onMenu = onOpenMenu,
+                onDrawer = onOpenDrawer
+            )
 
             LazyColumn(
                 modifier = Modifier
@@ -68,27 +110,33 @@ fun SavedProjectsScreen(
                     )
                 }
 
-                // ---- Card 1 ----
-                item {
-                    SavedProjectCard(
-                        time = "Iniciativa 1 • 5m",
-                        title = "Buscamos Diseñadores",
-                        subtitle = "Personas interesadas en el diseño gráfico.",
-                        description = "Esperamos una disponibilidad de 2 horas semanales.",
-                        tags = listOf("Diseño", "Dibujo", "2 Horas")
-                    )
-                }
+                if (!nonEmptySaved) {
+                    item {
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 24.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text("You haven’t saved any projects yet.", color = Color.Gray)
+                        }
+                    }
+                } else {
+                    items(savedList, key = { it.id }) { e ->
+                        // Mapear skills (CSV) a lista para chips
+                        val tags = remember(e.skills) {
+                            e.skills.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+                        }
 
-                // ---- Card 2 ----
-                item {
-                    SavedProjectCard(
-                        time = "Iniciativa 2 • 10m",
-                        title = "Buscamos Diseñadores",
-                        subtitle = "Personas interesadas en el diseño gráfico.",
-                        description = "Esperamos una disponibilidad de 2 horas semanales.",
-                        tags = listOf("Diseño", "Dibujo", "2 Horas"),
-                        showSecondRowChips = true
-                    )
+                        SavedProjectCard(
+                            time = e.createdAt ?: "—",
+                            title = e.title,
+                            subtitle = e.subtitle ?: "",
+                            description = e.description,
+                            tags = tags,
+                            onRemove = { vm.toggleFavorite(e.toDomain()) } // desmarca favorito
+                        )
+                    }
                 }
 
                 item { Spacer(Modifier.height(8.dp)) }
@@ -113,7 +161,7 @@ private fun SavedProjectCard(
     subtitle: String,
     description: String,
     tags: List<String>,
-    showSecondRowChips: Boolean = false
+    onRemove: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -132,31 +180,25 @@ private fun SavedProjectCard(
                 contentScale = ContentScale.Crop
             )
             Spacer(Modifier.width(8.dp))
-            Text(text = time, fontSize = 12.sp, color = Color.Gray)
+            Text(text = "iniciativa • $time", fontSize = 12.sp, color = Color.Gray)
         }
 
         Spacer(Modifier.height(8.dp))
         Text(title, color = TitleGreen, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
-        Text(subtitle, fontSize = 12.sp, color = Color.DarkGray)
+        if (subtitle.isNotBlank()) {
+            Text(subtitle, fontSize = 12.sp, color = Color.DarkGray)
+        }
         Spacer(Modifier.height(8.dp))
         Text(description, fontSize = 12.sp, color = Color.DarkGray)
 
-        // Chips fila 1
-        Spacer(Modifier.height(10.dp))
-        Row(
-            horizontalArrangement = Arrangement.Center,
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            tags.forEach { ChipTag(it) }
-        }
-        // Chips fila 2 opcional (para imitar tu segunda card)
-        if (showSecondRowChips) {
+        // Chips (skills)
+        if (tags.isNotEmpty()) {
             Spacer(Modifier.height(10.dp))
             Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp, Alignment.CenterHorizontally),
+                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
                 modifier = Modifier.fillMaxWidth()
             ) {
-                ChipTag("Diseño"); ChipTag("Diseño")
+                tags.forEach { ChipTag(it) }
             }
         }
 
@@ -173,18 +215,15 @@ private fun SavedProjectCard(
                 color = LinkGreen
             )
 
-            Text(
-                "Save",
-                fontSize = 12.sp,
-                color = TitleGreen
-            )
-            Text(
-                "Apply",
-                fontSize = 12.sp,
-                color = TitleGreen
-            )
-
-
+            // Remove (unsave)
+            OutlinedButton(
+                onClick = onRemove,
+                shape = RoundedCornerShape(20.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = TitleGreen.copy(alpha = 0.08f),
+                    contentColor = TitleGreen
+                )
+            ) { Text("Remove", fontSize = 12.sp) }
         }
     }
 }
@@ -231,7 +270,6 @@ private fun TopBarCustom(
             )
         }
 
-
         Row(
             modifier = Modifier
                 .align(Alignment.CenterEnd)
@@ -249,9 +287,7 @@ private fun TopBarCustom(
             IconButton(onClick = onDrawer) {
                 Icon(Icons.Filled.MoreVert, contentDescription = "Open drawer", tint = TitleGreen)
             }
-            Spacer(Modifier.width(4.dp))
         }
-
     }
 }
 
@@ -282,3 +318,18 @@ private fun BottomBarCustom(
         }
     }
 }
+
+/* =================== Helpers / Mappers =================== */
+
+// Mapper local para poder reutilizar toggleFavorite(Project) del ViewModel.
+// (Tu ProjectEntity guarda createdAt como String; lo dejamos en null aquí.)
+private fun ProjectEntity.toDomain(): Project = Project(
+    id = id,
+    title = title,
+    subtitle = subtitle,
+    description = description,
+    skills = if (skills.isBlank()) emptyList() else skills.split(",").map { it.trim() },
+    imgUrl = imgUrl,
+    createdAt = null,       // si quieres, puedes reconvertir a Timestamp
+    createdById = createdById
+)

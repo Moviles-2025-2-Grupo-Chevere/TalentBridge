@@ -10,6 +10,7 @@ data class Project(
     val description: String,
     val skills: List<String>,
     val imgUrl: String?,
-    val createdAt: Timestamp?,
-    val createdById: String,
+    val createdAt: com.google.firebase.Timestamp?,
+    val createdById: String
 )
+
