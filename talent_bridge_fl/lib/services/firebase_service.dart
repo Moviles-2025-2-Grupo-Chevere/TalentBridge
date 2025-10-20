@@ -10,6 +10,12 @@ import 'package:talent_bridge_fl/domain/project_entity.dart';
 import 'package:talent_bridge_fl/domain/user_entity.dart';
 
 class FirebaseService {
+  FirebaseService._internal();
+  static final FirebaseService _instance = FirebaseService._internal();
+
+  factory FirebaseService() => _instance;
+  static FirebaseService get instance => _instance;
+
   final _auth = FirebaseAuth.instance;
   final _db = FirebaseFirestore.instance;
   final _storage = FirebaseStorage.instance;
@@ -80,6 +86,12 @@ class FirebaseService {
     return querySnapshot.docs
         .map((doc) => UserEntity.fromMap(doc.data()))
         .toList();
+  }
+
+  Future<UserEntity> getUserById(String uid) async {
+    final snap = await _db.collection('users').doc(uid).get();
+    if (!snap.exists) throw Exception('User $uid not found');
+    return UserEntity.fromMap(snap.data()!);
   }
 
   // ---------------- PROJECTS ----------------

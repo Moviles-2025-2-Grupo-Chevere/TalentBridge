@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:talent_bridge_fl/domain/user_entity.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
+import 'package:talent_bridge_fl/cache/profile_cache_helper.dart';
 
 // ---- Tokens ----
 const kBg = Color(0xFFFEF7E6); // cream
@@ -12,7 +13,6 @@ const kPillRadius = 26.0; // pill look
 
 class Search extends StatefulWidget {
   const Search({super.key});
-
   @override
   State<Search> createState() => _SearchState();
 }
@@ -20,7 +20,7 @@ class Search extends StatefulWidget {
 class _SearchState extends State<Search> {
   // Search state
   final _queryCtrl = TextEditingController();
-  final _firebaseService = FirebaseService();
+  final _firebaseService = FirebaseService(); // uses your facade
 
   // User data
   List<UserEntity> _allUsers = [];
@@ -41,26 +41,27 @@ class _SearchState extends State<Search> {
   void initState() {
     super.initState();
     _loadUserData();
-    // Listen for search bar changes
     _queryCtrl.addListener(_onQueryChanged);
-    WidgetsBinding.instance.addPostFrameCallback((_) {});
   }
 
   Future<void> _loadUserData() async {
-    // Get all users
     final users = await _firebaseService.getAllUsers();
-    setState(() {
-      _allUsers = users;
-      final uid = _firebaseService.currentUid();
-      if (uid != null) {
-        for (final u in _allUsers) {
-          if (u.id == uid) {
-            _currentUser = u;
-            break;
-          }
+
+    // find current user (nullable)
+    UserEntity? me;
+    final uid = _firebaseService.currentUid();
+    if (uid != null) {
+      for (final u in users) {
+        if (u.id == uid) {
+          me = u;
+          break;
         }
       }
-      // Initial search results empty
+    }
+
+    setState(() {
+      _allUsers = users;
+      _currentUser = me;
       _searchResults = [];
     });
   }
@@ -75,11 +76,10 @@ class _SearchState extends State<Search> {
   void _onQueryChanged() {
     final q = _queryCtrl.text.trim().toLowerCase();
     if (q.isEmpty) {
-      setState(() {
-        _searchResults = [];
-      });
+      setState(() => _searchResults = []);
       return;
     }
+
     final projects = _currentUser?.projects ?? [];
     final skills = projects
         .expand((i) => i.skills)
@@ -89,36 +89,37 @@ class _SearchState extends State<Search> {
       {},
       (map, item) => map..update(item, (v) => v + 1, ifAbsent: () => 1),
     );
-    final weights = frequencies.map((s, i) => MapEntry(s, i / skills.length));
+    final weights = frequencies.map(
+      (s, i) => MapEntry(s, i / (skills.isEmpty ? 1 : skills.length)),
+    );
+
     final filteredUsers = _allUsers
-        .where((u) => u.displayName.toLowerCase().contains(q))
+        .where((u) => (u.displayName).toLowerCase().contains(q))
         .toList();
-    print('users: $filteredUsers');
+
     final Map<UserEntity, double> scores = {};
     for (var u in filteredUsers) {
       double score = 0;
-      var uSkills = (u.skillsOrTopics ?? []).map((i) => i.toLowerCase());
+      final uSkills = (u.skillsOrTopics ?? []).map((i) => i.toLowerCase());
       for (var skill in uSkills) {
         score += weights[skill] ?? 0;
       }
       scores[u] = score;
     }
     filteredUsers.sort((a, b) => -scores[a]!.compareTo(scores[b]!));
+
     setState(() {
       _userScores = scores;
       _searchResults = filteredUsers;
     });
-    print(scores);
-    print(weights);
   }
 
   void _applySearch() {
     final q = _queryCtrl.text.trim();
     if (q.isEmpty) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Buscando: "$q"')),
-    );
-    // TODO: hook real search here
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text('Searching: "$q"')));
   }
 
   @override
@@ -136,10 +137,6 @@ class _SearchState extends State<Search> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Text(
-                  //   _currentUser != null ? _currentUser!.displayName : '?',
-                  // ),
-                  // Label “Buscar”
                   Text('Search', style: labelStyle),
                   const SizedBox(height: 8),
 
@@ -155,13 +152,11 @@ class _SearchState extends State<Search> {
                             inputFormatters: [
                               LengthLimitingTextInputFormatter(100),
                             ],
-                            decoration: _pillInput(), // sin icono de lupa
+                            decoration: _pillInput(),
                           ),
                         ),
                       ),
                       const SizedBox(width: 8),
-
-                      // Botón redondo de filtros
                       _shadowWrap(
                         Material(
                           color: Colors.white,
@@ -171,7 +166,7 @@ class _SearchState extends State<Search> {
                             onTap: () =>
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                    content: Text('Filtros (pendiente)'),
+                                    content: Text('Filters (pending)'),
                                   ),
                                 ),
                             child: const Padding(
@@ -186,29 +181,25 @@ class _SearchState extends State<Search> {
 
                   const SizedBox(height: 24),
 
-                  // Search results
+                  // Search results (now using the cache-first helper)
                   if (_searchResults.isNotEmpty) ...[
                     Text('Results', style: labelStyle),
                     const SizedBox(height: 12),
                     ..._searchResults.map(
-                      (user) => SearchCard(
-                        title: user.displayName,
+                      (user) => ProfileResultTile(
+                        uid: user.id, // <-- key for cache
+                        fallbackName: user.displayName, // shown while loading
                         score: _userScores[user],
                       ),
                     ),
                     const SizedBox(height: 24),
                   ],
 
-                  // “Recientes”
+                  // Recents
                   Text('Recent searches', style: labelStyle),
                   const SizedBox(height: 12),
-
-                  // Lista de recientes (icono reloj + tarjeta pill)
                   ..._recents.map(
-                    (title) => SearchCard(
-                      title: title,
-                      isRecent: true,
-                    ),
+                    (title) => SearchCard(title: title, isRecent: true),
                   ),
                 ],
               ),
@@ -216,6 +207,83 @@ class _SearchState extends State<Search> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// A result tile that fetches name/photo with cache-first (RAM + TTL)
+class ProfileResultTile extends StatelessWidget {
+  final String uid;
+  final String fallbackName;
+  final double? score;
+
+  const ProfileResultTile({
+    super.key,
+    required this.uid,
+    required this.fallbackName,
+    this.score,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return FutureBuilder<({String name, String? photoUrl})>(
+      future: getProfileSnippetCacheFirst(uid), // <- uses RAM cache
+      builder: (_, snap) {
+        final has = snap.hasData;
+        final data = snap.data;
+        final displayName = has ? data!.name : fallbackName;
+        final photoUrl = has ? data!.photoUrl : null;
+
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 12),
+          child: Material(
+            color: Colors.white,
+            elevation: 4,
+            shadowColor: kShadowCol,
+            borderRadius: BorderRadius.circular(12),
+            child: InkWell(
+              borderRadius: BorderRadius.circular(12),
+              onTap: () => ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text('Open "$displayName"'))),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 12,
+                ),
+                child: Row(
+                  children: [
+                    CircleAvatar(
+                      radius: 16,
+                      backgroundColor: Colors.purple.shade200,
+                      backgroundImage: photoUrl != null
+                          ? NetworkImage(photoUrl)
+                          : null,
+                      child: photoUrl == null
+                          ? const Icon(
+                              Icons.person,
+                              size: 18,
+                              color: Colors.white,
+                            )
+                          : null,
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        displayName,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: const TextStyle(fontSize: 14),
+                      ),
+                    ),
+                    if (score != null) Text(score!.toStringAsPrecision(3)),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -239,11 +307,7 @@ class SearchCard extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          if (isRecent)
-            const Icon(
-              Icons.access_time,
-              color: Colors.black45,
-            ),
+          if (isRecent) const Icon(Icons.access_time, color: Colors.black45),
           const SizedBox(width: 8),
           Expanded(
             child: Material(
@@ -253,11 +317,9 @@ class SearchCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               child: InkWell(
                 borderRadius: BorderRadius.circular(12),
-                onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Abrir "$title"'),
-                  ),
-                ),
+                onTap: () => ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(SnackBar(content: Text('Open "$title"'))),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
@@ -280,9 +342,7 @@ class SearchCard extends StatelessWidget {
                           title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 14,
-                          ),
+                          style: const TextStyle(fontSize: 14),
                         ),
                       ),
                       if (score != null)
@@ -322,11 +382,7 @@ Widget _shadowWrap(Widget child) {
     decoration: BoxDecoration(
       borderRadius: BorderRadius.circular(kPillRadius),
       boxShadow: const [
-        BoxShadow(
-          color: kShadowCol,
-          offset: Offset(0, 6),
-          blurRadius: 12,
-        ),
+        BoxShadow(color: kShadowCol, offset: Offset(0, 6), blurRadius: 12),
       ],
     ),
     child: child,
