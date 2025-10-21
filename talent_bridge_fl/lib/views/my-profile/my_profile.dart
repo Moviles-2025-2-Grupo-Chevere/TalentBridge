@@ -106,28 +106,36 @@ class _MyProfileState extends State<MyProfile> {
       );
 
       if (image != null && mounted) {
-        fb
-            .uploadPFP(File(image.path))
-            .then((sn) {
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text('Profile picture uploaded!')),
-                );
-              }
-            })
-            .catchError((_) {
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Error uploading profile picture :('),
-                  ),
-                );
-              }
-            });
-
+        var file = File(image.path);
         final localPicturePath = await ProfileStorage.saveProfilePictureLocally(
           image.path,
         );
+        try {
+          final taskSnapshot = await fb.uploadPFP(file);
+          if (taskSnapshot != null) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text('Profile picture uploaded!')),
+              );
+            }
+          } else {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Profile picture will be uploaded later'),
+                ),
+              );
+            }
+          }
+        } catch (e) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('Error uploading profile picture :('),
+              ),
+            );
+          }
+        }
 
         setState(() {
           // ignore: unnecessary_brace_in_string_interps

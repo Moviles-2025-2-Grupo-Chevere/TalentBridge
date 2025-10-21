@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
@@ -347,12 +348,24 @@ class FirebaseService {
   Future<TaskSnapshot?> uploadPFP(File image) async {
     var uid = _auth.currentUser?.uid;
     if (uid == null) return null;
+    final connection = await Connectivity().checkConnectivity();
+    if (connection[0] == ConnectivityResult.none) {
+      print('🚫 No internet connection, skipping upload.');
+      return null;
+    }
     var ref = _storage.ref().child('profile_pictures/$uid');
     try {
-      return await ref.putFile(image);
+      final task = await ref.putFile(image);
+      return task;
     } on firebase_core.FirebaseException catch (e) {
-      // ...
-      rethrow;
+      print('Firebase error: ${e.code} - ${e.message}');
+      if (e.code == 'retry-limit-exceeded') {
+        print('❌ No internet connection.');
+        // Optionally queue upload for retry, show message, etc.
+        return null;
+      } else {
+        rethrow;
+      }
     } catch (e) {
       rethrow;
     }
