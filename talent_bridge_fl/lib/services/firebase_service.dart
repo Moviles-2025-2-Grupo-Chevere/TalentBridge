@@ -350,7 +350,7 @@ class FirebaseService {
     if (uid == null) return null;
     final connection = await Connectivity().checkConnectivity();
     if (connection[0] == ConnectivityResult.none) {
-      print('🚫 No internet connection, skipping upload.');
+      print('No internet connection, skipping upload.');
       return null;
     }
     var ref = _storage.ref().child('profile_pictures/$uid');
@@ -360,8 +360,7 @@ class FirebaseService {
     } on firebase_core.FirebaseException catch (e) {
       print('Firebase error: ${e.code} - ${e.message}');
       if (e.code == 'retry-limit-exceeded') {
-        print('❌ No internet connection.');
-        // Optionally queue upload for retry, show message, etc.
+        print('No internet connection.');
         return null;
       } else {
         rethrow;

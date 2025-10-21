@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:talent_bridge_fl/components/add_element_widget.dart';
 import 'package:talent_bridge_fl/components/yellow_text_box_widget.dart';
@@ -8,20 +9,21 @@ import 'package:talent_bridge_fl/components/circular_image_widget.dart';
 import 'package:talent_bridge_fl/data/project_service.dart';
 import 'package:talent_bridge_fl/domain/project_entity.dart';
 import 'package:talent_bridge_fl/domain/user_entity.dart';
+import 'package:talent_bridge_fl/providers/upload_queue.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
 import 'package:talent_bridge_fl/services/profile_pic_storage.dart';
 import 'package:talent_bridge_fl/views/add_project/add_project.dart';
 
 const darkBlue = Color(0xFF3E6990);
 
-class MyProfile extends StatefulWidget {
+class MyProfile extends ConsumerStatefulWidget {
   const MyProfile({super.key});
 
   @override
-  State<MyProfile> createState() => _MyProfileState();
+  ConsumerState<MyProfile> createState() => _MyProfileState();
 }
 
-class _MyProfileState extends State<MyProfile> {
+class _MyProfileState extends ConsumerState<MyProfile> {
   String? _profileImagePath;
   UserEntity? userEntity;
   final fb = FirebaseService();
@@ -52,17 +54,15 @@ class _MyProfileState extends State<MyProfile> {
       });
       return;
     }
-    fb
-        .getPFPUrl()
-        .then((pfpUrl) {
-          setState(() {
-            _profileImagePath = pfpUrl;
-          });
-          print('Obtained Image Url from network');
-        })
-        .catchError((e) {
-          _profileImagePath = null;
-        });
+    try {
+      final remotePfpUrl = await fb.getPFPUrl();
+      setState(() {
+        _profileImagePath = remotePfpUrl;
+      });
+      print('Obtained Image Url from network');
+    } catch (e) {
+      _profileImagePath = null;
+    }
   }
 
   // Show dialog to confirm taking a profile picture
@@ -105,29 +105,23 @@ class _MyProfileState extends State<MyProfile> {
         preferredCameraDevice: CameraDevice.front, // Start with front camera
       );
 
-      if (image != null && mounted) {
-        var file = File(image.path);
+      if (image != null) {
         final localPicturePath = await ProfileStorage.saveProfilePictureLocally(
           image.path,
         );
         try {
-          final taskSnapshot = await fb.uploadPFP(file);
-          if (taskSnapshot != null) {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Profile picture uploaded!')),
-              );
-            }
-          } else {
-            if (mounted) {
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Profile picture will be uploaded later'),
-                ),
-              );
-            }
+          final result = await ref
+              .read(pfpUploadProvider.notifier)
+              .enqueuePfpUpload(localPicturePath);
+          if (result == null && mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('The picture will be uploaded later'),
+              ),
+            );
           }
         } catch (e) {
+          debugPrint(e.toString());
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -187,6 +181,16 @@ class _MyProfileState extends State<MyProfile> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(
+      pfpUploadProvider,
+      (prev, next) {
+        if (prev != null && next == null) {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(SnackBar(content: Text("Profile Picture uploaded")));
+        }
+      },
+    );
     return Container(
       color: const Color.fromARGB(255, 255, 255, 255), // White background
       child: SingleChildScrollView(
