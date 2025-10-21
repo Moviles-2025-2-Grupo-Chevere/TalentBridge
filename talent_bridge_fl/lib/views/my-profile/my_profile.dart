@@ -43,14 +43,22 @@ class _MyProfileState extends State<MyProfile> {
     }
   }
 
-  void getPfP() {
+  /// Uses offline first, online fallback for getting the profile picture.
+  Future<void> getPfP() async {
+    final localPath = await ProfileStorage.getLocalProfileImagePath();
+    if (localPath != null) {
+      setState(() {
+        _profileImagePath = localPath;
+      });
+      return;
+    }
     fb
         .getPFPUrl()
         .then((pfpUrl) {
           setState(() {
             _profileImagePath = pfpUrl;
           });
-          print('Obtained Image Url');
+          print('Obtained Image Url from network');
         })
         .catchError((e) {
           _profileImagePath = null;
@@ -117,11 +125,16 @@ class _MyProfileState extends State<MyProfile> {
               }
             });
 
+        final localPicturePath = await ProfileStorage.saveProfilePictureLocally(
+          image.path,
+        );
+
         setState(() {
-          _profileImagePath = image.path;
+          // ignore: unnecessary_brace_in_string_interps
+          print("Set Image path to: ${localPicturePath}");
+          _profileImagePath = localPicturePath;
         });
         // Save to storage
-        ProfileStorage.saveProfileImagePath(image.path);
       }
     } catch (e) {
       _showErrorDialog('Error accessing camera: $e');

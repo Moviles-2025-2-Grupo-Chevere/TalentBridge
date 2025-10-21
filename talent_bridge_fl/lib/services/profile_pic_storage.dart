@@ -1,18 +1,30 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
+import 'package:path_provider/path_provider.dart';
 
 class ProfileStorage {
   static String? _profileImagePath;
 
   /// Get the current profile image path
-  static String? getProfileImagePath() {
-    return _profileImagePath;
+  static Future<String?> getLocalProfileImagePath() async {
+    final directory = await getApplicationDocumentsDirectory();
+    final appPath = '${directory.path}/profile_picture.jpg';
+    final file = File(appPath);
+    if (file.existsSync()) {
+      return appPath;
+    }
+    return null;
   }
 
   /// Save the profile image path
-  static void saveProfileImagePath(String? path) {
-    _profileImagePath = path;
-    // Might persist this to storage here -> Add to firebase
-    debugPrint('Profile image path saved: $path');
+  static Future<String> saveProfilePictureLocally(String tempPath) async {
+    final localImage = File(tempPath);
+    final directory = await getApplicationDocumentsDirectory();
+    final appPath = '${directory.path}/profile_picture.jpg';
+    final newFile = await localImage.copy(appPath);
+    debugPrint('Profile image path saved: $tempPath');
+    return newFile.path;
   }
 
   /// Clear the profile image path
