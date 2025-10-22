@@ -180,6 +180,15 @@ class _MyProfileState extends ConsumerState<MyProfile> {
     );
   }
 
+  void _openEditProfileOverlay() {
+    showModalBottomSheet(
+      useSafeArea: true,
+      isScrollControlled: true,
+      context: context,
+      builder: (context) => Placeholder(),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     ref.listen(
@@ -244,7 +253,7 @@ class _MyProfileState extends ConsumerState<MyProfile> {
                     child: Align(
                       alignment: Alignment.topRight,
                       child: IconButton(
-                        onPressed: () {},
+                        onPressed: _openEditProfileOverlay,
                         icon: Icon(Icons.edit),
                       ),
                     ),
