@@ -32,7 +32,7 @@ class ProfileStorage {
     final directory = await getApplicationDocumentsDirectory();
     final appPath = '${directory.path}/$uid.jpg';
     final newFile = await localImage.copy(appPath);
-    debugPrint('Profile image path saved: $tempPath');
+    debugPrint('Profile image path saved: $appPath');
     return newFile.path;
   }
 

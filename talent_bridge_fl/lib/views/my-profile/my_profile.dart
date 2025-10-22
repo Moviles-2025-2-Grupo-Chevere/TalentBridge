@@ -24,7 +24,7 @@ class MyProfile extends ConsumerStatefulWidget {
 }
 
 class _MyProfileState extends ConsumerState<MyProfile> {
-  String? _profileImagePath;
+  ImageProvider? pfpProvider;
   UserEntity? userEntity;
   final fb = FirebaseService();
   final projectService = ProjectService();
@@ -50,19 +50,19 @@ class _MyProfileState extends ConsumerState<MyProfile> {
     final localPath = await ProfileStorage.getLocalProfileImagePath();
     if (localPath != null) {
       setState(() {
-        _profileImagePath = localPath;
+        pfpProvider = FileImage(File(localPath));
       });
       return;
     }
     try {
       final remotePfpUrl = await fb.getPFPUrl();
-      setState(() {
-        _profileImagePath = remotePfpUrl;
-      });
-      print('Obtained Image Url from network');
-    } catch (e) {
-      _profileImagePath = null;
-    }
+      if (remotePfpUrl != null) {
+        setState(() {
+          pfpProvider = NetworkImage(remotePfpUrl);
+        });
+        print('Obtained Image Url from network');
+      }
+    } catch (e) {}
   }
 
   // Show dialog to confirm taking a profile picture
@@ -130,11 +130,11 @@ class _MyProfileState extends ConsumerState<MyProfile> {
             );
           }
         }
-
+        final evicted = await (pfpProvider as FileImage).evict();
+        debugPrint('Evicted: $evicted');
         setState(() {
-          // ignore: unnecessary_brace_in_string_interps
-          print("Set Image path to: ${localPicturePath}");
-          _profileImagePath = localPicturePath;
+          print("Set Image path to: $localPicturePath");
+          pfpProvider = FileImage(File(image.path));
         });
         // Save to storage
       }
@@ -204,10 +204,12 @@ class _MyProfileState extends ConsumerState<MyProfile> {
                 child: Column(
                   children: [
                     // Profile image
-                    CircularImageWidget(
-                      imageUrl: _profileImagePath,
-                      size: 120.0,
+                    InkWell(
                       onTap: _showTakePhotoDialog,
+                      child: CircleAvatar(
+                        radius: 60,
+                        backgroundImage: pfpProvider,
+                      ),
                     ),
                     const SizedBox(height: 16.0),
                     // Username
