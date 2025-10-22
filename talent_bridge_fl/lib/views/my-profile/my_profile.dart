@@ -5,7 +5,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:talent_bridge_fl/components/add_element_widget.dart';
 import 'package:talent_bridge_fl/components/yellow_text_box_widget.dart';
-import 'package:talent_bridge_fl/components/circular_image_widget.dart';
 import 'package:talent_bridge_fl/data/project_service.dart';
 import 'package:talent_bridge_fl/domain/project_entity.dart';
 import 'package:talent_bridge_fl/domain/user_entity.dart';

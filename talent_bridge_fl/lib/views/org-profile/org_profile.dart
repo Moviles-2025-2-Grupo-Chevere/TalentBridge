@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:talent_bridge_fl/components/add_element_widget.dart';
 import 'package:talent_bridge_fl/components/yellow_text_box_widget.dart';
-import 'package:talent_bridge_fl/components/circular_image_widget.dart';
 
 class OrgProfile extends StatelessWidget {
   const OrgProfile({Key? key}) : super(key: key);
@@ -21,11 +20,7 @@ class OrgProfile extends StatelessWidget {
                 child: Column(
                   children: [
                     // Profile image
-                    const CircularImageWidget(
-                      imageUrl:
-                          'assets/images/org_profile.jpg', // Replace with actual image URL
-                      size: 120.0,
-                    ),
+                    const CircleAvatar(),
                     const SizedBox(height: 16.0),
                     // Username
                     const Text(
