@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:talent_bridge_fl/data/major_service.dart';
 
 const darkBlue = Color(0xFF3E6990);
 
@@ -66,7 +67,16 @@ class _EditProfileState extends State<EditProfile> {
                   ),
                 ),
                 SizedBox(height: 16),
-                TextFormField(
+                DropdownButtonFormField(
+                  items: MajorService.getMajors()
+                      .map(
+                        (e) => DropdownMenuItem(
+                          value: e,
+                          child: Text(e),
+                        ),
+                      )
+                      .toList(),
+                  onChanged: (value) {},
                   decoration: const InputDecoration(
                     label: Text('Major'),
                   ),
