@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
 
 class SelectSkills extends StatefulWidget {
-  SelectSkills({super.key, required List<String> skills})
-    : sortedSkills = List.of(skills)..sort();
+  SelectSkills({
+    super.key,
+    required List<String> skills,
+    required this.selectedSkills,
+  }) : sortedSkills = List.of(skills)..sort();
 
   final List<String> sortedSkills;
+  final Set<String> selectedSkills;
 
   @override
   State<SelectSkills> createState() => _SelectSkillsState();
@@ -55,8 +59,17 @@ class _SelectSkillsState extends State<SelectSkills> {
               itemBuilder: (context, index) => CheckboxListTile(
                 title: Text(filteredSkills[index]),
                 key: ValueKey(filteredSkills[index]),
-                value: false,
-                onChanged: (value) {},
+                value: widget.selectedSkills.contains(filteredSkills[index]),
+                onChanged: (value) {
+                  if (value == null) return;
+                  setState(() {
+                    if (value) {
+                      widget.selectedSkills.add(filteredSkills[index]);
+                    } else {
+                      widget.selectedSkills.remove(filteredSkills[index]);
+                    }
+                  });
+                },
               ),
             ),
           ),

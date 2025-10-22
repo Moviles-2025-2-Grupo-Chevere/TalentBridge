@@ -1,3 +1,5 @@
+import 'dart:collection';
+
 import 'package:flutter/material.dart';
 import 'package:talent_bridge_fl/data/major_service.dart';
 import 'package:talent_bridge_fl/services/skills_service.dart';
@@ -14,20 +16,37 @@ class EditProfile extends StatefulWidget {
 
 class _EditProfileState extends State<EditProfile> {
   final _formKey = GlobalKey<FormState>();
+  final _skills = SkillsService.getSkills();
+  final _selectedSkills = HashSet<String>();
 
   _submitData() {}
+
+  void _removeSelectedSkill(String skill) {
+    setState(() {
+      _selectedSkills.remove(skill);
+    });
+  }
 
   void _openSkillsView(BuildContext context) {
     Navigator.of(context).push(
       MaterialPageRoute(
-        builder: (context) => Scaffold(
-          appBar: AppBar(
-            title: const Text('Select Skills'),
-          ),
-          body: SelectSkills(
-            skills: SkillsService.getSkills(),
-          ),
-        ),
+        builder: (context) {
+          return PopScope(
+            onPopInvokedWithResult: (didPop, result) {
+              debugPrint('Popped from skills view!');
+              setState(() {});
+            },
+            child: Scaffold(
+              appBar: AppBar(
+                title: const Text('Select Skills'),
+              ),
+              body: SelectSkills(
+                skills: _skills,
+                selectedSkills: _selectedSkills,
+              ),
+            ),
+          );
+        },
       ),
     );
   }
@@ -104,6 +123,17 @@ class _EditProfileState extends State<EditProfile> {
                       icon: Icon(Icons.add),
                     ),
                   ],
+                ),
+                Wrap(
+                  spacing: 8,
+                  children: _selectedSkills
+                      .map(
+                        (e) => InputChip(
+                          label: Text(e),
+                          onDeleted: () => _removeSelectedSkill(e),
+                        ),
+                      )
+                      .toList(),
                 ),
                 SizedBox(height: 16),
                 Row(
