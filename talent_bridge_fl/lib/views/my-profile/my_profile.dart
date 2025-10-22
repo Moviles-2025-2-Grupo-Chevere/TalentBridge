@@ -12,6 +12,7 @@ import 'package:talent_bridge_fl/providers/upload_queue.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
 import 'package:talent_bridge_fl/services/profile_pic_storage.dart';
 import 'package:talent_bridge_fl/views/add_project/add_project.dart';
+import 'package:talent_bridge_fl/views/edit_profile/edit_profile.dart';
 
 const darkBlue = Color(0xFF3E6990);
 
@@ -184,7 +185,7 @@ class _MyProfileState extends ConsumerState<MyProfile> {
       useSafeArea: true,
       isScrollControlled: true,
       context: context,
-      builder: (context) => Placeholder(),
+      builder: (context) => EditProfile(),
     );
   }
 
