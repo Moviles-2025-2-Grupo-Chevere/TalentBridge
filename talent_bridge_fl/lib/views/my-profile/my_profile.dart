@@ -202,39 +202,54 @@ class _MyProfileState extends ConsumerState<MyProfile> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               // Profile header with image and username
-              Center(
-                child: Column(
-                  children: [
-                    // Profile image
-                    Stack(
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(child: Container()),
+                  SizedBox(
+                    child: Column(
                       children: [
-                        InkWell(
-                          onTap: _showTakePhotoDialog,
-                          child: CircleAvatar(
-                            radius: 60,
-                            backgroundImage: pfpProvider,
+                        // Profile image
+                        Stack(
+                          children: [
+                            InkWell(
+                              onTap: _showTakePhotoDialog,
+                              child: CircleAvatar(
+                                radius: 60,
+                                backgroundImage: pfpProvider,
+                              ),
+                            ),
+                            if (pendingUpload)
+                              Positioned(
+                                bottom: 0,
+                                right: 0,
+                                child: Icon(Icons.sync_alt_outlined),
+                              ),
+                          ],
+                        ),
+                        const SizedBox(height: 16.0),
+                        // Username
+                        Text(
+                          userEntity?.displayName ?? '',
+                          style: TextStyle(
+                            fontSize: 18.0,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'OpenSans',
                           ),
                         ),
-                        if (pendingUpload)
-                          Positioned(
-                            bottom: 0,
-                            right: 0,
-                            child: Icon(Icons.sync_alt_outlined),
-                          ),
                       ],
                     ),
-                    const SizedBox(height: 16.0),
-                    // Username
-                    Text(
-                      userEntity?.displayName ?? '',
-                      style: TextStyle(
-                        fontSize: 18.0,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'OpenSans',
+                  ),
+                  Expanded(
+                    child: Align(
+                      alignment: Alignment.topRight,
+                      child: IconButton(
+                        onPressed: () {},
+                        icon: Icon(Icons.edit),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
               const SizedBox(height: 24.0),
 
