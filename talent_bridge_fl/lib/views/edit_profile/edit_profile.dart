@@ -94,7 +94,11 @@ class _EditProfileState extends State<EditProfile> {
                 TextFormField(
                   decoration: const InputDecoration(
                     label: Text('Description'),
+                    border: OutlineInputBorder(),
                   ),
+                  keyboardType: TextInputType.multiline,
+                  minLines: 3,
+                  maxLines: null,
                 ),
                 SizedBox(height: 16),
                 DropdownButtonFormField(
