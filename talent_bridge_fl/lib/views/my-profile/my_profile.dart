@@ -26,6 +26,7 @@ class MyProfile extends ConsumerStatefulWidget {
 class _MyProfileState extends ConsumerState<MyProfile> {
   ImageProvider? pfpProvider;
   UserEntity? userEntity;
+  bool syncingImage = false;
   final fb = FirebaseService();
   final projectService = ProjectService();
 
@@ -191,6 +192,7 @@ class _MyProfileState extends ConsumerState<MyProfile> {
         }
       },
     );
+    final pendingUpload = ref.watch(pfpUploadProvider) != null;
     return Container(
       color: const Color.fromARGB(255, 255, 255, 255), // White background
       child: SingleChildScrollView(
@@ -204,12 +206,22 @@ class _MyProfileState extends ConsumerState<MyProfile> {
                 child: Column(
                   children: [
                     // Profile image
-                    InkWell(
-                      onTap: _showTakePhotoDialog,
-                      child: CircleAvatar(
-                        radius: 60,
-                        backgroundImage: pfpProvider,
-                      ),
+                    Stack(
+                      children: [
+                        InkWell(
+                          onTap: _showTakePhotoDialog,
+                          child: CircleAvatar(
+                            radius: 60,
+                            backgroundImage: pfpProvider,
+                          ),
+                        ),
+                        if (pendingUpload)
+                          Positioned(
+                            bottom: 0,
+                            right: 0,
+                            child: Icon(Icons.sync_alt_outlined),
+                          ),
+                      ],
                     ),
                     const SizedBox(height: 16.0),
                     // Username

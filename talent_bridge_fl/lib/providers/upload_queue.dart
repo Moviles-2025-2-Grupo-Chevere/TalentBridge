@@ -13,6 +13,7 @@ class PfpUploadNotifier extends Notifier<String?> {
   final _fbService = FirebaseService();
   StreamSubscription<List<ConnectivityResult>>? _subscription;
 
+  /// Uses stream concurrency to listen to connectivity changes
   @override
   String? build() {
     state = null;
