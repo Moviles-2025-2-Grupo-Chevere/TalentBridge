@@ -10,7 +10,9 @@ import 'package:talent_bridge_fl/views/select_skills/select_skills.dart';
 const darkBlue = Color(0xFF3E6990);
 
 class EditProfile extends StatefulWidget {
-  const EditProfile({super.key});
+  const EditProfile({super.key, required this.existingData});
+
+  final UpdateUserDto existingData;
 
   @override
   State<EditProfile> createState() => _EditProfileState();
@@ -159,7 +161,7 @@ class _EditProfileState extends State<EditProfile> {
   @override
   void initState() {
     super.initState();
-
+    _selectedSkills.addAll(widget.existingData.skillsOrTopics);
     // 🪄 Schedule validation after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final currentState = _formKey.currentState;
@@ -173,8 +175,10 @@ class _EditProfileState extends State<EditProfile> {
 
   @override
   Widget build(BuildContext context) {
+    final user = widget.existingData;
     // Form fields
     var displayNameField = TextFormField(
+      initialValue: user.displayName,
       autovalidateMode: AutovalidateMode.onUserInteraction,
       maxLength: 30,
       decoration: const InputDecoration(
@@ -185,6 +189,7 @@ class _EditProfileState extends State<EditProfile> {
     );
 
     var headlineField = TextFormField(
+      initialValue: user.headline,
       autovalidateMode: AutovalidateMode.onUserInteraction,
       maxLength: 80,
       decoration: const InputDecoration(
@@ -194,6 +199,7 @@ class _EditProfileState extends State<EditProfile> {
       onSaved: (newValue) => headline = newValue ?? '',
     );
     var linkedinField = TextFormField(
+      initialValue: user.linkedin,
       autovalidateMode: AutovalidateMode.onUserInteraction,
       maxLength: 150,
       decoration: const InputDecoration(
@@ -203,6 +209,7 @@ class _EditProfileState extends State<EditProfile> {
       onSaved: (newValue) => linkedinUrl = newValue ?? '',
     );
     var mobileNumberField = TextFormField(
+      initialValue: user.mobileNumber,
       autovalidateMode: AutovalidateMode.onUserInteraction,
       maxLength: 10,
       decoration: const InputDecoration(
@@ -213,6 +220,7 @@ class _EditProfileState extends State<EditProfile> {
       onSaved: (newValue) => mobileNumber = newValue ?? '',
     );
     var descriptionField = TextFormField(
+      initialValue: user.description,
       autovalidateMode: AutovalidateMode.onUserInteraction,
       maxLength: 1000,
       decoration: const InputDecoration(
@@ -226,9 +234,10 @@ class _EditProfileState extends State<EditProfile> {
       onSaved: (newValue) => description = newValue ?? '',
     );
     var majorField = DropdownButtonFormField(
+      value: user.major,
       items: [
         DropdownMenuItem(
-          value: null,
+          value: '',
           child: Text('None'),
         ),
         ...MajorService.getMajors().map(

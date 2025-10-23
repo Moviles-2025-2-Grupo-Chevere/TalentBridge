@@ -7,6 +7,7 @@ import 'package:talent_bridge_fl/components/add_element_widget.dart';
 import 'package:talent_bridge_fl/components/yellow_text_box_widget.dart';
 import 'package:talent_bridge_fl/data/project_service.dart';
 import 'package:talent_bridge_fl/domain/project_entity.dart';
+import 'package:talent_bridge_fl/domain/update_user_dto.dart';
 import 'package:talent_bridge_fl/domain/user_entity.dart';
 import 'package:talent_bridge_fl/providers/upload_queue.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
@@ -181,11 +182,22 @@ class _MyProfileState extends ConsumerState<MyProfile> {
   }
 
   void _openEditProfileOverlay() {
+    final user = userEntity!;
     showModalBottomSheet(
       useSafeArea: true,
       isScrollControlled: true,
       context: context,
-      builder: (context) => EditProfile(),
+      builder: (context) => EditProfile(
+        existingData: UpdateUserDto(
+          displayName: user.displayName,
+          headline: user.headline ?? '',
+          linkedin: user.linkedin ?? '',
+          mobileNumber: user.mobileNumber ?? '',
+          skillsOrTopics: user.skillsOrTopics ?? [],
+          description: user.description ?? '',
+          major: user.major ?? '',
+        ),
+      ),
     );
   }
 
@@ -253,7 +265,9 @@ class _MyProfileState extends ConsumerState<MyProfile> {
                     child: Align(
                       alignment: Alignment.topRight,
                       child: IconButton(
-                        onPressed: _openEditProfileOverlay,
+                        onPressed: userEntity != null
+                            ? _openEditProfileOverlay
+                            : () {},
                         icon: Icon(Icons.edit),
                       ),
                     ),
