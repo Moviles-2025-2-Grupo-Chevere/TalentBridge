@@ -51,6 +51,74 @@ class _EditProfileState extends State<EditProfile> {
     );
   }
 
+  // Validators
+  // Display name
+  String? validateDisplayName(String? value) {
+    if (value == null) {
+      return 'Not Initialized';
+    }
+    if (value.length > 30) {
+      return 'Too long';
+    }
+    if (value.isNotEmpty && value.length < 5) {
+      return 'Too short';
+    }
+    return null;
+  }
+
+  // Headline
+  String? validateHeadline(String? value) {
+    if (value == null) {
+      return 'Not Initialized';
+    }
+    if (value.length > 80) {
+      return 'Too long';
+    }
+
+    return null;
+  }
+
+  // Linkedin
+  String? validateLinkedin(String? value) {
+    if (value == null) {
+      return 'Not Initialized';
+    }
+    final pattern =
+        r'^(https?:\/\/)?(www\.)?linkedin\.com\/(in|pub)\/[A-z0-9_-]+\/?$';
+    final regex = RegExp(pattern);
+
+    if (value.isNotEmpty && !regex.hasMatch(value.trim())) {
+      return 'Enter a valid LinkedIn profile URL';
+    }
+    return null;
+  }
+
+  // Mobile number
+  String? validateMobileNumber(String? value) {
+    if (value == null) {
+      return 'Not Initialized';
+    }
+    if (value.isNotEmpty && value.length != 10) {
+      return 'Invalid mobile length';
+    }
+    final regex = RegExp(r'^[0-9]{10}$');
+    if (value.isNotEmpty && !regex.hasMatch(value.trim())) {
+      return 'Enter a valid 10-digit phone number';
+    }
+    return null;
+  }
+
+  // Description
+  String? validateDescription(String? value) {
+    if (value == null) {
+      return 'Not Initialized';
+    }
+    if (value.length > 1000) {
+      return 'Description too long';
+    }
+    return null;
+  }
+
   @override
   Widget build(BuildContext context) {
     return SizedBox(
@@ -67,31 +135,45 @@ class _EditProfileState extends State<EditProfile> {
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
                 TextFormField(
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  maxLength: 30,
                   decoration: const InputDecoration(
                     label: Text('Display Name'),
                   ),
+                  validator: validateDisplayName,
                 ),
                 SizedBox(height: 16),
                 TextFormField(
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  maxLength: 80,
                   decoration: const InputDecoration(
                     label: Text('Headline'),
                   ),
+                  validator: validateHeadline,
                 ),
                 SizedBox(height: 16),
                 TextFormField(
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  maxLength: 150,
                   decoration: const InputDecoration(
                     label: Text('Linkedin'),
                   ),
+                  validator: validateLinkedin,
                 ),
                 SizedBox(height: 16),
                 TextFormField(
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  maxLength: 10,
                   decoration: const InputDecoration(
                     label: Text('Mobile Number'),
                   ),
                   keyboardType: TextInputType.phone,
+                  validator: validateMobileNumber,
                 ),
                 SizedBox(height: 16),
                 TextFormField(
+                  autovalidateMode: AutovalidateMode.onUserInteraction,
+                  maxLength: 1000,
                   decoration: const InputDecoration(
                     label: Text('Description'),
                     border: OutlineInputBorder(),
@@ -99,17 +181,22 @@ class _EditProfileState extends State<EditProfile> {
                   keyboardType: TextInputType.multiline,
                   minLines: 3,
                   maxLines: null,
+                  validator: validateDescription,
                 ),
                 SizedBox(height: 16),
                 DropdownButtonFormField(
-                  items: MajorService.getMajors()
-                      .map(
-                        (e) => DropdownMenuItem(
-                          value: e,
-                          child: Text(e),
-                        ),
-                      )
-                      .toList(),
+                  items: [
+                    DropdownMenuItem(
+                      value: null,
+                      child: Text('None'),
+                    ),
+                    ...MajorService.getMajors().map(
+                      (e) => DropdownMenuItem(
+                        value: e,
+                        child: Text(e),
+                      ),
+                    ),
+                  ],
                   onChanged: (value) {},
                   decoration: const InputDecoration(
                     label: Text('Major'),
