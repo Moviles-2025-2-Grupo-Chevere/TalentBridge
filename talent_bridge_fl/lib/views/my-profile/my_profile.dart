@@ -282,17 +282,25 @@ class _MyProfileState extends ConsumerState<MyProfile> {
               ],
             ),
             Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Expanded(
-                  child: Text(
-                    userEntity?.headline ?? '',
-                    textAlign: TextAlign.center,
-                  ),
-                ),
+                (userEntity?.headline ?? '').isEmpty
+                    ? TextButton(
+                        onPressed: _openEditProfileOverlay,
+                        child: Text(
+                          'Add headline',
+                          style: const TextStyle(color: Colors.blue),
+                        ),
+                      )
+                    : Expanded(
+                        child: Text(
+                          userEntity!.headline!,
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
               ],
             ),
-            const SizedBox(height: 24.0),
-
+            const SizedBox(height: 16.0),
             // Contact section
             const Text(
               'Contact',
