@@ -1,3 +1,6 @@
+import 'dart:async';
+
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -11,17 +14,18 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp();
-  runApp(ProviderScope(child: const MyApp()));
+  runApp(ProviderScope(child: const TalentBridge()));
 }
 
-class MyApp extends StatefulWidget {
-  const MyApp({super.key});
+class TalentBridge extends StatefulWidget {
+  const TalentBridge({super.key});
   @override
-  State<MyApp> createState() => _MyAppState();
+  State<TalentBridge> createState() => _TalentBridgeState();
 }
 
-class _MyAppState extends State<MyApp> {
+class _TalentBridgeState extends State<TalentBridge> {
   final ConnectivityService _connectivityService = ConnectivityService();
+  StreamSubscription<User?>? _authSub;
 
   @override
   void initState() {
@@ -41,7 +45,7 @@ class _MyAppState extends State<MyApp> {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Talent Bridge',
-      navigatorKey: navigatorKey, // Add the navigator key
+      navigatorKey: navigatorKey,
       navigatorObservers: [
         FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
       ],
