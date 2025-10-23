@@ -6,8 +6,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_core;
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:flutter/material.dart';
 import 'package:talent_bridge_fl/domain/project_entity.dart';
+import 'package:talent_bridge_fl/domain/update_user_dto.dart';
 import 'package:talent_bridge_fl/domain/user_entity.dart';
 
 class FirebaseService {
@@ -330,21 +331,6 @@ class FirebaseService {
     await _analytics.logEvent(name: name, parameters: parameters);
   }
 
-  /// Set user properties for analytics
-  Future<void> setUserProperties({
-    required String userId,
-    String? userType,
-    String? plan,
-  }) async {
-    await _analytics.setUserId(id: userId);
-    if (userType != null) {
-      await _analytics.setUserProperty(name: 'user_type', value: userType);
-    }
-    if (plan != null) {
-      await _analytics.setUserProperty(name: 'plan', value: plan);
-    }
-  }
-
   Future<TaskSnapshot?> uploadPFP(File image) async {
     var uid = _auth.currentUser?.uid;
     if (uid == null) return null;
@@ -382,6 +368,20 @@ class FirebaseService {
         print('File does not exist');
         return null;
       }
+      rethrow;
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<void> updateUserProfile(UpdateUserDto data) async {
+    final uid = currentUid();
+    if (uid == null) throw Exception("Uid not set");
+    try {
+      await _db.collection('users').doc(uid).update(data.toMap());
+      return;
+    } on FirebaseException catch (e) {
+      debugPrint(e.code);
       rethrow;
     } catch (e) {
       rethrow;

@@ -2,6 +2,8 @@ import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:talent_bridge_fl/data/major_service.dart';
+import 'package:talent_bridge_fl/domain/update_user_dto.dart';
+import 'package:talent_bridge_fl/services/firebase_service.dart';
 import 'package:talent_bridge_fl/services/skills_service.dart';
 import 'package:talent_bridge_fl/views/select_skills/select_skills.dart';
 
@@ -15,6 +17,7 @@ class EditProfile extends StatefulWidget {
 }
 
 class _EditProfileState extends State<EditProfile> {
+  final _fb = FirebaseService();
   final _formKey = GlobalKey<FormState>();
   final _skills = SkillsService.getSkills();
   var _formIsValid = false;
@@ -27,8 +30,25 @@ class _EditProfileState extends State<EditProfile> {
   String major = '';
   final _selectedSkills = HashSet<String>();
 
-  _submitData() {
-    if (_formKey.currentState!.validate()) {}
+  _submitData() async {
+    if (_formKey.currentState!.validate()) {
+      _formKey.currentState!.save();
+      await _fb.updateUserProfile(
+        UpdateUserDto(
+          displayName: displayName,
+          headline: headline,
+          linkedin: linkedinUrl,
+          mobileNumber: mobileNumber,
+          skillsOrTopics: _selectedSkills.toList(),
+          description: description,
+          major: major,
+        ),
+      );
+      debugPrint("Updated user document");
+      if (mounted) {
+        Navigator.of(context).pop();
+      }
+    }
   }
 
   void _removeSelectedSkill(String skill) {
