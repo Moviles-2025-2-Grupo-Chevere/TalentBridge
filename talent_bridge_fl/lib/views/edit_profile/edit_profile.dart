@@ -92,7 +92,7 @@ class _EditProfileState extends State<EditProfile> {
     if (value.length > 30) {
       return 'Too long';
     }
-    if (value.isNotEmpty && value.length < 5) {
+    if (value.length < 5) {
       return 'Too short';
     }
     return null;
