@@ -53,6 +53,7 @@ import com.example.talent_bridge_kt.presentation.ui.components.HomeWithDrawer
 import androidx.compose.runtime.*
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.talent_bridge_kt.data.AnalyticsManager
+import com.example.talent_bridge_kt.data.repository.ProfileRepository
 import kotlin.system.measureTimeMillis
 
 
@@ -204,9 +205,13 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
                         }
-                        composable(Routes.SomeOneElseProfile) {
+                        composable(Routes.SomeOneElseProfile) { backStack ->
+                            val uid = backStack.arguments?.getString("uid") ?: return@composable
                             HomeWithDrawer(navController = navController) { openDrawer ->
+                                val repo = remember { ProfileRepository(FirebaseFirestore.getInstance()) }
                                 SomeElseProfileScreen(
+                                    uid = uid,
+                                    repo = repo,
                                     onBack = { navController.popBackStack() },
                                     onOpenDrawer = { openDrawer() }
                                 )
@@ -221,7 +226,9 @@ class MainActivity : ComponentActivity() {
                             HomeWithDrawer(navController = navController) { openDrawer ->
                                 StudentFeedScreen(
                                     onBack = { navController.popBackStack() },
-                                    onSomeOneElseProfile = { navController.navigate(Routes.SomeOneElseProfile) },
+                                    onSomeOneElseProfile = { uid ->
+                                        navController.navigate(Routes.someoneElse(uid))
+                                    },
                                     onExploreStudents = { navController.navigate(Routes.LeaderFeed) },
                                     onSearch = { navController.navigate(Routes.Search) },
                                     onProfile = { navController.navigate(Routes.StudentProfile) },

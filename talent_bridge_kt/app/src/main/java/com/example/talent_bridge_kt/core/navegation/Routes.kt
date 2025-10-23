@@ -10,7 +10,8 @@ object Routes {
     const val Search = "search"
     const val StudentProfile = "student_profile"
 
-    const val SomeOneElseProfile ="someone_else_profile"
+    const val SomeOneElseProfileBase ="someone_else_profile"
+    const val SomeOneElseProfile = "$SomeOneElseProfileBase/{uid}"
 
     const val Credits = "credits"
 
@@ -18,4 +19,6 @@ object Routes {
 
     const val InitiativeDetail = "initiative_detail"
     const val LateralMenu = "lateral_menu"
+
+    fun someoneElse(uid: String) = "$SomeOneElseProfileBase/$uid"
 }

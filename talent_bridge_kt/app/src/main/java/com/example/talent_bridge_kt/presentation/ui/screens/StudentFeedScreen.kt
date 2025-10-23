@@ -41,9 +41,10 @@ import com.example.talent_bridge_kt.ui.theme.CreamBackground
 import com.example.talent_bridge_kt.ui.theme.LinkGreen
 import com.example.talent_bridge_kt.ui.theme.TitleGreen
 
-/* =========================================================================
- * ExploreProjectsScreen – con header, cards, bottom bar y pop-up de “Aplicar”
- * ========================================================================= */
+import com.google.firebase.auth.FirebaseAuth
+
+
+
 @Composable
 fun StudentFeedScreen(
     onBack: () -> Unit = {},
@@ -53,13 +54,14 @@ fun StudentFeedScreen(
     onHome: () -> Unit = {},
     onSearch: () -> Unit = {},
     onFav: () -> Unit = {},
-    // Navegación desde el pop-up (opcional)
     onGoToApplications: () -> Unit = {},
-    onSomeOneElseProfile: () -> Unit = {},
+    onSomeOneElseProfile: (String) -> Unit = {},
     onExploreStudents: () -> Unit = {},
     onProfile: () -> Unit = {}
 
 ) {
+    val currentUserUid = FirebaseAuth.getInstance().currentUser?.uid
+
     var showSubmitted by remember { mutableStateOf(false) }
 
     Surface(color = Color.White, modifier = Modifier.fillMaxSize()) {
@@ -99,6 +101,7 @@ fun StudentFeedScreen(
                         tags = listOf("Diseño", "Dibujo", "2 Horas"),
                         imageRes = R.drawable.robocol,
                         onApplyClick = { showSubmitted = true },
+                        userUid = currentUserUid ?: "unknown",
                         onSomeOneElseProfile = onSomeOneElseProfile
                     )
                 }
@@ -113,6 +116,7 @@ fun StudentFeedScreen(
                         tags = listOf("Diseño", "Dibujo", "2 Horas"),
                         imageRes = R.drawable.relaja,
                         onApplyClick = { showSubmitted = true },
+                        userUid = currentUserUid ?: "unknown",
                         onSomeOneElseProfile = onSomeOneElseProfile
 
                     )
@@ -128,6 +132,7 @@ fun StudentFeedScreen(
                         tags = listOf("Diseño", "Dibujo", "2 Horas"),
                         imageRes = null,
                         onApplyClick = { showSubmitted = true },
+                        userUid = currentUserUid ?: "unknown",
                         onSomeOneElseProfile = onSomeOneElseProfile
                     )
                 }
@@ -166,9 +171,10 @@ private fun ProjectCardSimple(
     subtitle: String,
     description: String,
     tags: List<String>,
-    imageRes: Int?,                   // puede ser null
+    imageRes: Int?,
     onApplyClick: () -> Unit,
-    onSomeOneElseProfile: () -> Unit
+    userUid: String,
+    onSomeOneElseProfile: (String) -> Unit
 
 ) {
     Column(
@@ -184,7 +190,7 @@ private fun ProjectCardSimple(
             Image(
                 painter = painterResource(id = R.drawable.iniciativa),
                 contentDescription = "iniciativa",
-                modifier = Modifier.size(28.dp) .clickable { onSomeOneElseProfile() },
+                modifier = Modifier.size(28.dp) .clickable { onSomeOneElseProfile(userUid) },
                 contentScale = ContentScale.Crop
             )
             Spacer(Modifier.width(8.dp))
