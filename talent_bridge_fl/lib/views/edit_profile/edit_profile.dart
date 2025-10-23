@@ -10,9 +10,14 @@ import 'package:talent_bridge_fl/views/select_skills/select_skills.dart';
 const darkBlue = Color(0xFF3E6990);
 
 class EditProfile extends StatefulWidget {
-  const EditProfile({super.key, required this.existingData});
+  const EditProfile({
+    super.key,
+    required this.existingData,
+    required this.onUpdate,
+  });
 
   final UpdateUserDto existingData;
+  final void Function(UpdateUserDto updateDto) onUpdate;
 
   @override
   State<EditProfile> createState() => _EditProfileState();
@@ -35,18 +40,20 @@ class _EditProfileState extends State<EditProfile> {
   _submitData() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
+      var updateUserDto = UpdateUserDto(
+        displayName: displayName,
+        headline: headline,
+        linkedin: linkedinUrl,
+        mobileNumber: mobileNumber,
+        skillsOrTopics: _selectedSkills.toList(),
+        description: description,
+        major: major,
+      );
       await _fb.updateUserProfile(
-        UpdateUserDto(
-          displayName: displayName,
-          headline: headline,
-          linkedin: linkedinUrl,
-          mobileNumber: mobileNumber,
-          skillsOrTopics: _selectedSkills.toList(),
-          description: description,
-          major: major,
-        ),
+        updateUserDto,
       );
       debugPrint("Updated user document");
+      widget.onUpdate(updateUserDto);
       if (mounted) {
         Navigator.of(context).pop();
       }

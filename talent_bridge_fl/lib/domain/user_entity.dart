@@ -1,22 +1,22 @@
 import 'package:talent_bridge_fl/domain/project_entity.dart';
 
 class UserEntity {
-  final String id;
-  final String displayName;
-  final String email;
-  final String? headline;
-  final bool isPublic;
-  final String? linkedin;
-  final String? location;
-  final String? mobileNumber;
-  final String? photoUrl;
-  final List<ProjectEntity>? projects;
-  final List<String>? applications;
-  final List<String>? acceptedProjects;
-  final List<String>? skillsOrTopics;
-  final String? description;
-  final String? major;
-  final String? lastPortfolioUpdateAt;
+  String id;
+  String displayName;
+  String email;
+  String? headline;
+  bool isPublic;
+  String? linkedin;
+  String? location;
+  String? mobileNumber;
+  String? photoUrl;
+  List<ProjectEntity>? projects;
+  List<String>? applications;
+  List<String>? acceptedProjects;
+  List<String>? skillsOrTopics;
+  String? description;
+  String? major;
+  String? lastPortfolioUpdateAt;
 
   UserEntity({
     required this.id,

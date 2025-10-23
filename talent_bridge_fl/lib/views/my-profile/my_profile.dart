@@ -191,6 +191,19 @@ class _MyProfileState extends ConsumerState<MyProfile> {
     );
   }
 
+  void _onUserUpdate(UpdateUserDto dto) {
+    setState(() {
+      assert(userEntity != null);
+      userEntity!.displayName = dto.displayName;
+      userEntity!.headline = dto.headline;
+      userEntity!.linkedin = dto.linkedin;
+      userEntity!.mobileNumber = dto.mobileNumber;
+      userEntity!.description = dto.description;
+      userEntity!.major = dto.major;
+      userEntity!.skillsOrTopics = dto.skillsOrTopics;
+    });
+  }
+
   void _openEditProfileOverlay() {
     final user = userEntity!;
     showModalBottomSheet(
@@ -198,6 +211,7 @@ class _MyProfileState extends ConsumerState<MyProfile> {
       isScrollControlled: true,
       context: context,
       builder: (context) => EditProfile(
+        onUpdate: _onUserUpdate,
         existingData: UpdateUserDto(
           displayName: user.displayName,
           headline: user.headline ?? '',
@@ -332,7 +346,6 @@ class _MyProfileState extends ConsumerState<MyProfile> {
                 ),
               ],
             ),
-            const SizedBox(height: 24.0),
 
             // Description section
             const Text('Your Description', style: headerStyle),
