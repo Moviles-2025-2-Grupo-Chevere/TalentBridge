@@ -68,9 +68,11 @@ class _MyProfileState extends ConsumerState<MyProfile> {
         setState(() {
           pfpProvider = NetworkImage(remotePfpUrl);
         });
-        print('Obtained Image Url from network');
+        debugPrint('Obtained Image Url from network');
       }
-    } catch (e) {}
+    } catch (e) {
+      debugPrint(e.toString());
+    }
   }
 
   // Show dialog to confirm taking a profile picture
@@ -141,7 +143,7 @@ class _MyProfileState extends ConsumerState<MyProfile> {
         final evicted = await (pfpProvider as FileImage).evict();
         debugPrint('Evicted: $evicted');
         setState(() {
-          print("Set Image path to: $localPicturePath");
+          debugPrint("Set Image path to: $localPicturePath");
           pfpProvider = FileImage(File(image.path));
         });
         // Save to storage
@@ -304,17 +306,20 @@ class _MyProfileState extends ConsumerState<MyProfile> {
                   ContactItem(
                     label: 'Linkedin',
                     value: userEntity?.linkedin,
-                    fallback: 'Add linkedin',
+                    fallback: 'Add LinkedIn',
+                    fallbackAction: _openEditProfileOverlay,
                   ),
                   ContactItem(
                     label: 'Mobile Number',
                     value: userEntity?.mobileNumber,
                     fallback: 'Add mobile number',
+                    fallbackAction: _openEditProfileOverlay,
                   ),
                   ContactItem(
                     label: 'Major',
                     value: userEntity?.major,
                     fallback: 'Add major',
+                    fallbackAction: _openEditProfileOverlay,
                   ),
                 ],
               ),
@@ -328,7 +333,7 @@ class _MyProfileState extends ConsumerState<MyProfile> {
                 ? Text(userEntity!.description!)
                 : Center(
                     child: TextButton(
-                      onPressed: () {},
+                      onPressed: _openEditProfileOverlay,
                       child: Text(
                         'Add description',
                         style: TextStyle(
@@ -339,7 +344,7 @@ class _MyProfileState extends ConsumerState<MyProfile> {
                   ),
             const SizedBox(height: 8.0),
 
-            const Text('My Flags', style: headerStyle),
+            const Text('My Skills and Topics', style: headerStyle),
             const SizedBox(height: 8.0),
             Wrap(
               spacing: 8.0,
@@ -350,9 +355,9 @@ class _MyProfileState extends ConsumerState<MyProfile> {
             ),
             Center(
               child: TextButton(
-                onPressed: () {},
+                onPressed: _openEditProfileOverlay,
                 child: const Text(
-                  'Agregar flag',
+                  'Add Skills',
                   style: TextStyle(
                     color: Colors.blue,
                   ),
@@ -643,22 +648,20 @@ class ContactItem extends StatelessWidget {
     required this.label,
     this.value,
     this.fallback = '',
-    this.isLink = false,
-    this.linkColor,
+    this.fallbackAction,
   });
 
   final String label;
   final String? value;
   final String fallback;
-  final bool isLink;
-  final Color? linkColor;
+  final VoidCallback? fallbackAction;
 
   @override
   Widget build(BuildContext context) {
-    bool displayLink = isLink;
-    if ((value ?? '').isEmpty) displayLink = true;
+    var displayFallback = false;
+    if ((value ?? '').isEmpty) displayFallback = true;
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
+      padding: const EdgeInsets.only(bottom: 16.0),
       child: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -671,20 +674,19 @@ class ContactItem extends StatelessWidget {
                 fontWeight: FontWeight.w500,
               ),
             ),
-            const SizedBox(height: 4.0),
-            displayLink
-                ? InkWell(
-                    onTap: () {
-                      // Handle link tap
-                    },
+            displayFallback
+                ? TextButton(
+                    onPressed: fallbackAction ?? () {},
                     child: Text(
                       fallback,
-                      style: headerStyle,
+                      style: const TextStyle(color: Colors.blue),
                     ),
                   )
                 : Text(
                     value!,
-                    style: const TextStyle(fontSize: 14.0),
+                    style: const TextStyle(
+                      fontSize: 14.0,
+                    ),
                   ),
           ],
         ),
