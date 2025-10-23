@@ -17,9 +17,19 @@ class EditProfile extends StatefulWidget {
 class _EditProfileState extends State<EditProfile> {
   final _formKey = GlobalKey<FormState>();
   final _skills = SkillsService.getSkills();
+  var _formIsValid = false;
+  // Form values
+  String displayName = '';
+  String headline = '';
+  String linkedinUrl = '';
+  String mobileNumber = '';
+  String description = '';
+  String major = '';
   final _selectedSkills = HashSet<String>();
 
-  _submitData() {}
+  _submitData() {
+    if (_formKey.currentState!.validate()) {}
+  }
 
   void _removeSelectedSkill(String skill) {
     setState(() {
@@ -119,11 +129,105 @@ class _EditProfileState extends State<EditProfile> {
     return null;
   }
 
+  void onFormChange() {
+    final isValid = _formKey.currentState!.validate();
+    setState(() {
+      _formIsValid = isValid;
+    });
+  }
+
+  @override
+  void initState() {
+    super.initState();
+
+    // 🪄 Schedule validation after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final currentState = _formKey.currentState;
+      if (currentState != null) {
+        setState(() {
+          _formIsValid = currentState.validate();
+        });
+      }
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Form fields
+    var displayNameField = TextFormField(
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      maxLength: 30,
+      decoration: const InputDecoration(
+        label: Text('Display Name'),
+      ),
+      validator: validateDisplayName,
+      onSaved: (newValue) => displayName = newValue ?? '',
+    );
+
+    var headlineField = TextFormField(
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      maxLength: 80,
+      decoration: const InputDecoration(
+        label: Text('Headline'),
+      ),
+      validator: validateHeadline,
+      onSaved: (newValue) => headline = newValue ?? '',
+    );
+    var linkedinField = TextFormField(
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      maxLength: 150,
+      decoration: const InputDecoration(
+        label: Text('Linkedin'),
+      ),
+      validator: validateLinkedin,
+      onSaved: (newValue) => linkedinUrl = newValue ?? '',
+    );
+    var mobileNumberField = TextFormField(
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      maxLength: 10,
+      decoration: const InputDecoration(
+        label: Text('Mobile Number'),
+      ),
+      keyboardType: TextInputType.phone,
+      validator: validateMobileNumber,
+      onSaved: (newValue) => mobileNumber = newValue ?? '',
+    );
+    var descriptionField = TextFormField(
+      autovalidateMode: AutovalidateMode.onUserInteraction,
+      maxLength: 1000,
+      decoration: const InputDecoration(
+        label: Text('Description'),
+        border: OutlineInputBorder(),
+      ),
+      keyboardType: TextInputType.multiline,
+      minLines: 3,
+      maxLines: null,
+      validator: validateDescription,
+      onSaved: (newValue) => description = newValue ?? '',
+    );
+    var majorField = DropdownButtonFormField(
+      items: [
+        DropdownMenuItem(
+          value: null,
+          child: Text('None'),
+        ),
+        ...MajorService.getMajors().map(
+          (e) => DropdownMenuItem(
+            value: e,
+            child: Text(e),
+          ),
+        ),
+      ],
+      onChanged: (value) {},
+      onSaved: (newValue) => major = newValue ?? '',
+      decoration: const InputDecoration(
+        label: Text('Major'),
+      ),
+    );
     return SizedBox(
       height: double.infinity,
       child: Form(
+        onChanged: onFormChange,
         key: _formKey,
         child: SingleChildScrollView(
           child: Padding(
@@ -134,74 +238,17 @@ class _EditProfileState extends State<EditProfile> {
                   'Edit profile',
                   style: Theme.of(context).textTheme.headlineMedium,
                 ),
-                TextFormField(
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  maxLength: 30,
-                  decoration: const InputDecoration(
-                    label: Text('Display Name'),
-                  ),
-                  validator: validateDisplayName,
-                ),
+                displayNameField,
                 SizedBox(height: 16),
-                TextFormField(
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  maxLength: 80,
-                  decoration: const InputDecoration(
-                    label: Text('Headline'),
-                  ),
-                  validator: validateHeadline,
-                ),
+                headlineField,
                 SizedBox(height: 16),
-                TextFormField(
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  maxLength: 150,
-                  decoration: const InputDecoration(
-                    label: Text('Linkedin'),
-                  ),
-                  validator: validateLinkedin,
-                ),
+                linkedinField,
                 SizedBox(height: 16),
-                TextFormField(
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  maxLength: 10,
-                  decoration: const InputDecoration(
-                    label: Text('Mobile Number'),
-                  ),
-                  keyboardType: TextInputType.phone,
-                  validator: validateMobileNumber,
-                ),
+                mobileNumberField,
                 SizedBox(height: 16),
-                TextFormField(
-                  autovalidateMode: AutovalidateMode.onUserInteraction,
-                  maxLength: 1000,
-                  decoration: const InputDecoration(
-                    label: Text('Description'),
-                    border: OutlineInputBorder(),
-                  ),
-                  keyboardType: TextInputType.multiline,
-                  minLines: 3,
-                  maxLines: null,
-                  validator: validateDescription,
-                ),
+                descriptionField,
                 SizedBox(height: 16),
-                DropdownButtonFormField(
-                  items: [
-                    DropdownMenuItem(
-                      value: null,
-                      child: Text('None'),
-                    ),
-                    ...MajorService.getMajors().map(
-                      (e) => DropdownMenuItem(
-                        value: e,
-                        child: Text(e),
-                      ),
-                    ),
-                  ],
-                  onChanged: (value) {},
-                  decoration: const InputDecoration(
-                    label: Text('Major'),
-                  ),
-                ),
+                majorField,
                 SizedBox(height: 16),
                 Row(
                   children: [
@@ -242,7 +289,7 @@ class _EditProfileState extends State<EditProfile> {
                       width: 16,
                     ),
                     FilledButton.icon(
-                      onPressed: _submitData,
+                      onPressed: _formIsValid ? _submitData : null,
                       label: Text('Save'),
                       style: FilledButton.styleFrom(
                         backgroundColor: darkBlue,
