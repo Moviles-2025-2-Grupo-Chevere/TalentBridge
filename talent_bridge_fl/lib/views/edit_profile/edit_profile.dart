@@ -52,7 +52,7 @@ class _EditProfileState extends State<EditProfile> {
       await _fb.updateUserProfile(
         updateUserDto,
       );
-      debugPrint("Updated user document");
+      print("Updated user document");
       widget.onUpdate(updateUserDto);
       if (mounted) {
         Navigator.of(context).pop();

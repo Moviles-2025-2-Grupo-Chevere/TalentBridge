@@ -1,10 +1,7 @@
-import 'dart:async';
-
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'views/login/login.dart';
+import 'package:talent_bridge_fl/views/splash_screen.dart';
 import 'services/connectivity_service.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 
@@ -25,7 +22,6 @@ class TalentBridge extends StatefulWidget {
 
 class _TalentBridgeState extends State<TalentBridge> {
   final ConnectivityService _connectivityService = ConnectivityService();
-  StreamSubscription<User?>? _authSub;
 
   @override
   void initState() {
@@ -49,7 +45,7 @@ class _TalentBridgeState extends State<TalentBridge> {
       navigatorObservers: [
         FirebaseAnalyticsObserver(analytics: FirebaseAnalytics.instance),
       ],
-      home: const Login(),
+      home: const SplashScreen(),
     );
   }
 }
