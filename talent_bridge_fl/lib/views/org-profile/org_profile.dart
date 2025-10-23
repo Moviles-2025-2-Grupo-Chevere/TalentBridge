@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:talent_bridge_fl/components/add_element_widget.dart';
-import 'package:talent_bridge_fl/components/yellow_text_box_widget.dart';
+import 'package:talent_bridge_fl/components/text_box_widget.dart';
 
 class OrgProfile extends StatelessWidget {
   const OrgProfile({Key? key}) : super(key: key);
@@ -109,11 +109,11 @@ class OrgProfile extends StatelessWidget {
                 spacing: 8.0,
                 runSpacing: 8.0,
                 children: [
-                  YellowTextBoxWidget(text: 'Diseño', onTap: () {}),
-                  YellowTextBoxWidget(text: 'Dibujo', onTap: () {}),
-                  YellowTextBoxWidget(text: 'Robótica', onTap: () {}),
-                  YellowTextBoxWidget(text: 'ROS', onTap: () {}),
-                  YellowTextBoxWidget(text: 'MatLab', onTap: () {}),
+                  TextBoxWidget(text: 'Diseño', onTap: () {}),
+                  TextBoxWidget(text: 'Dibujo', onTap: () {}),
+                  TextBoxWidget(text: 'Robótica', onTap: () {}),
+                  TextBoxWidget(text: 'ROS', onTap: () {}),
+                  TextBoxWidget(text: 'MatLab', onTap: () {}),
                 ],
               ),
               Center(
