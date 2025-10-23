@@ -279,7 +279,18 @@ class _MyProfileState extends ConsumerState<MyProfile> {
                 ),
               ],
             ),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    userEntity?.headline ?? '',
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 24.0),
+
             // Contact section
             const Text(
               'Contact',
