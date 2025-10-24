@@ -9,6 +9,7 @@ class ProfileNotifier extends Notifier<UserEntity?> {
   @override
   build() {
     print('Profile provider rebuilt');
+    state = null;
     final asyncProfile = ref.watch(dbProfileProvider);
 
     // Update state reactively whenever Firestore stream emits
@@ -28,6 +29,6 @@ class ProfileNotifier extends Notifier<UserEntity?> {
 
 final dbProfileProvider = StreamProvider.autoDispose(
   (ref) {
-    return _fb.getCurentUserSnapshot()!;
+    return _fb.getCurrentUserSnapshot()!;
   },
 );
