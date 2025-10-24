@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:talent_bridge_fl/domain/project_entity.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
@@ -20,7 +22,7 @@ class ProjectService {
       parameters: {
         "createdById": project.createdById,
         "title": project.title,
-        "skills": project.skills,
+        "skills": jsonEncode(project.skills),
         "id": project.id ?? "",
       },
     );
