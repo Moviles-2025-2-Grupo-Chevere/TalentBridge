@@ -59,7 +59,6 @@ class UserEntity {
       skillsOrTopics: List<String>.from(map['skillsOrTopics'] ?? []),
       description: map['description'] ?? '',
       major: map['major'] ?? '',
-      lastPortfolioUpdateAt: map['lastPortfolioUpdateAt'] ?? '',
     );
   }
 

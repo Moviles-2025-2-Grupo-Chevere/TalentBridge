@@ -16,7 +16,13 @@ class ProfileNotifier extends Notifier<UserEntity?> {
     asyncProfile.whenData((snapshot) {
       if (snapshot.exists) {
         print('User data updated');
-        state = UserEntity.fromMap(snapshot.data()!);
+        UserEntity userEntity;
+        try {
+          userEntity = UserEntity.fromMap(snapshot.data()!);
+          state = userEntity;
+        } catch (e) {
+          print(e);
+        }
       } else {
         print('User data NOT updated');
         state = null;
