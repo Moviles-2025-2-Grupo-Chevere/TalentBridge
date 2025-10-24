@@ -587,12 +587,13 @@ class _MyProfileState extends ConsumerState<MyProfile> {
             // Link sections for CV and Portfolio
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(
                   child: Column(
                     children: [
                       AddElementWidget(
-                        title: 'Agregar CV',
+                        title: 'Add CV',
                         onTap: _pickAndUploadCVs,
                       ),
                       const SizedBox(height: 8),
@@ -611,7 +612,7 @@ class _MyProfileState extends ConsumerState<MyProfile> {
                 const SizedBox(width: 16.0),
                 Expanded(
                   child: AddElementWidget(
-                    title: 'Agregar Portafolio',
+                    title: 'Add Portfolio',
                     onTap: () {
                       // Add Portfolio action
                     },
