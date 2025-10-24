@@ -70,12 +70,16 @@ class FirebaseService {
     return _db.collection('users').doc(uid).snapshots();
   }
 
-  Future<UserEntity?> getCurrentUserEntity() async {
+  Future<UserEntity?> getCurrentUserEntity(bool? useOnline) async {
     final uid = currentUid();
     if (uid == null) return null;
 
     final docRef = _db.collection('users').doc(uid);
-    final snap = await docRef.get();
+    final snap = await docRef.get(
+      GetOptions(
+        source: useOnline == true ? Source.server : Source.serverAndCache,
+      ),
+    );
 
     if (!snap.exists) return null;
 

@@ -12,8 +12,8 @@ class DbService {
   final usersTable = 'users';
   final fb = FirebaseService();
 
-  Future<void> onCreateDB(Database db, int version) {
-    return db.execute(
+  Future<void> onCreateDB(Database db, int version) async {
+    await db.execute(
       '''
         CREATE TABLE projects (
         id TEXT PRIMARY KEY,
@@ -25,20 +25,24 @@ class DbService {
         img_url TEXT,                 -- Nullable image URL
         is_favorite INTEGER DEFAULT 0 -- 0 = false, 1 = true (optional local flag)
       ); 
-        CREATE TABLE users (
-        id TEXT PRIMARY KEY,
-        display_name TEXT,
-        email TEXT,
-        headline TEXT,
-        linkedin TEXT,
-        location TEXT,
-        mobile_number TEXT,
-        description TEXT,
-        major TEXT
-        skills TEXT -- JSON-encoded array of strings
-        );
+        
       ''',
     );
+
+    await db.execute('''
+      CREATE TABLE users (
+              id TEXT PRIMARY KEY,
+              display_name TEXT,
+              email TEXT,
+              headline TEXT,
+              linkedin TEXT,
+              location TEXT,
+              mobile_number TEXT,
+              description TEXT,
+              major TEXT,
+              skills TEXT -- JSON-encoded array of strings
+              );
+              ''');
   }
 
   Future<Database> _getDB() async {
