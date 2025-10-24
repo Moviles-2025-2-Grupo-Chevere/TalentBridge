@@ -126,12 +126,6 @@ class _LoginState extends State<Login> {
     _emailCtrl.addListener(_revalidate);
     _passCtrl.addListener(_revalidate);
 
-    // (Opcional) registrar vista de pantalla para analytics
-    // WidgetsBinding.instance.addPostFrameCallback((_) {
-    //   _fb.logEvent('screen_view', {'screen': 'Login'});
-    // });
-
-    // Post-frame revalidation (covers autofill/paste)
     WidgetsBinding.instance.addPostFrameCallback((_) => _revalidate());
   }
 
@@ -161,9 +155,9 @@ class _LoginState extends State<Login> {
       if (!mounted) return;
 
       // Ir a MainFeed y limpiar el stack
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => HomeView())
-      );
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (_) => HomeView()));
     } on FirebaseAuthException catch (e) {
       // Conservamos tu UX de errores con códigos específicos
       final msg = switch (e.code) {

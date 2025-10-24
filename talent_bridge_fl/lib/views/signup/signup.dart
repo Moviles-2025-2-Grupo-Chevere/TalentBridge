@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // para mapear errores conocidos
-import 'package:talent_bridge_fl/views/login/login.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
 
 // ---------- COLOR & SHAPE TOKENS ----------

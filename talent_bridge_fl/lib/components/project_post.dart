@@ -1,4 +1,3 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:talent_bridge_fl/domain/project_entity.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
@@ -9,15 +8,18 @@ class ProjectPost extends StatelessWidget {
     super.key,
     required this.project,
     required this.showApplyModal,
+    required this.showSaveModal,
+    required this.showRemoveModal,
   });
 
   final ProjectEntity project;
   final void Function(String, String) showApplyModal;
-
+  final void Function(ProjectEntity) showSaveModal;
+  final void Function(ProjectEntity) showRemoveModal;
   @override
   Widget build(BuildContext context) {
+    final firebaseService = FirebaseService();
     var profilePictureUrl = project.createdBy?.photoUrl;
-    final _firebaseService = FirebaseService();
     return Card(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
@@ -79,14 +81,23 @@ class ProjectPost extends StatelessWidget {
             Wrap(
               spacing: 4,
               children: [
-                TextButton(onPressed: () {}, child: Text('Comentarios')),
-                TextButton(onPressed: () {}, child: Text('Guardar')),
+                TextButton(onPressed: () {}, child: Text('Comments')),
+                if (!project.isFavorite)
+                  TextButton(
+                    onPressed: () => showSaveModal(project),
+                    child: Text('Save'),
+                  ),
+                if (project.isFavorite)
+                  TextButton(
+                    onPressed: () => showRemoveModal(project),
+                    child: Text('Remove'),
+                  ),
                 TextButton(
                   onPressed: () {
-                    final currentUserId = _firebaseService.currentUid() ?? "";
+                    final currentUserId = firebaseService.currentUid() ?? "";
                     showApplyModal(currentUserId, project.id ?? "");
                   },
-                  child: Text('Aplicar'),
+                  child: Text('Apply'),
                 ),
               ],
             ),

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:talent_bridge_fl/components/yellow_text_box_widget.dart';
-import 'package:talent_bridge_fl/components/circular_image_widget.dart';
+import 'package:talent_bridge_fl/components/text_box_widget.dart';
 
 class UserProfile extends StatelessWidget {
   const UserProfile({super.key});
@@ -20,11 +19,7 @@ class UserProfile extends StatelessWidget {
                 child: Column(
                   children: [
                     // Profile image
-                    const CircularImageWidget(
-                      imageUrl:
-                          'assets/images/other_user.jpg', // Replace with actual image URL
-                      size: 120.0,
-                    ),
+                    const CircleAvatar(),
                     const SizedBox(height: 16.0),
                     // Username
                     const Text(
@@ -95,11 +90,11 @@ class UserProfile extends StatelessWidget {
                 spacing: 8.0,
                 runSpacing: 8.0,
                 children: [
-                  YellowTextBoxWidget(text: 'Diseño', onTap: () {}),
-                  YellowTextBoxWidget(text: 'Dibujo', onTap: () {}),
-                  YellowTextBoxWidget(text: 'AutoCad', onTap: () {}),
-                  YellowTextBoxWidget(text: 'Planos', onTap: () {}),
-                  YellowTextBoxWidget(text: 'Cerámica', onTap: () {}),
+                  TextBoxWidget(text: 'Diseño', onTap: () {}),
+                  TextBoxWidget(text: 'Dibujo', onTap: () {}),
+                  TextBoxWidget(text: 'AutoCad', onTap: () {}),
+                  TextBoxWidget(text: 'Planos', onTap: () {}),
+                  TextBoxWidget(text: 'Cerámica', onTap: () {}),
                 ],
               ),
 
