@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 /// Commonly used for skills, tags, or 'flags' in a profile
 /// This widget can be easily customized with different border colors,
 /// text styles, and padding
-class YellowTextBoxWidget extends StatelessWidget {
+class TextBoxWidget extends StatelessWidget {
   final String text;
   final Color borderColor;
   final Color textColor;
@@ -14,16 +14,16 @@ class YellowTextBoxWidget extends StatelessWidget {
   final double borderRadius;
   final VoidCallback? onTap;
 
-  const YellowTextBoxWidget({
-    Key? key,
+  const TextBoxWidget({
+    super.key,
     required this.text,
-    this.borderColor = const Color(0xFF3E6990), // Yellow color for border
-    this.textColor = const Color(0xFF3E6990), // Yellow color for text
+    this.borderColor = const Color(0xFF3E6990),
+    this.textColor = const Color(0xFF3E6990),
     this.padding = const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
     this.borderWidth = 1.0,
     this.borderRadius = 4.0,
     this.onTap,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

@@ -2,11 +2,15 @@ import 'package:sqflite/sqflite.dart' as sql;
 import 'package:sqflite/sqlite_api.dart';
 import 'package:path/path.dart' as path;
 import 'package:talent_bridge_fl/domain/project_entity.dart';
+import 'package:talent_bridge_fl/domain/user_entity.dart';
+import 'package:talent_bridge_fl/services/firebase_service.dart';
 
 class DbService {
-  const DbService();
+  DbService();
 
   final projectTable = 'projects';
+  final usersTable = 'users';
+  final fb = FirebaseService();
 
   Future<void> onCreateDB(Database db, int version) {
     return db.execute(
@@ -20,7 +24,20 @@ class DbService {
         skills TEXT NOT NULL,         -- JSON-encoded array of strings
         img_url TEXT,                 -- Nullable image URL
         is_favorite INTEGER DEFAULT 0 -- 0 = false, 1 = true (optional local flag)
-      ); ''',
+      ); 
+        CREATE TABLE users (
+        id TEXT PRIMARY KEY,
+        display_name TEXT,
+        email TEXT,
+        headline TEXT,
+        linkedin TEXT,
+        location TEXT,
+        mobile_number TEXT,
+        description TEXT,
+        major TEXT
+        skills TEXT -- JSON-encoded array of strings
+        );
+      ''',
     );
   }
 
@@ -71,6 +88,33 @@ class DbService {
           .toList();
     } catch (e) {
       throw Error();
+    }
+  }
+
+  Future<void> saveProfileLocally(UserEntity u) async {
+    final db = await _getDB();
+    try {
+      db.insert(usersTable, u.toLocalMap());
+    } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<UserEntity?> getProfileLocally() async {
+    final db = await _getDB();
+    try {
+      final uid = fb.currentUid();
+      if (uid == null) throw Exception('Uid not found');
+      var result = (await db.query(
+        usersTable,
+        where: "id = ?",
+        limit: 1,
+        whereArgs: [uid],
+      ));
+      if (result.length != 1) return null;
+      return UserEntity.fromLocalMap(result[0]);
+    } catch (e) {
+      rethrow;
     }
   }
 }

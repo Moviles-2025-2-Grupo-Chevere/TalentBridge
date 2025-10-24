@@ -25,12 +25,12 @@ class Credits extends StatefulWidget {
 class _CreditsState extends State<Credits> {
   // Edit these to point to your real asset files (leave null for placeholder)
   final List<_Member> _members = const [
-    _Member('Daniel', 'assets/images/DANIEL.JPG'),
-    _Member('David', 'assets/images/DAVID.JPG'),
-    _Member('Mariana', 'assets/images/MARIANA.JPG'),
-    _Member('Manuela', 'assets/images/MANUELA.JPG'),
-    _Member('Juan Diego', 'assets/images/MP.JPG'), // map as you need
-    _Member('María Pau', 'assets/images/MP.JPG'),
+    _Member('Daniel', 'assets/images/DANIEL.jpg'),
+    _Member('David', 'assets/images/DAVID.jpg'),
+    _Member('Mariana', 'assets/images/MARIANA.jpg'),
+    _Member('Manuela', 'assets/images/MANUELA.jpg'),
+    _Member('Juan Diego', 'assets/images/JUDI.jpg'), // map as you need
+    _Member('María Pau', 'assets/images/MP.jpg'),
   ];
 
   @override
@@ -79,42 +79,6 @@ class _CreditsState extends State<Credits> {
                           ),
                         ),
                       ],
-                    ),
-                    const SizedBox(height: 24),
-
-                    // ---- Centered pill "Home" button ----
-                    Center(
-                      child: SizedBox(
-                        width: 120,
-                        height: 40,
-                        child: DecoratedBox(
-                          decoration: const BoxDecoration(
-                            boxShadow: [
-                              BoxShadow(
-                                color: kShadowCol,
-                                offset: Offset(0, 6),
-                                blurRadius: 12,
-                              ),
-                            ],
-                            borderRadius: BorderRadius.all(Radius.circular(22)),
-                          ),
-                          child: ElevatedButton(
-                            onPressed: () => Navigator.of(context).pop(),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: kHomeBtn,
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(22),
-                              ),
-                              elevation: 0,
-                              textStyle: const TextStyle(
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                            child: const Text('Home'),
-                          ),
-                        ),
-                      ),
                     ),
 
                     const SizedBox(height: 28),
