@@ -9,6 +9,7 @@ import 'package:talent_bridge_fl/data/project_service.dart';
 import 'package:talent_bridge_fl/domain/project_entity.dart';
 import 'package:talent_bridge_fl/domain/update_user_dto.dart';
 import 'package:talent_bridge_fl/domain/user_entity.dart';
+import 'package:talent_bridge_fl/providers/profile_provider.dart';
 import 'package:talent_bridge_fl/providers/upload_queue.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
 import 'package:talent_bridge_fl/services/profile_pic_storage.dart';
@@ -34,7 +35,6 @@ class MyProfile extends ConsumerStatefulWidget {
 
 class _MyProfileState extends ConsumerState<MyProfile> {
   ImageProvider? pfpProvider;
-  UserEntity? userEntity;
   bool syncingImage = false;
   final fb = FirebaseService();
   final projectService = ProjectService();
@@ -43,16 +43,6 @@ class _MyProfileState extends ConsumerState<MyProfile> {
   void initState() {
     super.initState();
     getPfP();
-    getUserDocument();
-  }
-
-  Future<void> getUserDocument() async {
-    var user = await fb.getCurrentUserEntity();
-    if (context.mounted) {
-      setState(() {
-        userEntity = user;
-      });
-    }
   }
 
   /// Uses offline first, online fallback for getting the profile picture.
@@ -191,27 +181,13 @@ class _MyProfileState extends ConsumerState<MyProfile> {
     );
   }
 
-  void _onUserUpdate(UpdateUserDto dto) {
-    setState(() {
-      assert(userEntity != null);
-      userEntity!.displayName = dto.displayName;
-      userEntity!.headline = dto.headline;
-      userEntity!.linkedin = dto.linkedin;
-      userEntity!.mobileNumber = dto.mobileNumber;
-      userEntity!.description = dto.description;
-      userEntity!.major = dto.major;
-      userEntity!.skillsOrTopics = dto.skillsOrTopics;
-    });
-  }
-
-  void _openEditProfileOverlay() {
-    final user = userEntity!;
+  void _openEditProfileOverlay(UserEntity user) {
     showModalBottomSheet(
       useSafeArea: true,
       isScrollControlled: true,
       context: context,
       builder: (context) => EditProfile(
-        onUpdate: _onUserUpdate,
+        onUpdate: (updateDto) {},
         existingData: UpdateUserDto(
           displayName: user.displayName,
           headline: user.headline ?? '',
@@ -238,6 +214,7 @@ class _MyProfileState extends ConsumerState<MyProfile> {
       },
     );
     final pendingUpload = ref.watch(pfpUploadProvider) != null;
+    var userEntity = ref.watch(profileProvider);
 
     return SingleChildScrollView(
       child: Padding(
@@ -289,7 +266,7 @@ class _MyProfileState extends ConsumerState<MyProfile> {
                     alignment: Alignment.topRight,
                     child: IconButton(
                       onPressed: userEntity != null
-                          ? _openEditProfileOverlay
+                          ? () => _openEditProfileOverlay(userEntity!)
                           : () {},
                       icon: Icon(Icons.edit),
                     ),
@@ -302,7 +279,7 @@ class _MyProfileState extends ConsumerState<MyProfile> {
               children: [
                 (userEntity?.headline ?? '').isEmpty
                     ? TextButton(
-                        onPressed: _openEditProfileOverlay,
+                        onPressed: () => _openEditProfileOverlay(userEntity!),
                         child: Text(
                           'Add headline',
                           style: const TextStyle(color: Colors.blue),
@@ -330,19 +307,19 @@ class _MyProfileState extends ConsumerState<MyProfile> {
                   label: 'Linkedin',
                   value: userEntity?.linkedin,
                   fallback: 'Add LinkedIn',
-                  fallbackAction: _openEditProfileOverlay,
+                  fallbackAction: () => _openEditProfileOverlay(userEntity!),
                 ),
                 ContactItem(
                   label: 'Mobile Number',
                   value: userEntity?.mobileNumber,
                   fallback: 'Add mobile number',
-                  fallbackAction: _openEditProfileOverlay,
+                  fallbackAction: () => _openEditProfileOverlay(userEntity!),
                 ),
                 ContactItem(
                   label: 'Major',
                   value: userEntity?.major,
                   fallback: 'Add major',
-                  fallbackAction: _openEditProfileOverlay,
+                  fallbackAction: () => _openEditProfileOverlay(userEntity!),
                 ),
               ],
             ),
@@ -354,7 +331,7 @@ class _MyProfileState extends ConsumerState<MyProfile> {
                 ? Text(userEntity!.description!)
                 : Center(
                     child: TextButton(
-                      onPressed: _openEditProfileOverlay,
+                      onPressed: () => _openEditProfileOverlay(userEntity!),
                       child: Text(
                         'Add description',
                         style: TextStyle(
@@ -376,7 +353,7 @@ class _MyProfileState extends ConsumerState<MyProfile> {
             ),
             Center(
               child: TextButton(
-                onPressed: _openEditProfileOverlay,
+                onPressed: () => _openEditProfileOverlay(userEntity!),
                 child: const Text(
                   'Add Skills',
                   style: TextStyle(

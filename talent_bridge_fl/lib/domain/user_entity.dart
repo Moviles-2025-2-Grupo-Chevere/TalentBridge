@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:talent_bridge_fl/domain/project_entity.dart';
 
 class UserEntity {
@@ -58,6 +60,47 @@ class UserEntity {
       description: map['description'] ?? '',
       major: map['major'] ?? '',
       lastPortfolioUpdateAt: map['lastPortfolioUpdateAt'] ?? '',
+    );
+  }
+
+  Map<String, Object> toLocalMap() {
+    return {
+      'id': id,
+      'display_name': displayName,
+      'email': email,
+      'headline': headline ?? '',
+      'linkedin': linkedin ?? '',
+      'location': location ?? '',
+      'mobile_number': mobileNumber ?? '',
+      'description': description ?? '',
+      'major': major ?? '',
+      'skills': skillsOrTopics != null ? jsonEncode(skillsOrTopics) : '[]',
+    };
+  }
+
+  /// Create a [UserEntity] from a locally-stored map.
+  factory UserEntity.fromLocalMap(Map<String, dynamic> map) {
+    // Parse skills which may be stored as a JSON string or as a List.
+    final dynamic skillsRaw = map['skills'];
+    List<String>? skillsList = List<String>.from(jsonDecode(skillsRaw));
+
+    return UserEntity(
+      id: map['id']?.toString() ?? '',
+      displayName: map['display_name'],
+      email: map['email'] ?? '',
+      headline: (map['headline'] ?? '')?.toString(),
+      isPublic: true,
+      linkedin: (map['linkedin'] ?? '')?.toString(),
+      location: (map['location'] ?? '')?.toString(),
+      mobileNumber: (map['mobile_number'] ?? '')?.toString(),
+      photoUrl: 'assets/images/gumball.jpg',
+      projects: [],
+      applications: [],
+      acceptedProjects: [],
+      skillsOrTopics: skillsList,
+      description: (map['description'] ?? '')?.toString(),
+      major: (map['major'] ?? '')?.toString(),
+      lastPortfolioUpdateAt: '',
     );
   }
 }

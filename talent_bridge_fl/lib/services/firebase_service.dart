@@ -64,6 +64,12 @@ class FirebaseService {
 
   // ---------------- USER DATA ----------------
 
+  Stream<DocumentSnapshot<Map<String, dynamic>>>? getCurentUserSnapshot() {
+    final uid = currentUid();
+    if (uid == null) return null;
+    return _db.collection('users').doc(uid).snapshots();
+  }
+
   Future<UserEntity?> getCurrentUserEntity() async {
     final uid = currentUid();
     if (uid == null) return null;
