@@ -100,7 +100,7 @@ class DbService {
     }
   }
 
-  Future<UserEntity?> getProfileLocally(UserEntity u) async {
+  Future<UserEntity?> getProfileLocally() async {
     final db = await _getDB();
     try {
       final uid = fb.currentUid();
