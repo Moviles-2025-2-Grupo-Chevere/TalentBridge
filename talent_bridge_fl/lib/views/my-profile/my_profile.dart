@@ -214,7 +214,7 @@ class _MyProfileState extends ConsumerState<MyProfile> {
       },
     );
     final pendingUpload = ref.watch(pfpUploadProvider) != null;
-    var userEntity = ref.watch(profileProvider);
+    final userEntity = ref.watch(profileProvider);
 
     return SingleChildScrollView(
       child: Padding(
