@@ -16,7 +16,7 @@ class ProjectList extends StatefulWidget {
 
 class _ProjectListState extends State<ProjectList> {
   final firebaseService = FirebaseService();
-  final dbService = const DbService();
+  final dbService = DbService();
 
   late final List<ProjectEntity> projects;
 
