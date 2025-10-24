@@ -139,20 +139,7 @@ class MainActivity : ComponentActivity() {
                                 onBack = { navController.popBackStack() },
                             )
                         }
-                        composable(Routes.Navegation) {
-                            NavegationScreen(
-                                onBack = { navController.popBackStack() },
-                                onInitiativeProfile = { navController.navigate(Routes.InitiativeProfile) },
-                                onLeaderFeed = { navController.navigate(Routes.LeaderFeed) },
-                                onSavedProjects = { navController.navigate(Routes.SavedProjects) },
-                                onSearch = { navController.navigate(Routes.Search) },
-                                onStudentProfile = { navController.navigate(Routes.StudentProfile) },
-                                onSomeoneElseProfile = { navController.navigate(Routes.SomeOneElseProfile) },
-                                onCredits = { navController.navigate(Routes.Credits) },
-                                onStudentFeed = { navController.navigate(Routes.StudentFeed) },
-                                onInitiativeDetail = { navController.navigate(Routes.InitiativeDetail) }
-                            )
-                        }
+
                         composable(Routes.InitiativeProfile) {
                             HomeWithDrawer(navController = navController) { openDrawer ->
                                 InitiativeProfileSceen(
@@ -165,8 +152,10 @@ class MainActivity : ComponentActivity() {
                             HomeWithDrawer(navController = navController) { openDrawer ->
                                 LeaderFeedScreen(
                                     onBack = { navController.popBackStack() },
-                                    onOpenDrawer = { openDrawer() }
-
+                                    onOpenDrawer = { openDrawer() },
+                                    onStudentClick = { uid ->
+                                        navController.navigate(Routes.someoneElse(uid))
+                                    }
                                 )
                             }
                         }
