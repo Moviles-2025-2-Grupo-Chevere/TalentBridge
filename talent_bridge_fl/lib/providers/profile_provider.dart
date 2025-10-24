@@ -13,33 +13,19 @@ class ProfileNotifier extends Notifier<UserEntity?> {
     print('Profile provider rebuilt');
     state = null;
     updateLocalWithOnline();
-    // final asyncProfile = ref.watch(remoteProfileProvider);
-
-    // // Update state reactively whenever Firestore stream emits
-    // asyncProfile.whenData((snapshot) {
-    //   if (snapshot.exists) {
-    //     print('User data updated');
-    //     UserEntity userEntity;
-    //     try {
-    //       userEntity = UserEntity.fromMap(snapshot.data()!);
-    //       state = userEntity;
-    //     } catch (e) {
-    //       print(e);
-    //     }
-    //   } else {
-    //     print('User data NOT updated');
-    //     state = null;
-    //   }
-    // });
-
     return state;
   }
 
   updateLocalWithOnline() async {
-    final remoteValue = await _fb.getCurrentUserEntity(true);
+    final remoteValue = await _fb
+        .getCurrentUserEntity(true)
+        .catchError((e) => null);
     if (remoteValue != null) {
       await _db.saveProfileLocally(remoteValue);
       state = remoteValue;
+    } else {
+      // fallback to online
+      state = await _db.getProfileLocally();
     }
   }
 }

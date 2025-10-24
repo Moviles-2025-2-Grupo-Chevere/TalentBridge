@@ -470,13 +470,23 @@ class _MyProfileState extends ConsumerState<MyProfile> {
                       ),
                       const SizedBox(height: 16.0),
                       // Username
-                      Text(
-                        userEntity?.displayName ?? '',
-                        style: TextStyle(
-                          fontSize: 18.0,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'OpenSans',
-                        ),
+                      Row(
+                        children: [
+                          Text(
+                            userEntity?.displayName ?? '',
+                            style: TextStyle(
+                              fontSize: 18.0,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'OpenSans',
+                            ),
+                          ),
+                          if (userEntity?.source == Source.local) ...[
+                            SizedBox(
+                              width: 4,
+                            ),
+                            Icon(Icons.cloud_off_outlined),
+                          ],
+                        ],
                       ),
                     ],
                   ),

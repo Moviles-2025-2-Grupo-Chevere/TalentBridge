@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:talent_bridge_fl/domain/project_entity.dart';
 
+enum Source { remote, local }
+
 class UserEntity {
   String id;
   String displayName;
@@ -19,6 +21,7 @@ class UserEntity {
   String? description;
   String? major;
   String? lastPortfolioUpdateAt;
+  Source? source;
 
   UserEntity({
     required this.id,
@@ -37,6 +40,7 @@ class UserEntity {
     this.description,
     this.major,
     this.lastPortfolioUpdateAt,
+    this.source,
   });
 
   factory UserEntity.fromMap(Map<String, dynamic> map) {

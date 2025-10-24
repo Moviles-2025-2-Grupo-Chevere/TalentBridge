@@ -11,7 +11,7 @@ import 'package:firebase_analytics/firebase_analytics.dart';
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await deleteDatabase(join(await getDatabasesPath(), 'talent_bridge.db'));
+  // await deleteDatabase(join(await getDatabasesPath(), 'talent_bridge.db'));
   await Firebase.initializeApp();
   runApp(ProviderScope(child: const TalentBridge()));
 }

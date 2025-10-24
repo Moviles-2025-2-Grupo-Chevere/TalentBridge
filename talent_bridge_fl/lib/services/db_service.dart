@@ -98,7 +98,11 @@ class DbService {
   Future<void> saveProfileLocally(UserEntity u) async {
     final db = await _getDB();
     try {
-      db.insert(usersTable, u.toLocalMap());
+      db.insert(
+        usersTable,
+        u.toLocalMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
     } catch (e) {
       rethrow;
     }
@@ -116,7 +120,9 @@ class DbService {
         whereArgs: [uid],
       ));
       if (result.length != 1) return null;
-      return UserEntity.fromLocalMap(result[0]);
+      var userEntity = UserEntity.fromLocalMap(result[0]);
+      userEntity.source = Source.local;
+      return userEntity;
     } catch (e) {
       rethrow;
     }

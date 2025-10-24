@@ -9,7 +9,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:talent_bridge_fl/domain/project_entity.dart';
 import 'package:talent_bridge_fl/domain/update_user_dto.dart';
-import 'package:talent_bridge_fl/domain/user_entity.dart';
+import 'package:talent_bridge_fl/domain/user_entity.dart' hide Source;
 
 class FirebaseService {
   final _auth = FirebaseAuth.instance;
