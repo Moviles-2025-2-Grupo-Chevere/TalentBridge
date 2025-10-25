@@ -58,9 +58,13 @@ class DbService {
   Future<void> insertSavedProject(ProjectEntity p) async {
     final db = await _getDB();
     try {
-      await db.insert(projectTable, p.toLocalDbMap(true));
+      await db.insert(
+        projectTable,
+        p.toLocalDbMap(true),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
     } catch (e) {
-      throw Error();
+      rethrow;
     }
   }
 

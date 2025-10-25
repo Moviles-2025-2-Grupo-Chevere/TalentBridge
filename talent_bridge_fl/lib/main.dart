@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:path/path.dart';
-import 'package:sqflite/sqflite.dart';
 import 'package:talent_bridge_fl/views/splash_screen.dart';
 import 'services/connectivity_service.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
