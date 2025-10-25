@@ -9,7 +9,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:talent_bridge_fl/domain/project_entity.dart';
 import 'package:talent_bridge_fl/domain/update_user_dto.dart';
-import 'package:talent_bridge_fl/domain/user_entity.dart';
+import 'package:talent_bridge_fl/domain/user_entity.dart' hide Source;
 
 class FirebaseService {
   final _auth = FirebaseAuth.instance;
@@ -70,12 +70,16 @@ class FirebaseService {
     return _db.collection('users').doc(uid).snapshots();
   }
 
-  Future<UserEntity?> getCurrentUserEntity() async {
+  Future<UserEntity?> getCurrentUserEntity(bool? useOnline) async {
     final uid = currentUid();
     if (uid == null) return null;
 
     final docRef = _db.collection('users').doc(uid);
-    final snap = await docRef.get();
+    final snap = await docRef.get(
+      GetOptions(
+        source: useOnline == true ? Source.server : Source.serverAndCache,
+      ),
+    );
 
     if (!snap.exists) return null;
 

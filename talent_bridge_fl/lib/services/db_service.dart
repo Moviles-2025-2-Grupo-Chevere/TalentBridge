@@ -12,8 +12,8 @@ class DbService {
   final usersTable = 'users';
   final fb = FirebaseService();
 
-  Future<void> onCreateDB(Database db, int version) {
-    return db.execute(
+  Future<void> onCreateDB(Database db, int version) async {
+    await db.execute(
       '''
         CREATE TABLE projects (
         id TEXT PRIMARY KEY,
@@ -25,20 +25,24 @@ class DbService {
         img_url TEXT,                 -- Nullable image URL
         is_favorite INTEGER DEFAULT 0 -- 0 = false, 1 = true (optional local flag)
       ); 
-        CREATE TABLE users (
-        id TEXT PRIMARY KEY,
-        display_name TEXT,
-        email TEXT,
-        headline TEXT,
-        linkedin TEXT,
-        location TEXT,
-        mobile_number TEXT,
-        description TEXT,
-        major TEXT
-        skills TEXT -- JSON-encoded array of strings
-        );
+        
       ''',
     );
+
+    await db.execute('''
+      CREATE TABLE users (
+              id TEXT PRIMARY KEY,
+              display_name TEXT,
+              email TEXT,
+              headline TEXT,
+              linkedin TEXT,
+              location TEXT,
+              mobile_number TEXT,
+              description TEXT,
+              major TEXT,
+              skills TEXT -- JSON-encoded array of strings
+              );
+              ''');
   }
 
   Future<Database> _getDB() async {
@@ -54,9 +58,13 @@ class DbService {
   Future<void> insertSavedProject(ProjectEntity p) async {
     final db = await _getDB();
     try {
-      await db.insert(projectTable, p.toLocalDbMap(true));
+      await db.insert(
+        projectTable,
+        p.toLocalDbMap(true),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
     } catch (e) {
-      throw Error();
+      rethrow;
     }
   }
 
@@ -94,7 +102,14 @@ class DbService {
   Future<void> saveProfileLocally(UserEntity u) async {
     final db = await _getDB();
     try {
-      db.insert(usersTable, u.toLocalMap());
+      db.insert(
+        usersTable,
+        u.toLocalMap(),
+        conflictAlgorithm: ConflictAlgorithm.replace,
+      );
+      for (var p in u.projects ?? []) {
+        insertSavedProject(p);
+      }
     } catch (e) {
       rethrow;
     }
@@ -105,14 +120,25 @@ class DbService {
     try {
       final uid = fb.currentUid();
       if (uid == null) throw Exception('Uid not found');
-      var result = (await db.query(
+      var result = await db.query(
         usersTable,
         where: "id = ?",
         limit: 1,
         whereArgs: [uid],
-      ));
+      );
+      var projects = await db.query(
+        projectTable,
+        where: "created_by_id = ?",
+        whereArgs: [uid],
+      );
       if (result.length != 1) return null;
-      return UserEntity.fromLocalMap(result[0]);
+      var userEntity = UserEntity.fromLocalMap(result[0]);
+      var projectEntities = projects
+          .map((e) => ProjectEntity.fromLocalDbMap(e))
+          .toList();
+      userEntity.projects = projectEntities;
+      userEntity.source = Source.local;
+      return userEntity;
     } catch (e) {
       rethrow;
     }

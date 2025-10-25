@@ -4,12 +4,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:talent_bridge_fl/views/splash_screen.dart';
 import 'services/connectivity_service.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
-import 'package:file_picker/file_picker.dart';
 
 // Global navigator key
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // await deleteDatabase(join(await getDatabasesPath(), 'talent_bridge.db'));
   await Firebase.initializeApp();
   runApp(ProviderScope(child: const TalentBridge()));
 }
@@ -27,7 +27,7 @@ class _TalentBridgeState extends State<TalentBridge> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _connectivityService.initialize(context);
+      _connectivityService.initialize(this.context);
     });
   }
 
