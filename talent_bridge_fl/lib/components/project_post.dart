@@ -20,6 +20,10 @@ class ProjectPost extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final firebaseService = FirebaseService();
+    var displayName = (project.createdBy?.displayName ?? '').isEmpty
+        ? project.createdBy!.displayName
+        : 'Anon user';
+    var minutesAgo = project.timeAgo;
     return Card(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
@@ -55,7 +59,7 @@ class ProjectPost extends StatelessWidget {
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       Text(
-                        "${project.createdBy?.displayName ?? 'Project Manager'} · 5m",
+                        "$displayName · $minutesAgo",
                         style: TextStyle(fontWeight: FontWeight.w300),
                       ),
                       Text(project.description),

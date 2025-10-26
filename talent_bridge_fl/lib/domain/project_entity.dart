@@ -7,15 +7,15 @@ import 'package:uuid/uuid.dart';
 final _uuid = Uuid();
 
 class ProjectEntity {
-  final String? id;
-  final DateTime? createdAt;
-  final String createdById;
-  final UserEntity? createdBy;
-  final String title;
-  final String description;
-  final List<String> skills;
-  final String? imgUrl;
-  final bool isFavorite;
+  String? id;
+  DateTime? createdAt;
+  String createdById;
+  UserEntity? createdBy;
+  String title;
+  String description;
+  List<String> skills;
+  String? imgUrl;
+  bool isFavorite;
 
   ProjectEntity({
     String? id,
@@ -109,5 +109,21 @@ class ProjectEntity {
       'img_url': imgUrl,
       'is_favorite': isFavorite ? 1 : 0,
     };
+  }
+
+  /// Returns a short relative time string for `createdAt`: "5m", "2h", "3d", "1w", etc.
+  /// Returns "-" when `createdAt` is null.
+  String get timeAgo {
+    if (createdAt == null) return '-';
+    final diff = DateTime.now().difference(createdAt!);
+    final minutes = diff.inMinutes;
+    if (minutes < 1) return '0m';
+    if (minutes < 60) return '${minutes}m';
+    final hours = diff.inHours;
+    if (hours < 24) return '${hours}h';
+    final days = diff.inDays;
+    if (days < 7) return '${days}d';
+    final weeks = days ~/ 7;
+    return '${weeks}w';
   }
 }
