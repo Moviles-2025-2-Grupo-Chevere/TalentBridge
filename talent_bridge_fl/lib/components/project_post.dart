@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:talent_bridge_fl/components/project_post_pfp.dart';
 import 'package:talent_bridge_fl/domain/project_entity.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
 import 'package:talent_bridge_fl/views/user-profile/user_profile.dart';
@@ -19,7 +20,6 @@ class ProjectPost extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final firebaseService = FirebaseService();
-    var profilePictureUrl = project.createdBy?.photoUrl;
     return Card(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
@@ -43,12 +43,7 @@ class ProjectPost extends StatelessWidget {
                       );
                     },
                     customBorder: const CircleBorder(),
-                    child: CircleAvatar(
-                      radius: 24,
-                      backgroundImage: profilePictureUrl != null
-                          ? AssetImage(profilePictureUrl)
-                          : AssetImage('assets/images/gumball.jpg'),
-                    ),
+                    child: ProjectPostPfp(uid: project.createdById),
                   ),
                 ),
                 Expanded(
