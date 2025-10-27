@@ -1,6 +1,8 @@
 import 'dart:collection';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:talent_bridge_fl/data/project_service.dart';
 import 'package:talent_bridge_fl/domain/project_entity.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
@@ -19,6 +21,7 @@ class AddProject extends StatefulWidget {
 }
 
 class _AddProjectState extends State<AddProject> {
+  final picker = ImagePicker();
   final firebaseService = FirebaseService();
   final projectService = ProjectService();
   final _titleController = TextEditingController();
@@ -26,6 +29,7 @@ class _AddProjectState extends State<AddProject> {
   // final _skillsController = TextEditingController();
   final _skills = SkillsService.getSkills();
   final _selectedSkills = HashSet<String>();
+  String? _imagePath;
 
   void _submitData() {
     final title = _titleController.text;
@@ -93,7 +97,17 @@ class _AddProjectState extends State<AddProject> {
     });
   }
 
-  void _getAnImage() {}
+  Future<void> _getAnImage() async {
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+
+    if (image != null) {
+      print('Picked file path: ${image.path}');
+      // You can convert it to File if needed:
+      setState(() {
+        _imagePath = image.path;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -166,6 +180,18 @@ class _AddProjectState extends State<AddProject> {
                   ),
                 ],
               ),
+              if (_imagePath != null) ...[
+                SizedBox(
+                  height: 8,
+                ),
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: 200),
+                  child: Image.file(
+                    File(_imagePath!),
+                    fit: BoxFit.contain,
+                  ),
+                ),
+              ],
               SizedBox(height: 16),
               Row(
                 children: [
