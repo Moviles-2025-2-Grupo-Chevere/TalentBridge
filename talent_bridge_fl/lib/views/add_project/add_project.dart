@@ -93,6 +93,8 @@ class _AddProjectState extends State<AddProject> {
     });
   }
 
+  void _getAnImage() {}
+
   @override
   Widget build(BuildContext context) {
     var titleField = TextField(
@@ -148,6 +150,21 @@ class _AddProjectState extends State<AddProject> {
                       ),
                     )
                     .toList(),
+              ),
+              SizedBox(
+                height: 16,
+              ),
+              Row(
+                children: [
+                  Text("Add a picture"),
+                  SizedBox(
+                    width: 12,
+                  ),
+                  IconButton(
+                    onPressed: () => _getAnImage(),
+                    icon: Icon(Icons.image_search),
+                  ),
+                ],
               ),
               SizedBox(height: 16),
               Row(
