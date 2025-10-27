@@ -36,7 +36,7 @@ class _TalentBridgeState extends State<TalentBridge> {
       provisional: true,
     );
     final token = await messaging.getToken();
-    print("Token: $token");
+    // print("Token: $token");
   }
 
   @override
