@@ -3,6 +3,9 @@ import 'package:flutter/services.dart';
 import 'package:talent_bridge_fl/domain/user_entity.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
 
+// ---- BQ timer helper (nuevo) ----
+import 'package:talent_bridge_fl/analytics/analytics_timer.dart';
+
 // ---- Tokens ----
 const kBg = Color(0xFFFEF7E6); // cream
 const kAmber = Color(0xFFFFC107); // amber accents
@@ -22,6 +25,10 @@ class _SearchState extends State<Search> {
   final _queryCtrl = TextEditingController();
   final _firebaseService = FirebaseService();
 
+  // ---- BQ: medir time-to-first-content de People ----
+  late final ScreenTimer _tPeople;
+  bool _ttfcSent = false; // evita duplicar el evento
+
   // User data
   List<UserEntity> _allUsers = [];
   UserEntity? _currentUser;
@@ -40,6 +47,12 @@ class _SearchState extends State<Search> {
   @override
   void initState() {
     super.initState();
+    // Inicia cronómetro para People (Search)
+    _tPeople = ScreenTimer(
+      'first_content_people',
+      baseParams: {'screen': 'People'},
+    );
+
     _loadUserData();
     // Listen for search bar changes
     _queryCtrl.addListener(_onQueryChanged);
@@ -89,11 +102,20 @@ class _SearchState extends State<Search> {
       {},
       (map, item) => map..update(item, (v) => v + 1, ifAbsent: () => 1),
     );
-    final weights = frequencies.map((s, i) => MapEntry(s, i / skills.length));
+    final weights = frequencies.map(
+      (s, i) => MapEntry(s, i / (skills.isEmpty ? 1 : skills.length)),
+    );
     final filteredUsers = _allUsers
         .where((u) => u.displayName.toLowerCase().contains(q))
         .toList();
-    print('users: $filteredUsers');
+
+    // ---- BQ: primera vez que hay resultados -> dispara evento ----
+    if (!_ttfcSent && filteredUsers.isNotEmpty) {
+      _ttfcSent = true;
+      // Fuente 'cache' porque la lista sale de memoria local (no pegamos a red aquí)
+      _tPeople.endOnce(source: 'cache', itemCount: filteredUsers.length);
+    }
+
     final Map<UserEntity, double> scores = {};
     for (var u in filteredUsers) {
       double score = 0;
@@ -108,8 +130,6 @@ class _SearchState extends State<Search> {
       _userScores = scores;
       _searchResults = filteredUsers;
     });
-    print(scores);
-    print(weights);
   }
 
   void _applySearch() {
@@ -136,10 +156,6 @@ class _SearchState extends State<Search> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Text(
-                  //   _currentUser != null ? _currentUser!.displayName : '?',
-                  // ),
-                  // Label “Buscar”
                   Text('Search', style: labelStyle),
                   const SizedBox(height: 8),
 
@@ -202,8 +218,6 @@ class _SearchState extends State<Search> {
                   // “Recientes”
                   Text('Recent searches', style: labelStyle),
                   const SizedBox(height: 12),
-
-                  // Lista de recientes (icono reloj + tarjeta pill)
                   ..._recents.map(
                     (title) => SearchCard(
                       title: title,
