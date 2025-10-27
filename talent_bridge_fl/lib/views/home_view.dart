@@ -9,9 +9,10 @@ import 'package:talent_bridge_fl/views/login/login.dart';
 import 'package:talent_bridge_fl/views/main-feed/main_feed.dart';
 import 'package:talent_bridge_fl/views/my-profile/my_profile.dart';
 import 'package:talent_bridge_fl/views/saved-projects/saved_projects.dart';
-// import 'package:talent_bridge_fl/views/project/project_view.dart';
-// import 'package:talent_bridge_fl/views/saved-projects/saved_projects.dart';
 import 'package:talent_bridge_fl/views/search/search.dart';
+
+// ⬇️ NUEVO
+import 'package:firebase_performance/firebase_performance.dart';
 
 const kBg = Color(0xFFFEF7E6);
 
@@ -26,6 +27,33 @@ class _HomeViewState extends ConsumerState<HomeView> {
   final _fb = FirebaseService();
   int _selectedPageIdx = 0;
 
+  // ---- BQ: Trace TTFC Home (mínimo y seguro contra rebuilds) ----
+  static Trace? _ttfcHome;
+  static bool _started = false;
+  static bool _stopped = false;
+
+  @override
+  void initState() {
+    super.initState();
+
+    // arranca el trace solo una vez
+    if (!_started) {
+      _started = true;
+      _ttfcHome = FirebasePerformance.instance.newTrace('ttfc_home')
+        ..putAttribute('screen', 'Home') // etiqueta opcional
+        ..start();
+    }
+
+    // lo detenemos cuando el primer frame del Home ya se pintó
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_stopped) {
+        _stopped = true;
+        _ttfcHome?.stop();
+      }
+    });
+  }
+  // ---------------------------------------------------------------
+
   void _selectPage(int idx) {
     setState(() {
       _selectedPageIdx = idx;
@@ -37,39 +65,33 @@ class _HomeViewState extends ConsumerState<HomeView> {
     ref.listen(
       notificationProvider,
       (previous, next) {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(
+        ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Row(
-              children: [
+              children: const [
                 Icon(Icons.notification_important_outlined),
                 SizedBox(width: 8),
-                Text(next?.notification?.title ?? ''),
               ],
             ),
           ),
         );
       },
     );
+
     final mainViews = [
       MainViewItem(
         title: 'Home',
         widget: MainFeed(),
-        icon: Icon(Icons.home_outlined),
+        icon: const Icon(Icons.home_outlined),
         label: "Home",
         actions: [
           IconButton(
-            icon: Icon(Icons.bookmark_outline),
+            icon: const Icon(Icons.bookmark_outline),
             onPressed: () {
-              Navigator.of(
-                context,
-              ).push(
+              Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (ctx) => Scaffold(
-                    appBar: AppBar(
-                      title: Text('Saved Projects'),
-                    ),
+                    appBar: AppBar(title: const Text('Saved Projects')),
                     body: SavedProjects(),
                   ),
                 ),
@@ -77,15 +99,13 @@ class _HomeViewState extends ConsumerState<HomeView> {
             },
           ),
           IconButton(
-            icon: Icon(Icons.people_outline),
+            icon: const Icon(Icons.people_outline),
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (ctx) => Scaffold(
                     backgroundColor: kBg,
-                    appBar: AppBar(
-                      title: Text('Featured Students'),
-                    ),
+                    appBar: AppBar(title: const Text('Featured Students')),
                     body: LeaderFeed(),
                   ),
                 ),
@@ -96,37 +116,38 @@ class _HomeViewState extends ConsumerState<HomeView> {
       ),
       MainViewItem(
         title: 'Search',
-        widget: Search(),
-        icon: Icon(Icons.search),
+        widget: const Search(),
+        icon: const Icon(Icons.search),
         label: 'Search',
-        actions: [],
+        actions: const [],
       ),
       MainViewItem(
         title: 'My Profile',
-        widget: MyProfile(),
-        icon: Icon(Icons.person_outline),
+        widget: const MyProfile(),
+        icon: const Icon(Icons.person_outline),
         label: 'Profile',
-        actions: [],
+        actions: const [],
         drawer: ProfileDrawer(
           onTapLogOut: () async {
             await _fb.signOut();
             if (context.mounted) {
               Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (_) => Login()),
+                MaterialPageRoute(builder: (_) => const Login()),
                 (_) => false,
               );
             }
           },
           onTapCredits: () {
             Navigator.of(context).push(
-              MaterialPageRoute(builder: (ctx) => Credits()),
+              MaterialPageRoute(builder: (ctx) => const Credits()),
             );
           },
         ),
       ),
     ];
+
     final selectedView = mainViews[_selectedPageIdx];
-    Widget activePage = selectedView.widget;
+    final Widget activePage = selectedView.widget;
 
     return Scaffold(
       backgroundColor: kBg,
@@ -139,9 +160,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
               height: 40,
               fit: BoxFit.contain,
             ),
-            const SizedBox(
-              width: 8,
-            ),
+            const SizedBox(width: 8),
             Text(selectedView.title),
           ],
         ),

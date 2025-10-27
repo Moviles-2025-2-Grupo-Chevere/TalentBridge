@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:talent_bridge_fl/domain/user_entity.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
+import 'package:firebase_performance/firebase_performance.dart';
 
 // ---- Tokens ----
 const kBg = Color(0xFFFEF7E6); // cream
@@ -37,11 +38,21 @@ class _SearchState extends State<Search> {
     'Proyectos Inteligencia Artificial',
   ];
 
+  // --- BQ: Trace mínimo (TTFC de People/Search) ---
+  Trace? _ttfcPeople;
+  bool _ttfcStarted = false;
+  bool _ttfcStopped = false;
+  // -------------------------------------------------
+
   @override
   void initState() {
     super.initState();
+
+    _ttfcPeople = FirebasePerformance.instance.newTrace('ttfc_people');
+    _ttfcPeople?.start();
+    _ttfcStarted = true;
+
     _loadUserData();
-    // Listen for search bar changes
     _queryCtrl.addListener(_onQueryChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {});
   }
@@ -93,7 +104,12 @@ class _SearchState extends State<Search> {
     final filteredUsers = _allUsers
         .where((u) => u.displayName.toLowerCase().contains(q))
         .toList();
-    print('users: $filteredUsers');
+
+    if (!_ttfcStopped && _ttfcStarted && filteredUsers.isNotEmpty) {
+      _ttfcStopped = true;
+      _ttfcPeople?.stop();
+    }
+
     final Map<UserEntity, double> scores = {};
     for (var u in filteredUsers) {
       double score = 0;
@@ -108,8 +124,6 @@ class _SearchState extends State<Search> {
       _userScores = scores;
       _searchResults = filteredUsers;
     });
-    print(scores);
-    print(weights);
   }
 
   void _applySearch() {
@@ -136,10 +150,6 @@ class _SearchState extends State<Search> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Text(
-                  //   _currentUser != null ? _currentUser!.displayName : '?',
-                  // ),
-                  // Label “Buscar”
                   Text('Search', style: labelStyle),
                   const SizedBox(height: 8),
 
@@ -155,13 +165,11 @@ class _SearchState extends State<Search> {
                             inputFormatters: [
                               LengthLimitingTextInputFormatter(100),
                             ],
-                            decoration: _pillInput(), // sin icono de lupa
+                            decoration: _pillInput(),
                           ),
                         ),
                       ),
                       const SizedBox(width: 8),
-
-                      // Botón redondo de filtros
                       _shadowWrap(
                         Material(
                           color: Colors.white,
@@ -199,11 +207,9 @@ class _SearchState extends State<Search> {
                     const SizedBox(height: 24),
                   ],
 
-                  // “Recientes”
+                  // Recents
                   Text('Recent searches', style: labelStyle),
                   const SizedBox(height: 12),
-
-                  // Lista de recientes (icono reloj + tarjeta pill)
                   ..._recents.map(
                     (title) => SearchCard(
                       title: title,
@@ -254,9 +260,7 @@ class SearchCard extends StatelessWidget {
               child: InkWell(
                 borderRadius: BorderRadius.circular(12),
                 onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Abrir "$title"'),
-                  ),
+                  SnackBar(content: Text('Abrir "$title"')),
                 ),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
@@ -280,9 +284,7 @@ class SearchCard extends StatelessWidget {
                           title,
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 14,
-                          ),
+                          style: const TextStyle(fontSize: 14),
                         ),
                       ),
                       if (score != null)

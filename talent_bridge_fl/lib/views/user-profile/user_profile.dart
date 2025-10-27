@@ -1,11 +1,29 @@
 import 'package:flutter/material.dart';
 import 'package:talent_bridge_fl/components/text_box_widget.dart';
+import 'package:firebase_performance/firebase_performance.dart'; // <-- NUEVO
 
 class UserProfile extends StatelessWidget {
   const UserProfile({super.key});
 
+  static Trace? _ttfcProfile;
+  static bool _started = false;
+  static bool _stopped = false;
+  // ------------------------------------------
+
   @override
   Widget build(BuildContext context) {
+    if (!_started) {
+      _started = true;
+      _ttfcProfile = FirebasePerformance.instance.newTrace('ttfc_profile')
+        ..start();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!_stopped) {
+          _stopped = true;
+          _ttfcProfile?.stop();
+        }
+      });
+    }
+
     return Container(
       color: const Color.fromARGB(255, 255, 255, 255), // White background
       child: SingleChildScrollView(
