@@ -218,9 +218,6 @@ class MainActivity : ComponentActivity() {
                             HomeWithDrawer(navController = navController) { openDrawer ->
                                 StudentFeedScreen(
                                     onBack = { navController.popBackStack() },
-                                    onSomeOneElseProfile = { uid ->
-                                        navController.navigate(Routes.someoneElse(uid))
-                                    },
                                     onExploreStudents = { navController.navigate(Routes.LeaderFeed) },
                                     onSearch = { navController.navigate(Routes.Search) },
                                     onProfile = { navController.navigate(Routes.StudentProfile) },

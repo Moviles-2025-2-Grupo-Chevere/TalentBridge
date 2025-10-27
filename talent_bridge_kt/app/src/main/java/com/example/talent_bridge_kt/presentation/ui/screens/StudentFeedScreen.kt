@@ -43,17 +43,7 @@ import com.example.talent_bridge_kt.ui.theme.TitleGreen
 import androidx.lifecycle.viewmodel.compose.viewModel
 import java.util.concurrent.TimeUnit
 import androidx.compose.foundation.lazy.items
-import android.app.Application
-import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-private fun projectsVmFactory(app: Application) =
-    object : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            return com.example.talent_bridge_kt.presentation.ui.viewmodel.ProjectsViewModel(app) as T
-        }
-    }
+
 @Composable
 fun StudentFeedScreen(
     onBack: () -> Unit = {},
@@ -63,21 +53,16 @@ fun StudentFeedScreen(
     onHome: () -> Unit = {},
     onSearch: () -> Unit = {},
     onFav: () -> Unit = {},
+    // Navegación desde el pop-up (opcional)
     onGoToApplications: () -> Unit = {},
-    onSomeOneElseProfile: (String) -> Unit = {},
+    onSomeOneElseProfile: () -> Unit = {},
     onExploreStudents: () -> Unit = {},
     onProfile: () -> Unit = {}
 ) {
-    val context = LocalContext.current
-    val vm: ProjectsViewModel = viewModel(
-        factory = projectsVmFactory(context.applicationContext as Application)
-    )
+    val vm: ProjectsViewModel = viewModel()
     val projects by vm.projects.collectAsState()
     val loading by vm.loading.collectAsState()
     val error by vm.error.collectAsState()
-    val savedList by vm.savedProjects.collectAsState()
-    val savedIds = remember(savedList) { savedList.map { it.id }.toSet() }
-
 
     var showSubmitted by remember { mutableStateOf(false) }
 
@@ -139,8 +124,6 @@ fun StudentFeedScreen(
                 // Estado: Lista OK
                 if (!loading && error == null) {
                     items(projects, key = { it.id }) { p ->
-                        val isSaved = savedIds.contains(p.id)
-
                         ProjectCardSimple(
                             time = p.createdAt?.let { prettySince(it.toDate().time) } ?: "—",
                             title = p.title,
@@ -148,8 +131,6 @@ fun StudentFeedScreen(
                             description = p.description,
                             tags = p.skills,
                             imageRes = null, // Si luego guardas URL, cámbialo por AsyncImage con p.imgUrl
-                            saved = isSaved,                        // 👈 NUEVO
-                            onSaveClick = { vm.toggleFavorite(p) }, // 👈 NUEVO
                             onApplyClick = { showSubmitted = true },
                             onSomeOneElseProfile = onSomeOneElseProfile
                         )
@@ -216,12 +197,9 @@ private fun ProjectCardSimple(
     subtitle: String,
     description: String,
     tags: List<String>,
-    imageRes: Int?,
-    saved: Boolean,
-    onSaveClick: () -> Unit,
+    imageRes: Int?,                   // puede ser null
     onApplyClick: () -> Unit,
-    userUid: String,
-    onSomeOneElseProfile: (String) -> Unit
+    onSomeOneElseProfile: () -> Unit
 
 ) {
     Column(
@@ -237,7 +215,7 @@ private fun ProjectCardSimple(
             Image(
                 painter = painterResource(id = R.drawable.iniciativa),
                 contentDescription = "iniciativa",
-                modifier = Modifier.size(28.dp) .clickable { onSomeOneElseProfile(userUid) },
+                modifier = Modifier.size(28.dp) .clickable { onSomeOneElseProfile() },
                 contentScale = ContentScale.Crop
             )
             Spacer(Modifier.width(8.dp))
@@ -289,16 +267,14 @@ private fun ProjectCardSimple(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // ---- SAVE / SAVED ----
             OutlinedButton(
-                onClick = onSaveClick,
+                onClick = { /* guardar */ },
                 shape = RoundedCornerShape(20.dp),
                 colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = if (saved) TitleGreen.copy(alpha = 0.08f) else Color.White,
+                    containerColor = Color.White,
                     contentColor = TitleGreen
                 )
-            ) { Text(if (saved) "Saved" else "Save", fontSize = 12.sp) }
-
+            ) { Text("Comments (0)", fontSize = 12.sp) }
 
             OutlinedButton(
                 onClick = { /* guardar */ },
@@ -307,7 +283,7 @@ private fun ProjectCardSimple(
                     containerColor = Color.White,
                     contentColor = TitleGreen
                 )
-            ) { Text("Comments", fontSize = 12.sp) }
+            ) { Text("Save", fontSize = 12.sp) }
 
             OutlinedButton(
                 onClick = onApplyClick,
