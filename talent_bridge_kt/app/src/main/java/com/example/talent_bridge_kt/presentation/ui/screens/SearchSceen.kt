@@ -3,6 +3,7 @@ package com.example.talent_bridge_kt.presentation.ui.screens
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -52,7 +53,8 @@ fun SearchScreen(
     onHome: () -> Unit = {},
     onSearch: () -> Unit = {},
     onFav: () -> Unit = {},
-    onProfile: () -> Unit = {}
+    onProfile: () -> Unit = {},
+    onStudentClick: (String) -> Unit = {}
 
 
 ) {
@@ -176,7 +178,7 @@ fun SearchScreen(
                     modifier = Modifier.padding(bottom = 12.dp)
                 )
                 LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    items(state.results) { user -> ResultUserRow(user) }
+                    items(state.results) { user -> ResultUserRow(u = user, onClick = { onStudentClick(user.id)}) }
                 }
             }
             Spacer(Modifier.height(150.dp))
@@ -194,10 +196,11 @@ fun SearchScreen(
 
 
 @Composable
-private fun ResultUserRow(u: User) {
+private fun ResultUserRow(u: User, onClick: () -> Unit) {
     Row(
         Modifier
-            .fillMaxWidth(),
+            .fillMaxWidth()
+            .clickable { onClick() },
         verticalAlignment = Alignment.CenterVertically
     ) {
         AsyncImage(
@@ -315,7 +318,7 @@ private fun BottomBarCustom(
             .fillMaxWidth()
             .height(64.dp)
             .shadow(2.dp)
-            .background(CreamBackground)
+            .background(Color.White)
             .padding(horizontal = 8.dp)
     ) {
         Row(

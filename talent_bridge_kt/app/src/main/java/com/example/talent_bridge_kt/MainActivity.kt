@@ -180,6 +180,9 @@ class MainActivity : ComponentActivity() {
                                     onSearch = { navController.navigate(Routes.Search) },
                                     onProfile = { navController.navigate(Routes.StudentProfile) },
                                     onHome = { navController.navigate(Routes.StudentFeed) },
+                                    onStudentClick = { uid ->
+                                        navController.navigate(Routes.someoneElse(uid))
+                                    }
 
 
                                 )
