@@ -1,86 +1,37 @@
 import 'package:flutter/material.dart';
 import 'package:talent_bridge_fl/components/text_box_widget.dart';
+// ---- BQ helper (nuevo) ----
 import 'package:talent_bridge_fl/analytics/analytics_timer.dart';
-import 'package:talent_bridge_fl/services/firebase_service.dart';
-import 'package:talent_bridge_fl/domain/user_entity.dart';
 
-class UserProfile extends StatefulWidget {
-  const UserProfile({super.key, this.uid});
-  final String? uid; // si no lo pasas, usa el current user
-
-  @override
-  State<UserProfile> createState() => _UserProfileState();
-}
-
-class _UserProfileState extends State<UserProfile> {
-  late final ScreenTimer _tProfile;
-  bool _sent = false;
-  final _fb = FirebaseService();
-
-  Future<UserEntity> _loadUser() async {
-    final uid = widget.uid ?? _fb.currentUid();
-    if (uid == null) throw Exception('No user id');
-    return _fb.getUserById(uid);
-  }
-
-  @override
-  void initState() {
-    super.initState();
-    _tProfile = ScreenTimer(
-      'first_content_profile',
-      baseParams: {'screen': 'Profile'},
-    );
-  }
+class UserProfile extends StatelessWidget {
+  const UserProfile({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: const Color.fromARGB(255, 255, 255, 255),
-      child: FutureBuilder<UserEntity>(
-        future: _loadUser(),
-        builder: (_, snap) {
-          if (snap.connectionState == ConnectionState.waiting) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snap.hasError) {
-            return const Center(child: Text('Error loading profile'));
-          }
-          if (!snap.hasData) {
-            return const Center(child: Text('Profile not found'));
-          }
-
-          // Primer contenido real -> cierra BQ una sola vez
-          if (!_sent) {
-            _sent = true;
-            _tProfile.endOnce(
-              source: 'unknown', // cambia a 'cache' si usas helper cache-first
-              itemCount: 1,
-            );
-          }
-
-          final u = snap.data!;
-          return SingleChildScrollView(
+    return _BQFirstFrameProbe(
+      eventName: 'first_content_profile',
+      baseParams: const {'screen': 'Profile'},
+      // Como esta versión del perfil es estática (sin fetch), marcamos 'unknown'
+      source: 'unknown',
+      child: Container(
+        color: const Color.fromARGB(255, 255, 255, 255), // White background
+        child: SingleChildScrollView(
+          child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
+                // Profile header with image and username
                 Center(
                   child: Column(
                     children: [
-                      CircleAvatar(
-                        radius: 40,
-                        backgroundImage:
-                            (u.photoUrl != null && u.photoUrl!.isNotEmpty)
-                            ? NetworkImage(u.photoUrl!)
-                            : null,
-                        child: (u.photoUrl == null || u.photoUrl!.isEmpty)
-                            ? const Icon(Icons.person, size: 40)
-                            : null,
-                      ),
+                      // Profile image
+                      const CircleAvatar(),
                       const SizedBox(height: 16.0),
-                      Text(
-                        u.displayName.isNotEmpty ? u.displayName : 'Usuario',
-                        style: const TextStyle(
+                      // Username
+                      const Text(
+                        'UsuarioXYZ',
+                        style: TextStyle(
                           fontSize: 18.0,
                           fontWeight: FontWeight.bold,
                           fontFamily: 'OpenSans',
@@ -90,9 +41,19 @@ class _UserProfileState extends State<UserProfile> {
                   ),
                 ),
                 const SizedBox(height: 24.0),
-                Center(child: _buildContactItem('Carrera:', u.major ?? '—')),
+                Center(
+                  child: Column(
+                    children: [
+                      _buildContactItem(
+                        'Carrera:',
+                        'Diseño',
+                      ),
+                    ],
+                  ),
+                ),
                 const SizedBox(height: 24.0),
 
+                // Description section
                 const Text(
                   'Descripción',
                   style: TextStyle(
@@ -104,13 +65,25 @@ class _UserProfileState extends State<UserProfile> {
                   ),
                 ),
                 const SizedBox(height: 8.0),
-                Text(
-                  u.description?.isNotEmpty == true
-                      ? u.description!
-                      : 'Sin descripción',
+                const Text(
+                  'Interesado en proyectos no pagos (por experiencia) de diseño gráfico, edición de video y desarrollo web. Busco oportunidades para aprender y crecer en estas áreas.',
+                  style: TextStyle(fontSize: 14.0),
                 ),
-                const SizedBox(height: 16.0),
+                const SizedBox(height: 8.0),
+                const Text(
+                  'Experiencia previa:',
+                  style: TextStyle(fontSize: 14.0),
+                ),
+                const Padding(
+                  padding: EdgeInsets.only(left: 16.0),
+                  child: Text(
+                    '• Monitor de investigación de la facultad de Arquitectura y Diseño',
+                    style: TextStyle(fontSize: 14.0),
+                  ),
+                ),
+                const SizedBox(height: 8.0),
 
+                // Flags section (skill tags)
                 const Text(
                   'Mis Flags',
                   style: TextStyle(
@@ -123,13 +96,16 @@ class _UserProfileState extends State<UserProfile> {
                 Wrap(
                   spacing: 8.0,
                   runSpacing: 8.0,
-                  children: (u.skillsOrTopics ?? [])
-                      .take(8)
-                      .map((s) => TextBoxWidget(text: s, onTap: () {}))
-                      .toList(),
+                  children: [
+                    TextBoxWidget(text: 'Diseño', onTap: () {}),
+                    TextBoxWidget(text: 'Dibujo', onTap: () {}),
+                    TextBoxWidget(text: 'AutoCad', onTap: () {}),
+                    TextBoxWidget(text: 'Planos', onTap: () {}),
+                    TextBoxWidget(text: 'Cerámica', onTap: () {}),
+                  ],
                 ),
-                const SizedBox(height: 24.0),
 
+                // Contact section
                 const Text(
                   'Contacto',
                   style: TextStyle(
@@ -142,32 +118,41 @@ class _UserProfileState extends State<UserProfile> {
                 Center(
                   child: Column(
                     children: [
-                      _buildContactItem('Email:', u.email, isLink: false),
-                      if ((u.linkedin ?? '').isNotEmpty)
-                        _buildContactItem(
-                          'LinkedIn:',
-                          u.linkedin!,
-                          isLink: true,
-                          linkColor: Colors.blue,
-                        ),
-                      if ((u.mobileNumber ?? '').isNotEmpty)
-                        _buildContactItem(
-                          'Number:',
-                          u.mobileNumber!,
-                          isLink: false,
-                        ),
+                      _buildContactItem(
+                        'Email:',
+                        'usuario123@gmail.com',
+                        isLink: true,
+                        linkColor: Colors.blue,
+                      ),
+                      _buildContactItem(
+                        'LinkedIn:',
+                        'usuario123',
+                        isLink: true,
+                        linkColor: Colors.blue,
+                      ),
+                      _buildContactItem(
+                        'Number:',
+                        '+39 1234 567890',
+                        isLink: true,
+                        linkColor: Colors.blue,
+                      ),
                     ],
                   ),
                 ),
                 const SizedBox(height: 24.0),
+
+                // Link sections for CV and Portfolio
+
+                // Projects section
               ],
             ),
-          );
-        },
+          ),
+        ),
       ),
     );
   }
 
+  // Helper method to create contact information items
   Widget _buildContactItem(
     String label,
     String value, {
@@ -192,7 +177,7 @@ class _UserProfileState extends State<UserProfile> {
             isLink
                 ? InkWell(
                     onTap: () {
-                      /* TODO: abrir link */
+                      // Handle link tap
                     },
                     child: Text(
                       value,
@@ -203,10 +188,53 @@ class _UserProfileState extends State<UserProfile> {
                       ),
                     ),
                   )
-                : Text(value, style: const TextStyle(fontSize: 14.0)),
+                : Text(
+                    value,
+                    style: const TextStyle(fontSize: 14.0),
+                  ),
           ],
         ),
       ),
     );
   }
+}
+
+/// ---- Mini wrapper stateful SOLO para la BQ ----
+/// Arranca el cronómetro y lo cierra en el primer frame visible.
+/// No toca tu lógica ni tu UI.
+class _BQFirstFrameProbe extends StatefulWidget {
+  const _BQFirstFrameProbe({
+    required this.child,
+    required this.eventName,
+    this.baseParams = const {},
+    this.source = 'unknown',
+  });
+
+  final Widget child;
+  final String eventName;
+  final Map<String, Object?> baseParams;
+  final String source;
+
+  @override
+  State<_BQFirstFrameProbe> createState() => _BQFirstFrameProbeState();
+}
+
+class _BQFirstFrameProbeState extends State<_BQFirstFrameProbe> {
+  late final ScreenTimer _t;
+  bool _sent = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _t = ScreenTimer(widget.eventName, baseParams: widget.baseParams);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_sent) {
+        _sent = true;
+        _t.endOnce(source: widget.source, itemCount: 1);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
