@@ -1,7 +1,11 @@
+import 'dart:collection';
+
 import 'package:flutter/material.dart';
 import 'package:talent_bridge_fl/data/project_service.dart';
 import 'package:talent_bridge_fl/domain/project_entity.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
+import 'package:talent_bridge_fl/services/skills_service.dart';
+import 'package:talent_bridge_fl/views/select_skills/select_skills.dart';
 
 const darkBlue = Color(0xFF3E6990);
 
@@ -19,16 +23,14 @@ class _AddProjectState extends State<AddProject> {
   final projectService = ProjectService();
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
-  final _skillsController = TextEditingController();
+  // final _skillsController = TextEditingController();
+  final _skills = SkillsService.getSkills();
+  final _selectedSkills = HashSet<String>();
 
   void _submitData() {
     final title = _titleController.text;
     final description = _descriptionController.text;
-    final skills = _skillsController.text
-        .split(',')
-        .map((skill) => skill.trim())
-        .where((skill) => skill.isNotEmpty)
-        .toList();
+    final List<String> skills = _selectedSkills.toList();
     final uid = firebaseService.currentUid();
 
     if (title.isEmpty || uid == null) {
@@ -64,6 +66,33 @@ class _AddProjectState extends State<AddProject> {
     Navigator.pop(context);
   }
 
+  void _openSkillsView() {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => PopScope(
+          onPopInvokedWithResult: (didPop, result) {
+            setState(() {});
+          },
+          child: Scaffold(
+            appBar: AppBar(
+              title: const Text("Select project Skills"),
+            ),
+            body: SelectSkills(
+              skills: _skills,
+              selectedSkills: _selectedSkills,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _removeSelectedSkill(String skill) {
+    setState(() {
+      _selectedSkills.remove(skill);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     var titleField = TextField(
@@ -97,12 +126,28 @@ class _AddProjectState extends State<AddProject> {
               SizedBox(height: 16),
               descriptionField,
               SizedBox(height: 16),
-              TextField(
-                controller: _skillsController,
-                decoration: const InputDecoration(
-                  label: Text('Skills'),
-                  hintText: 'Enter skills separated by commas',
-                ),
+              Row(
+                children: [
+                  Text("Skills and Topics"),
+                  SizedBox(
+                    width: 12,
+                  ),
+                  IconButton(
+                    onPressed: () => _openSkillsView(),
+                    icon: Icon(Icons.add),
+                  ),
+                ],
+              ),
+              Wrap(
+                spacing: 8,
+                children: _selectedSkills
+                    .map(
+                      (e) => InputChip(
+                        label: Text(e),
+                        onDeleted: () => _removeSelectedSkill(e),
+                      ),
+                    )
+                    .toList(),
               ),
               SizedBox(height: 16),
               Row(
