@@ -106,4 +106,64 @@ class UserEntity {
       lastPortfolioUpdateAt: '',
     );
   }
+
+  // ...existing code...
+  UserEntity copyWith({
+    String? id,
+    String? displayName,
+    String? email,
+    String? headline,
+    bool? isPublic,
+    String? linkedin,
+    String? location,
+    String? mobileNumber,
+    String? photoUrl,
+    List<ProjectEntity>? projects,
+    List<String>? applications,
+    List<String>? acceptedProjects,
+    List<String>? skillsOrTopics,
+    String? description,
+    String? major,
+    String? lastPortfolioUpdateAt,
+    Source? source,
+  }) {
+    return UserEntity(
+      id: id ?? this.id,
+      displayName: displayName ?? this.displayName,
+      email: email ?? this.email,
+      headline: headline ?? this.headline,
+      isPublic: isPublic ?? this.isPublic,
+      linkedin: linkedin ?? this.linkedin,
+      location: location ?? this.location,
+      mobileNumber: mobileNumber ?? this.mobileNumber,
+      photoUrl: photoUrl ?? this.photoUrl,
+      projects:
+          projects ??
+          (this.projects != null
+              ? List<ProjectEntity>.from(this.projects!)
+              : null),
+      applications:
+          applications ??
+          (this.applications != null
+              ? List<String>.from(this.applications!)
+              : null),
+      acceptedProjects:
+          acceptedProjects ??
+          (this.acceptedProjects != null
+              ? List<String>.from(this.acceptedProjects!)
+              : null),
+      skillsOrTopics:
+          skillsOrTopics ??
+          (this.skillsOrTopics != null
+              ? List<String>.from(this.skillsOrTopics!)
+              : null),
+      description: description ?? this.description,
+      major: major ?? this.major,
+      lastPortfolioUpdateAt:
+          lastPortfolioUpdateAt ?? this.lastPortfolioUpdateAt,
+      source: source ?? this.source,
+    );
+  }
+
+  // ...existing code...
 }

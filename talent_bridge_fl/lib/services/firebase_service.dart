@@ -102,35 +102,22 @@ class FirebaseService {
 
     for (var doc in querySnapshot.docs) {
       final userData = doc.data();
-
-      // Check if projects field exists and is a list
-      if (userData.containsKey('projects') && userData['projects'] is List) {
-        final projectsList = userData['projects'] as List;
-
-        for (var projectData in projectsList) {
-          // Skip if not a map
-          if (projectData is! Map<String, dynamic>) continue;
-
-          Map<String, dynamic> projectMap = Map<String, dynamic>.from(
-            projectData,
-          );
-
-          // Ensure createdById exists
-          if (!projectMap.containsKey('createdById') ||
-              projectMap['createdById'] == null ||
-              projectMap['createdById'] == '') {
-            projectMap['createdById'] = doc.id;
-          }
-
-          try {
-            final project = ProjectEntity.fromMap(projectMap);
-            allProjects.add(project);
-          } catch (e) {
-            print('Error parsing project for user ${doc.id}: $e');
-          }
-        }
-      }
+      final UserEntity userEntity = UserEntity.fromMap(userData);
+      final UserEntity userWoutProjects = userEntity.copyWith(projects: null);
+      final userProjects = userEntity.projects ?? [];
+      final projectsWithUser = userProjects.map(
+        (e) {
+          e.createdBy = userWoutProjects;
+          return e;
+        },
+      ).toList();
+      allProjects.addAll(projectsWithUser);
     }
+    allProjects.sort((a, b) {
+      final aDate = a.createdAt ?? DateTime(1970);
+      final bDate = b.createdAt ?? DateTime(1970);
+      return -aDate.compareTo(bDate);
+    });
 
     return allProjects;
   }

@@ -1,0 +1,35 @@
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/material.dart';
+
+class ProjectPostPfp extends StatefulWidget {
+  const ProjectPostPfp({super.key, required this.uid});
+
+  final String uid;
+  @override
+  State<ProjectPostPfp> createState() => _ProjectPostPfpState();
+}
+
+class _ProjectPostPfpState extends State<ProjectPostPfp> {
+  String? url;
+  final storageRef = FirebaseStorage.instance.ref();
+  @override
+  void initState() {
+    super.initState();
+    final imageRef = storageRef.child('profile_pictures/${widget.uid}');
+    imageRef.getDownloadURL().then(
+      (value) => setState(() {
+        url = value;
+      }),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return CircleAvatar(
+      radius: 24,
+      backgroundImage: url != null
+          ? NetworkImage(url!)
+          : AssetImage('assets/images/gumball.jpg'),
+    );
+  }
+}

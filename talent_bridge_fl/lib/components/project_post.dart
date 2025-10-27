@@ -1,10 +1,13 @@
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:talent_bridge_fl/components/project_post_image.dart';
+import 'package:talent_bridge_fl/components/project_post_pfp.dart';
 import 'package:talent_bridge_fl/domain/project_entity.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
 import 'package:talent_bridge_fl/views/user-profile/user_profile.dart';
 
 class ProjectPost extends StatelessWidget {
-  const ProjectPost({
+  ProjectPost({
     super.key,
     required this.project,
     required this.showApplyModal,
@@ -12,6 +15,7 @@ class ProjectPost extends StatelessWidget {
     required this.showRemoveModal,
   });
 
+  final _storage = FirebaseStorage.instance;
   final ProjectEntity project;
   final void Function(String, String) showApplyModal;
   final void Function(ProjectEntity) showSaveModal;
@@ -19,7 +23,21 @@ class ProjectPost extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final firebaseService = FirebaseService();
-    var profilePictureUrl = project.createdBy?.photoUrl;
+    var displayName = (project.createdBy?.displayName ?? '').isNotEmpty
+        ? project.createdBy!.displayName
+        : 'Anon user';
+    var minutesAgo = project.timeAgo;
+    Future<String?>? imageUrl;
+    if (project.id != null) {
+      try {
+        imageUrl = _storage
+            .ref()
+            .child('project_images/${project.id}')
+            .getDownloadURL();
+      } catch (e) {
+        imageUrl = null;
+      }
+    }
     return Card(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
@@ -43,12 +61,7 @@ class ProjectPost extends StatelessWidget {
                       );
                     },
                     customBorder: const CircleBorder(),
-                    child: CircleAvatar(
-                      radius: 24,
-                      backgroundImage: profilePictureUrl != null
-                          ? AssetImage(profilePictureUrl)
-                          : AssetImage('assets/images/gumball.jpg'),
-                    ),
+                    child: ProjectPostPfp(uid: project.createdById),
                   ),
                 ),
                 Expanded(
@@ -60,7 +73,7 @@ class ProjectPost extends StatelessWidget {
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       Text(
-                        "${project.createdBy?.displayName ?? 'Project Manager'} · 5m",
+                        "$displayName · $minutesAgo",
                         style: TextStyle(fontWeight: FontWeight.w300),
                       ),
                       Text(project.description),
@@ -69,7 +82,7 @@ class ProjectPost extends StatelessWidget {
                 ),
               ],
             ),
-            if (project.imgUrl != null) Image.asset(project.imgUrl!),
+            if (imageUrl != null) ProjectPostImage(imageUrlFuture: imageUrl),
             Wrap(
               spacing: 4,
               children: [

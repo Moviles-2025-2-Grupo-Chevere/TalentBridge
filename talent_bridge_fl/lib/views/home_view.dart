@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:talent_bridge_fl/components/profile_drawer.dart';
+import 'package:talent_bridge_fl/providers/notification_provider.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
 import 'package:talent_bridge_fl/views/credits/credits.dart';
 import 'package:talent_bridge_fl/views/leader_feed/leader_feed.dart';
@@ -13,14 +15,14 @@ import 'package:talent_bridge_fl/views/search/search.dart';
 
 const kBg = Color(0xFFFEF7E6);
 
-class HomeView extends StatefulWidget {
+class HomeView extends ConsumerStatefulWidget {
   const HomeView({super.key});
 
   @override
-  State<HomeView> createState() => _HomeViewState();
+  ConsumerState<HomeView> createState() => _HomeViewState();
 }
 
-class _HomeViewState extends State<HomeView> {
+class _HomeViewState extends ConsumerState<HomeView> {
   final _fb = FirebaseService();
   int _selectedPageIdx = 0;
 
@@ -32,6 +34,24 @@ class _HomeViewState extends State<HomeView> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(
+      notificationProvider,
+      (previous, next) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(Icons.notification_important_outlined),
+                SizedBox(width: 8),
+                Text(next),
+              ],
+            ),
+          ),
+        );
+      },
+    );
     final mainViews = [
       MainViewItem(
         title: 'Home',
