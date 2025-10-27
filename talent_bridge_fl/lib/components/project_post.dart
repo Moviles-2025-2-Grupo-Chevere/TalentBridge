@@ -17,7 +17,7 @@ class ProjectPost extends StatelessWidget {
 
   final _storage = FirebaseStorage.instance;
   final ProjectEntity project;
-  final void Function(String, String) showApplyModal;
+  final void Function(String, String, String) showApplyModal;
   final void Function(ProjectEntity) showSaveModal;
   final void Function(ProjectEntity) showRemoveModal;
   @override
@@ -108,7 +108,11 @@ class ProjectPost extends StatelessWidget {
                 TextButton(
                   onPressed: () {
                     final currentUserId = firebaseService.currentUid() ?? "";
-                    showApplyModal(currentUserId, project.id ?? "");
+                    showApplyModal(
+                      currentUserId,
+                      project.createdById,
+                      project.id ?? "",
+                    );
                   },
                   child: Text('Apply'),
                 ),

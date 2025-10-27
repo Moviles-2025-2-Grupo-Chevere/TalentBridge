@@ -15,7 +15,7 @@ class UserEntity {
   String? mobileNumber;
   String? photoUrl;
   List<ProjectEntity>? projects;
-  List<String>? applications;
+  List<Map<String, String>>? applications;
   List<String>? acceptedProjects;
   List<String>? skillsOrTopics;
   String? description;
@@ -45,6 +45,17 @@ class UserEntity {
 
   factory UserEntity.fromMap(Map<String, dynamic> map) {
     final mapProjects = map['projects'] as List<dynamic>? ?? [];
+    List<Map<String, String>> applications = [];
+    try {
+      for (var element in ((map['applications'] ?? []) as List)) {
+        if (element is Map<String, String>) {
+          applications.add(element);
+        }
+      }
+    } catch (e) {
+      print(e);
+      applications = [];
+    }
     return UserEntity(
       id: map['id'] ?? '',
       displayName: map['displayName'] ?? '',
@@ -58,7 +69,7 @@ class UserEntity {
       projects: List<ProjectEntity>.from(
         mapProjects.map((i) => ProjectEntity.fromMap(i)),
       ), //CHECK TO MAP
-      applications: List<String>.from(map['applications'] ?? []),
+      applications: applications,
       acceptedProjects: List<String>.from(map['acceptedProjects'] ?? []),
       skillsOrTopics: List<String>.from(map['skillsOrTopics'] ?? []),
       description: map['description'] ?? '',
@@ -119,7 +130,7 @@ class UserEntity {
     String? mobileNumber,
     String? photoUrl,
     List<ProjectEntity>? projects,
-    List<String>? applications,
+    List<Map<String, String>>? applications,
     List<String>? acceptedProjects,
     List<String>? skillsOrTopics,
     String? description,
@@ -145,7 +156,7 @@ class UserEntity {
       applications:
           applications ??
           (this.applications != null
-              ? List<String>.from(this.applications!)
+              ? List<Map<String, String>>.from(this.applications!)
               : null),
       acceptedProjects:
           acceptedProjects ??

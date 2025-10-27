@@ -97,39 +97,47 @@ class FirebaseService {
 
   // ---------------- PROJECTS ----------------
   Future<List<ProjectEntity>> getAllProjects() async {
-    final querySnapshot = await _db.collection('users').get();
+    try {
+      final querySnapshot = await _db.collection('users').get();
 
-    List<ProjectEntity> allProjects = [];
+      List<ProjectEntity> allProjects = [];
 
-    for (var doc in querySnapshot.docs) {
-      final userData = doc.data();
-      final UserEntity userEntity = UserEntity.fromMap(userData);
-      final UserEntity userWoutProjects = userEntity.copyWith(projects: null);
-      final userProjects = userEntity.projects ?? [];
-      final projectsWithUser = userProjects.map(
-        (e) {
-          e.createdBy = userWoutProjects;
-          return e;
-        },
-      ).toList();
-      allProjects.addAll(projectsWithUser);
+      for (var doc in querySnapshot.docs) {
+        final userData = doc.data();
+        final UserEntity userEntity = UserEntity.fromMap(userData);
+        final UserEntity userWoutProjects = userEntity.copyWith(projects: null);
+        final userProjects = userEntity.projects ?? [];
+        final projectsWithUser = userProjects.map(
+          (e) {
+            e.createdBy = userWoutProjects;
+            return e;
+          },
+        ).toList();
+        allProjects.addAll(projectsWithUser);
+      }
+      allProjects.sort((a, b) {
+        final aDate = a.createdAt ?? DateTime(1970);
+        final bDate = b.createdAt ?? DateTime(1970);
+        return -aDate.compareTo(bDate);
+      });
+
+      return allProjects;
+    } catch (e) {
+      print("Error mapping projects: " + e.toString());
+      rethrow;
     }
-    allProjects.sort((a, b) {
-      final aDate = a.createdAt ?? DateTime(1970);
-      final bDate = b.createdAt ?? DateTime(1970);
-      return -aDate.compareTo(bDate);
-    });
-
-    return allProjects;
   }
 
   Future<void> addProjectToApplications({
     required String userId,
+    required String createdById,
     required String projectId,
   }) async {
     final docRef = _db.collection('users').doc(userId);
     await docRef.update({
-      'applications': FieldValue.arrayUnion([projectId]),
+      'applications': FieldValue.arrayUnion([
+        {"projectId": projectId, "createdById": createdById},
+      ]),
     });
   }
 
@@ -229,6 +237,7 @@ class FirebaseService {
         },
         SetOptions(merge: true),
       );
+      sendFCMToken();
     }
 
     await _analytics.logLogin(loginMethod: 'email');
@@ -292,6 +301,18 @@ class FirebaseService {
       print(e);
       return false;
     }
+  }
+
+  Future<void> setupNotifications() async {
+    var messaging = FirebaseMessaging.instance;
+    final notificationSettings = await messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+      provisional: true,
+    );
+    await sendFCMToken();
+    // print("Token: $token");
   }
 
   // ---------------- PIPELINE ----------------

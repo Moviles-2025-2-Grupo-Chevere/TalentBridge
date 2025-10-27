@@ -22,12 +22,14 @@ class _ProjectListState extends State<ProjectList> {
 
   void submitProjectApplication(
     BuildContext context,
-    String userId,
+    String currentUserId,
+    String createdById,
     String projectId,
   ) async {
     try {
       await firebaseService.addProjectToApplications(
-        userId: userId,
+        userId: currentUserId,
+        createdById: createdById,
         projectId: projectId,
       );
       if (context.mounted) {
@@ -152,6 +154,26 @@ class _ProjectListState extends State<ProjectList> {
     );
   }
 
+  void _showApplyModal(
+    String currentUserId,
+    String createdById,
+    String projectId,
+  ) {
+    showDialog(
+      context: context,
+      builder: (BuildContext dialogContext) => SubmitAlertDb(
+        userId: currentUserId,
+        projectId: projectId,
+        onConfirm: () => submitProjectApplication(
+          context,
+          currentUserId,
+          createdById,
+          projectId,
+        ),
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -174,17 +196,7 @@ class _ProjectListState extends State<ProjectList> {
           project: projects[index],
           showRemoveModal: showRemoveFromFavoritesModal,
           showSaveModal: showSaveModal,
-          showApplyModal: (String userId, String projectId) {
-            showDialog(
-              context: context,
-              builder: (BuildContext dialogContext) => SubmitAlertDb(
-                userId: userId,
-                projectId: projectId,
-                onConfirm: () =>
-                    submitProjectApplication(context, userId, projectId),
-              ),
-            );
-          },
+          showApplyModal: _showApplyModal,
         ),
       ),
     );
