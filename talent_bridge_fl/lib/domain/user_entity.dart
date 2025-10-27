@@ -56,6 +56,14 @@ class UserEntity {
       print(e);
       applications = [];
     }
+    var projects = List<ProjectEntity>.from(
+      mapProjects.map((i) => ProjectEntity.fromMap(i)),
+    );
+    projects.sort((a, b) {
+      final aDate = a.createdAt ?? DateTime(1970);
+      final bDate = b.createdAt ?? DateTime(1970);
+      return -aDate.compareTo(bDate);
+    });
     return UserEntity(
       id: map['id'] ?? '',
       displayName: map['displayName'] ?? '',
@@ -66,9 +74,7 @@ class UserEntity {
       location: map['location'] ?? '',
       mobileNumber: map['mobileNumber'] ?? '',
       photoUrl: map['photoUrl'] ?? 'assets/images/gumball.jpg',
-      projects: List<ProjectEntity>.from(
-        mapProjects.map((i) => ProjectEntity.fromMap(i)),
-      ), //CHECK TO MAP
+      projects: projects, //CHECK TO MAP
       applications: applications,
       acceptedProjects: List<String>.from(map['acceptedProjects'] ?? []),
       skillsOrTopics: List<String>.from(map['skillsOrTopics'] ?? []),
