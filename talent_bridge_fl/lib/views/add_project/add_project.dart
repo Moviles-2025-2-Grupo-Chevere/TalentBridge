@@ -14,7 +14,7 @@ const darkBlue = Color(0xFF3E6990);
 class AddProject extends StatefulWidget {
   const AddProject({super.key, required this.onAddProject});
 
-  final void Function(ProjectEntity project) onAddProject;
+  final void Function(ProjectEntity project, String? imagePath) onAddProject;
 
   @override
   State<AddProject> createState() => _AddProjectState();
@@ -66,6 +66,7 @@ class _AddProjectState extends State<AddProject> {
         description: description,
         skills: skills,
       ),
+      _imagePath,
     );
     Navigator.pop(context);
   }

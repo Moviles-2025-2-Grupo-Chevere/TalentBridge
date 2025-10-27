@@ -113,6 +113,11 @@ class FirebaseService {
       ).toList();
       allProjects.addAll(projectsWithUser);
     }
+    allProjects.sort((a, b) {
+      final aDate = a.createdAt ?? DateTime(1970);
+      final bDate = b.createdAt ?? DateTime(1970);
+      return -aDate.compareTo(bDate);
+    });
 
     return allProjects;
   }

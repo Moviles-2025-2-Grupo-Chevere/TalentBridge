@@ -386,8 +386,8 @@ class _MyProfileState extends ConsumerState<MyProfile> {
     );
   }
 
-  void _onSubmitProject(ProjectEntity project) {
-    projectService.createProject(project);
+  void _onSubmitProject(ProjectEntity project, String? imagePath) {
+    projectService.createProject(project, imagePath);
   }
 
   void _openAddProjectOverlay() {
