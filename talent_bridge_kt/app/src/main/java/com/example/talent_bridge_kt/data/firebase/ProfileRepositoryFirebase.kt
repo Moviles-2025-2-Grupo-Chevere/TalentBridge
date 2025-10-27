@@ -10,6 +10,8 @@ import com.google.firebase.firestore.ktx.firestore
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.storage.ktx.storage
 import kotlinx.coroutines.tasks.await
+import com.google.firebase.Timestamp
+import com.google.firebase.firestore.FieldValue
 
 class FirebaseProfileRepository : ProfileRepository {
 
@@ -22,9 +24,6 @@ class FirebaseProfileRepository : ProfileRepository {
             ?: throw IllegalStateException("No hay usuario autenticado")
     }
 
-    // ----- Helpers de mapeo -----
-
-    // FirebaseProfileRepository.kt  ➜ cambios clave
 
     private fun Profile.toMap(): Map<String, Any?> = mapOf(
         "id" to id,
@@ -38,8 +37,12 @@ class FirebaseProfileRepository : ProfileRepository {
             mapOf(
                 "id" to p.id,
                 "title" to p.title,
+                "subtitle" to p.subtitle, // NUEVO
                 "description" to p.description,
-                "skills" to p.skills
+                "skills" to p.skills,
+                "imgUrl" to p.imgUrl,     // NUEVO
+                "createdAt" to p.createdAt, // NUEVO (Timestamp? de Firebase)
+                "createdById" to p.createdById // NUEVO
             )
         },
         "avatarUrl" to avatarUrl,
@@ -53,23 +56,26 @@ class FirebaseProfileRepository : ProfileRepository {
                 com.example.talent_bridge_kt.domain.model.Project(
                     id = (m["id"] as? String).orEmpty(),
                     title = (m["title"] as? String).orEmpty(),
+                    subtitle = m["subtitle"] as? String, // NUEVO
                     description = (m["description"] as? String).orEmpty(),
-                    skills = ((m["skills"] as? List<*>)?.map { it.toString() } ?: emptyList())
+                    skills = ((m["skills"] as? List<*>)?.map { it.toString() } ?: emptyList()),
+                    imgUrl = m["imgUrl"] as? String, // NUEVO
+                    createdAt = m["createdAt"] as? com.google.firebase.Timestamp, // NUEVO
+                    createdById = (m["createdById"] as? String).orEmpty() // NUEVO
                 )
             }
         } ?: emptyList()
+
         val projectsUpdatedAtMillis = when (val v = data["projectsUpdatedAt"]) {
             is com.google.firebase.Timestamp -> v.toDate().time
             is Long -> v
             else -> null
         }
 
-
         return Profile(
             id = (data["id"] as? String) ?: id,
-            // antes: name = (data["name"] as? String).orEmpty(),
             name = (data["displayName"] as? String)
-                ?: (data["name"] as? String)          // compatibilidad con docs viejos
+                ?: (data["name"] as? String)
                 ?: "",
             email = (data["email"] as? String).orEmpty(),
             linkedin = data["linkedin"] as? String,
@@ -79,9 +85,9 @@ class FirebaseProfileRepository : ProfileRepository {
             projects = projects,
             avatarUrl = data["avatarUrl"] as? String,
             projectsUpdatedAt = projectsUpdatedAtMillis
-
         )
     }
+
 
     // ----- Implementación -----
 
@@ -101,8 +107,10 @@ class FirebaseProfileRepository : ProfileRepository {
                 bio = null,
                 tags = emptyList(),
                 projects = emptyList(),
-                avatarUrl = null
+                avatarUrl = null,
+                projectsUpdatedAt = null
             )
+
             db.collection("users").document(uid)
                 .set(base.toMap(), SetOptions.merge())
                 .await()
@@ -118,15 +126,57 @@ class FirebaseProfileRepository : ProfileRepository {
 
     override suspend fun updateProfile(profile: Profile): Resource<Profile> = try {
         val uid = uidOrError()
-        // merge() para no borrar campos que no mandes
-        db.collection("users").document(uid)
-            .set(profile.copy(id = uid).toMap(), SetOptions.merge())
-            .await()
+        val ref = db.collection("users").document(uid)
 
-        Resource.Success(profile.copy(id = uid))
+        // Lee el estado previo para detectar cambios en proyectos
+        val before = ref.get().await().data ?: emptyMap<String, Any?>()
+        val prevProjects = (before["projects"] as? List<*>) ?: emptyList<Any?>()
+
+        fun norm(list: List<com.example.talent_bridge_kt.domain.model.Project>) =
+            list.map {
+                mapOf(
+                    "id" to it.id,
+                    "title" to it.title,
+                    "subtitle" to it.subtitle,
+                    "description" to it.description,
+                    "skills" to it.skills,
+                    "imgUrl" to it.imgUrl
+                )
+            }
+
+        // list viene como List<*> y la voy filtrando a Map<*, *>
+        fun normStored(list: List<*>): List<Map<String, Any?>> =
+            list.mapNotNull { it as? Map<*, *> }   // descarta lo que no sea Map
+                .map { m ->
+                    mapOf(
+                        "id" to (m["id"] as? String).orEmpty(),
+                        "title" to (m["title"] as? String).orEmpty(),
+                        "subtitle" to (m["subtitle"] as? String),
+                        "description" to (m["description"] as? String).orEmpty(),
+                        "skills" to ((m["skills"] as? List<*>)?.map { s -> s.toString() } ?: emptyList<String>()),
+                        "imgUrl" to (m["imgUrl"] as? String)
+                    )
+                }
+
+
+        val projectsChanged = norm(profile.projects) != normStored(prevProjects)
+
+        val data = profile.copy(id = uid).toMap().toMutableMap()
+        if (projectsChanged) {
+            data["projectsUpdatedAt"] = com.google.firebase.firestore.FieldValue.serverTimestamp()
+        }
+
+        ref.set(data, SetOptions.merge()).await()
+
+        // Vuelve a leer para resolver serverTimestamp
+        val fresh = ref.get().await()
+        val updated = mapToProfile(fresh.data ?: emptyMap(), fresh.id)
+
+        Resource.Success(updated)
     } catch (e: Exception) {
         Resource.Error(e.message ?: "Error al actualizar perfil")
     }
+
 
     override suspend fun uploadAvatar(localImage: Uri): Resource<String> = try {
         val uid = uidOrError()

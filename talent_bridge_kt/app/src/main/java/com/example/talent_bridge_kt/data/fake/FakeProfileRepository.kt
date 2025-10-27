@@ -22,11 +22,6 @@ class FakeProfileRepository : ProfileRepository {
         isPublic = true,
         location = "Bogotá",
         projects = listOf(
-            Project(
-                title = "ML",
-                description = "Clasificador de imágenes on-device",
-                skills = listOf("ML", "TensorFlow Lite")
-            )
         )
     )
 

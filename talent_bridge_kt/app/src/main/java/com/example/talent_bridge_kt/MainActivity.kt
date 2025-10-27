@@ -225,7 +225,8 @@ class MainActivity : ComponentActivity() {
                                     onSearch = { navController.navigate(Routes.Search) },
                                     onProfile = { navController.navigate(Routes.StudentProfile) },
 
-                                    onOpenDrawer = { openDrawer() }
+                                    onOpenDrawer = { openDrawer() },
+                                    onFav = {  navController.navigate(Routes.SavedProjects) }
                                 )
                             }
                         }
