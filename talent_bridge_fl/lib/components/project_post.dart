@@ -82,7 +82,7 @@ class ProjectPost extends StatelessWidget {
                 ),
               ],
             ),
-            if (imageUrl != null) ProjectPostImage(imageUrl: imageUrl),
+            if (imageUrl != null) ProjectPostImage(imageUrlFuture: imageUrl),
             Wrap(
               spacing: 4,
               children: [
