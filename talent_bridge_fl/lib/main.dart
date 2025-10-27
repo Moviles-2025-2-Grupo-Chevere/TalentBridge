@@ -2,6 +2,7 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:talent_bridge_fl/services/firebase_service.dart';
 import 'package:talent_bridge_fl/views/splash_screen.dart';
 import 'services/connectivity_service.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
@@ -26,6 +27,7 @@ class TalentBridge extends StatefulWidget {
 
 class _TalentBridgeState extends State<TalentBridge> {
   final ConnectivityService _connectivityService = ConnectivityService();
+  final _fb = FirebaseService();
 
   Future<void> _setupNotifications() async {
     var messaging = FirebaseMessaging.instance;
@@ -35,7 +37,7 @@ class _TalentBridgeState extends State<TalentBridge> {
       sound: true,
       provisional: true,
     );
-    final token = await messaging.getToken();
+    await _fb.sendFCMToken();
     // print("Token: $token");
   }
 

@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_core;
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:talent_bridge_fl/domain/project_entity.dart';
@@ -273,6 +274,24 @@ class FirebaseService {
     await _analytics.logSignUp(signUpMethod: 'email');
 
     await logEvent('signup', {});
+  }
+
+  Future<bool> sendFCMToken() async {
+    try {
+      final uid = currentUid();
+      if (uid == null) return false;
+      var messaging = FirebaseMessaging.instance;
+      final token = await messaging.getToken();
+      if (token == null) return false;
+      await _db.collection('users').doc(uid).set(
+        {"fcm": token},
+        SetOptions(merge: true),
+      );
+      return true;
+    } catch (e) {
+      print(e);
+      return false;
+    }
   }
 
   // ---------------- PIPELINE ----------------
