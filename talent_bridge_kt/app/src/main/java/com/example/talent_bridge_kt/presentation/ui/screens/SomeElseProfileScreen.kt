@@ -12,6 +12,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -38,9 +39,15 @@ import com.example.talent_bridge_kt.ui.theme.AccentYellow
 import com.example.talent_bridge_kt.ui.theme.CreamBackground
 import com.example.talent_bridge_kt.ui.theme.LinkGreen
 import com.example.talent_bridge_kt.ui.theme.TitleGreen
+import androidx.compose.runtime.*
+import coil.compose.AsyncImage
+import com.example.talent_bridge_kt.data.repository.ProfileRepository
+import com.example.talent_bridge_kt.data.cache.ProfileSummary
 
 @Composable
 fun SomeElseProfileScreen(
+    uid: String,
+    repo: ProfileRepository,
     onBack: () -> Unit = {},
     onRequestPortfolio: () -> Unit = {},
     onRequestCv: () -> Unit = {},
@@ -48,10 +55,21 @@ fun SomeElseProfileScreen(
     onBottomSearch: () -> Unit = {},
     onBottomMenu: () -> Unit = {},
     onBottomFav: () -> Unit = {},
+    onOpenDrawer: () -> Unit = {}
 ) {
+    var profile by remember { mutableStateOf<ProfileSummary?>(null) }
+    var isLoading by remember { mutableStateOf(true) }
+
+    LaunchedEffect(uid) {
+        isLoading = true
+        profile = repo.getProfileByUid(uid)   // cache-first + TTL 5 min
+        isLoading = false
+    }
+
     // Datos demo
     val avatar = R.drawable.student // reemplaza por tu drawable de avatar
-    val name = "JuanPabloGomez"
+    val name = profile?.displayName ?: if (isLoading) "Loading..." else "Juan Pablo"
+    val avatarUrl = profile?.avatarUrl
     val subtitle = "Estudiante de Ing. Sistemas y\nComp."
     val description = "Interesado en proyectos con paga con relación a la IA."
     val experienceItems = listOf("Monitor de BI")
@@ -67,7 +85,8 @@ fun SomeElseProfileScreen(
             TopBarCustom(
                 height = 100.dp,
                 onBack = onBack,
-                onMenu=onBottomMenu
+                onMenu=onBottomMenu,
+                onDrawer= onOpenDrawer
             )
 
             Column(
@@ -83,8 +102,8 @@ fun SomeElseProfileScreen(
                     horizontalArrangement = Arrangement.spacedBy(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Image(
-                        painter = painterResource(id = avatar),
+                    AsyncImage(
+                        model = avatarUrl,
                         contentDescription = "Avatar",
                         contentScale = ContentScale.Crop,
                         modifier = Modifier
@@ -167,7 +186,8 @@ fun SomeElseProfileScreen(
 private fun TopBarCustom(
     height: Dp,
     onBack: () -> Unit,
-    onMenu: () -> Unit
+    onMenu: () -> Unit,
+    onDrawer: () -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -206,6 +226,11 @@ private fun TopBarCustom(
             IconButton(onClick = onMenu) {
                 Icon(Icons.Filled.Menu, contentDescription = "Menu", tint = TitleGreen)
             }
+            Spacer(Modifier.width(4.dp))
+            IconButton(onClick = onDrawer) {
+                Icon(Icons.Filled.MoreVert, contentDescription = "Open drawer", tint = TitleGreen)
+            }
+            Spacer(Modifier.width(4.dp))
         }
 
     }
