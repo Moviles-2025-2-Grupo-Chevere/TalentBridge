@@ -53,7 +53,10 @@ import com.example.talent_bridge_kt.presentation.ui.components.HomeWithDrawer
 import androidx.compose.runtime.*
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.talent_bridge_kt.data.AnalyticsManager
+import com.example.talent_bridge_kt.data.repository.ProfileRepository
 import kotlin.system.measureTimeMillis
+
+
 
 
 
@@ -138,20 +141,7 @@ class MainActivity : ComponentActivity() {
                                 onBack = { navController.popBackStack() },
                             )
                         }
-                        composable(Routes.Navegation) {
-                            NavegationScreen(
-                                onBack = { navController.popBackStack() },
-                                onInitiativeProfile = { navController.navigate(Routes.InitiativeProfile) },
-                                onLeaderFeed = { navController.navigate(Routes.LeaderFeed) },
-                                onSavedProjects = { navController.navigate(Routes.SavedProjects) },
-                                onSearch = { navController.navigate(Routes.Search) },
-                                onStudentProfile = { navController.navigate(Routes.StudentProfile) },
-                                onSomeoneElseProfile = { navController.navigate(Routes.SomeOneElseProfile) },
-                                onCredits = { navController.navigate(Routes.Credits) },
-                                onStudentFeed = { navController.navigate(Routes.StudentFeed) },
-                                onInitiativeDetail = { navController.navigate(Routes.InitiativeDetail) }
-                            )
-                        }
+
                         composable(Routes.InitiativeProfile) {
                             HomeWithDrawer(navController = navController) { openDrawer ->
                                 InitiativeProfileSceen(
@@ -164,7 +154,10 @@ class MainActivity : ComponentActivity() {
                             HomeWithDrawer(navController = navController) { openDrawer ->
                                 LeaderFeedScreen(
                                     onBack = { navController.popBackStack() },
-                                    onOpenDrawer = { openDrawer() }
+                                    onOpenDrawer = { openDrawer() },
+                                    onStudentClick = { uid ->
+                                        navController.navigate(Routes.someoneElse(uid))
+                                    }
 
                                 )
                             }
@@ -190,6 +183,9 @@ class MainActivity : ComponentActivity() {
                                     onSearch = { navController.navigate(Routes.Search) },
                                     onProfile = { navController.navigate(Routes.StudentProfile) },
                                     onHome = { navController.navigate(Routes.StudentFeed) },
+                                    onStudentClick = { uid ->
+                                        navController.navigate(Routes.someoneElse(uid))
+                                    }
 
 
                                 )
@@ -204,9 +200,13 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
                         }
-                        composable(Routes.SomeOneElseProfile) {
+                        composable(Routes.SomeOneElseProfile) { backStack ->
+                            val uid = backStack.arguments?.getString("uid") ?: return@composable
                             HomeWithDrawer(navController = navController) { openDrawer ->
+                                val repo = remember { ProfileRepository(FirebaseFirestore.getInstance()) }
                                 SomeElseProfileScreen(
+                                    uid = uid,
+                                    repo = repo,
                                     onBack = { navController.popBackStack() },
                                     onOpenDrawer = { openDrawer() }
                                 )
@@ -226,7 +226,8 @@ class MainActivity : ComponentActivity() {
                                     onSearch = { navController.navigate(Routes.Search) },
                                     onProfile = { navController.navigate(Routes.StudentProfile) },
 
-                                    onOpenDrawer = { openDrawer() }
+                                    onOpenDrawer = { openDrawer() },
+                                    onFav = {  navController.navigate(Routes.SavedProjects) }
                                 )
                             }
                         }

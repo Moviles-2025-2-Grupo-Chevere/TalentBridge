@@ -502,11 +502,22 @@ fun StudentProfileScreen(
                 TextButton(onClick = {
                     val skills = pSkills.split(",").map { it.trim() }.filter { it.isNotEmpty() }
                     if (pTitle.isNotBlank() && pDesc.isNotBlank()) {
-                        vm.addProject(Project(title = pTitle.trim(), description = pDesc.trim(), skills = skills))
+                        val newProject = Project(
+                            id = java.util.UUID.randomUUID().toString(),
+                            title = pTitle.trim(),
+                            subtitle = null,
+                            description = pDesc.trim(),
+                            skills = skills,
+                            imgUrl = null,
+                            createdAt = com.google.firebase.Timestamp.now(),
+                            createdById = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid.orEmpty()
+                        )
+                        vm.addProject(newProject)
                         pTitle = ""; pDesc = ""; pSkills = ""; showProjectDialog = false
                     }
                 }) { Text("Add") }
-            },
+            }
+            ,
             dismissButton = { TextButton(onClick = { showProjectDialog = false }) { Text("Cancel") } },
             title = { Text("Nuevo proyecto") },
             text = {
