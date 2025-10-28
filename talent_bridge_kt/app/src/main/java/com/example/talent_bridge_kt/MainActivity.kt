@@ -157,7 +157,8 @@ class MainActivity : ComponentActivity() {
                                     onOpenDrawer = { openDrawer() },
                                     onStudentClick = { uid ->
                                         navController.navigate(Routes.someoneElse(uid))
-                                    }
+                                    },
+                                    onInitiativeProfile = {navController.navigate(Routes.InitiativeProfile)}
 
                                 )
                             }
