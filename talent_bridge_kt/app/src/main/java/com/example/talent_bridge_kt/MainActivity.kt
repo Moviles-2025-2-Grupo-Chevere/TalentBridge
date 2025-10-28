@@ -52,8 +52,10 @@ import androidx.lifecycle.viewmodel.initializer
 import com.example.talent_bridge_kt.presentation.ui.components.HomeWithDrawer
 import androidx.compose.runtime.*
 import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.dialog
 import com.example.talent_bridge_kt.data.AnalyticsManager
 import com.example.talent_bridge_kt.data.repository.ProfileRepository
+import com.example.talent_bridge_kt.presentation.ui.screens.CreateProjectPopUp
 import kotlin.system.measureTimeMillis
 
 
@@ -146,10 +148,21 @@ class MainActivity : ComponentActivity() {
                             HomeWithDrawer(navController = navController) { openDrawer ->
                                 InitiativeProfileSceen(
                                     onBack = { navController.popBackStack() },
-                                    onOpenDrawer = { openDrawer() }
+                                    onOpenDrawer = { openDrawer() },
+                                    onAddProject = { navController.navigate("createProject") }
                                 )
                             }
                         }
+
+                        dialog("createProject") {
+                            CreateProjectPopUp(
+                                onDismiss = { navController.popBackStack() },
+                                onSave = { draft ->
+                                    navController.popBackStack()
+                                }
+                            )
+                        }
+
                         composable(Routes.LeaderFeed) {
                             HomeWithDrawer(navController = navController) { openDrawer ->
                                 LeaderFeedScreen(

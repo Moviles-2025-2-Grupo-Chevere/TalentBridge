@@ -165,9 +165,9 @@ fun InitiativeProfileSceen(
                             horizontalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
                             AddBox(
-                                title = "Add Offer",
+                                title = "Add Project",
                                 modifier = Modifier.weight(1f),
-                                onClick = onAddOferta
+                                onClick = onAddProject
                             )
                         }
                     }
