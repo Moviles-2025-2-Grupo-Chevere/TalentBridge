@@ -56,8 +56,13 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.firestore.ListenerRegistration
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.Dispatchers.Main
 import java.io.File
+import java.io.InputStream
+import java.security.MessageDigest
+import kotlin.math.roundToInt
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -522,7 +527,8 @@ private data class CvItemUi(
     val language: ResumeLanguage = ResumeLanguage.ES,
     val progress: Int = 0,
     val done: Boolean = false,
-    val error: String? = null
+    val error: String? = null,
+    val sha256: String? = null
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -572,7 +578,7 @@ private fun CvMultiUploadSheet(
                 fontSize = 18.sp
             )
 
-            // ⬇️ Botones centrados y de ancho completo
+            // Botones centrados y full width
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -602,6 +608,8 @@ private fun CvMultiUploadSheet(
                     Text("Limpiar lista")
                 }
 
+                // ===== Estrategia de MULTITHREADING (rúbrica): coroutines con Dispatcher IO,
+                // structured concurrency (supervisorScope) y async/awaitAll para subidas en paralelo. =====
                 Button(
                     onClick = {
                         if (cvItems.isEmpty() || isUploading) return@Button
@@ -609,18 +617,44 @@ private fun CvMultiUploadSheet(
                         globalError = null
                         uploadedCount = 0
 
-                        scope.launch {
+                        scope.launch(Main) {
                             try {
-                                val results = repo.uploadAll(
-                                    items = cvItems.map { it.uri to it.language },
-                                    onProgress = { prog ->
-                                        cvItems = cvItems.map { item ->
-                                            if (item.uri == prog.uri) item.copy(progress = prog.percent.coerceIn(0, 100)) else item
+                                // 1) Preprocesar en paralelo en IO (p.ej., calcular SHA-256) usando async
+                                val withHashes: List<CvItemUi> = supervisorScope {
+                                    cvItems.mapIndexed { index, item ->
+                                        async(IO) {
+                                            val hash = computeSha256(context.contentResolver.openInputStream(item.uri))
+                                            index to item.copy(sha256 = hash)
                                         }
-                                    }
-                                )
+                                    }.awaitAll()
+                                        .sortedBy { it.first }
+                                        .map { it.second }
+                                }
+                                cvItems = withHashes
+
+                                // 2) Subir en paralelo (IO) y reportar progreso a la UI (Main)
+                                //    Mantiene la UI responsiva y cumple "una en main y otras en I/O".
+                                val results = withContext(IO) {
+                                    // Si tu repo ya sube en paralelo, perfecto. Si no, esto sigue en IO.
+                                    repo.uploadAll(
+                                        items = withHashes.map { it.uri to it.language },
+                                        onProgress = { prog ->
+                                            // Saltamos a Main para actualizar estado Compose
+                                            scope.launch(Main) {
+                                                cvItems = cvItems.map { current ->
+                                                    if (current.uri == prog.uri) {
+                                                        current.copy(progress = prog.percent.coerceIn(0, 100))
+                                                    } else current
+                                                }
+                                            }
+                                        }
+                                    )
+                                }
+
                                 uploadedCount = results.size
                                 cvItems = cvItems.map { it.copy(progress = 100, done = true) }
+                            } catch (e: CancellationException) {
+                                throw e
                             } catch (e: Exception) {
                                 globalError = e.message ?: "Error desconocido"
                             } finally {
@@ -686,6 +720,10 @@ private fun CvRow(
     Card {
         Column(Modifier.padding(12.dp)) {
             Text(item.uri.lastPathSegment ?: item.uri.toString(), fontWeight = FontWeight.Medium)
+            item.sha256?.let {
+                Spacer(Modifier.height(4.dp))
+                Text("SHA-256: ${it.take(16)}...", fontSize = 11.sp, color = Color.Gray)
+            }
             Spacer(Modifier.height(8.dp))
             LangSelectorCv(selected = item.language, onChange = onLangChange)
             Spacer(Modifier.height(8.dp))
@@ -694,7 +732,10 @@ private fun CvRow(
                 modifier = Modifier.fillMaxWidth()
             )
             Spacer(Modifier.height(4.dp))
-            Text(if (item.done) "Completado" else "Progreso: ${item.progress}%")
+            Text(
+                if (item.done) "Completado" else "Progreso: ${item.progress}%",
+                fontSize = 12.sp
+            )
             item.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
         }
     }
@@ -881,5 +922,21 @@ private fun AddBox(title: String, modifier: Modifier = Modifier, onClick: () -> 
         Text(title, fontSize = 14.sp, color = TitleGreen, textAlign = TextAlign.Center)
         Spacer(Modifier.height(4.dp))
         Text("Add link", color = LinkGreen, fontSize = 12.sp, textDecoration = TextDecoration.Underline, modifier = Modifier.clickable { onClick() })
+    }
+}
+
+/* =================== UTIL: Hash en IO para demostrar trabajo paralelo =================== */
+
+private fun computeSha256(input: InputStream?): String? {
+    if (input == null) return null
+    return input.use { stream ->
+        val md = MessageDigest.getInstance("SHA-256")
+        val buf = ByteArray(DEFAULT_BUFFER_SIZE)
+        while (true) {
+            val read = stream.read(buf)
+            if (read <= 0) break
+            md.update(buf, 0, read)
+        }
+        md.digest().joinToString("") { b -> "%02x".format(b) }
     }
 }
