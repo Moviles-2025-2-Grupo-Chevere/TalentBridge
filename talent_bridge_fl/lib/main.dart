@@ -1,3 +1,4 @@
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -29,6 +30,24 @@ class _TalentBridgeState extends ConsumerState<TalentBridge> {
   final ConnectivityService _connectivityService = ConnectivityService();
   final _fb = FirebaseService();
 
+  Future setUpInteractedMessage() async {
+    RemoteMessage? initialMessage = await FirebaseMessaging.instance
+        .getInitialMessage();
+    if (initialMessage != null) {
+      _handleMessage(initialMessage);
+    }
+    FirebaseMessaging.onMessageOpenedApp.listen(_handleMessage);
+  }
+
+  void _handleMessage(RemoteMessage message) {
+    print("Opened app from notification: ${message.notification?.title}");
+    FirebaseAnalytics.instance.logAppOpen();
+    FirebaseAnalytics.instance.logEvent(
+      name: 'app_open_from_notification',
+      parameters: {'notification_title': message.notification?.title ?? ''},
+    );
+  }
+
   @override
   void initState() {
     super.initState();
@@ -36,6 +55,7 @@ class _TalentBridgeState extends ConsumerState<TalentBridge> {
       _connectivityService.initialize(this.context);
     });
     _fb.setupNotifications();
+    setUpInteractedMessage();
   }
 
   @override
