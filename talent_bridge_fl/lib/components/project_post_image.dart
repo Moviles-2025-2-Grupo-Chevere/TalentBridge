@@ -6,17 +6,18 @@ class ProjectPostImage extends StatelessWidget {
   const ProjectPostImage({
     super.key,
     required this.imageUrlFuture,
+    required this.imageKey,
   });
 
   final Future<String?>? imageUrlFuture;
+  final String imageKey;
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
       future: imageUrlFuture,
       builder: (context, snapshot) {
-        if (snapshot.hasData) {
-          final imageUrl = snapshot.data;
+        if (!snapshot.hasError) {
           return Padding(
             padding: const EdgeInsets.symmetric(
               horizontal: 16,
@@ -25,14 +26,16 @@ class ProjectPostImage extends StatelessWidget {
             child: ConstrainedBox(
               constraints: BoxConstraints(maxHeight: 300),
               child: CachedNetworkImage(
-                imageUrl: imageUrl!,
+                cacheKey: imageKey,
+                imageUrl: snapshot.data ?? '',
                 placeholder: (context, url) => CircularProgressIndicator(),
-                errorWidget: (context, url, error) => Icon(Icons.error),
+                errorWidget: (context, url, error) => const SizedBox.shrink(),
                 fit: BoxFit.contain,
               ),
             ),
           );
         }
+
         return const SizedBox.shrink();
       },
     );

@@ -141,7 +141,7 @@ class FirebaseService {
     });
   }
 
-  Future<List<Map<String, String>>> getUsersAppliedToProject({
+  Future<List<Map<String, String>>> getUsersWhoAppliedToProject({
     required String projectId,
   }) async {
     try {
