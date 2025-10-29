@@ -18,6 +18,8 @@ class _ProjectPostPfpState extends State<ProjectPostPfp> {
   Future<void> setImageUrl() async {
     final shared_preferences =
         await SharedPreferences.getInstance(); //Key-value DB for light data
+    final storage = FirebaseStorage.instance;
+    final localUrl = shared_preferences.getString(cacheKey);
   }
 
   final storageRef = FirebaseStorage.instance.ref();
