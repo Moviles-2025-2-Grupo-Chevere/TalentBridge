@@ -1,29 +1,30 @@
 import 'dart:async';
-import 'dart:io';
-
 import 'package:connectivity_plus/connectivity_plus.dart';
-import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:talent_bridge_fl/providers/project_application.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
 
-final projectApplyUploadProvider = NotifierProvider(
-  ProjectApplyUploadNotifier.new,
-);
+final projectApplyUploadProvider =
+    NotifierProvider<ProjectApplyUploadNotifier, List<ProjectApplication>>(
+      ProjectApplyUploadNotifier.new,
+    );
 
-class ProjectApplyUploadNotifier extends Notifier<String?> {
+class ProjectApplyUploadNotifier extends Notifier<List<ProjectApplication>> {
   final _connectivity = Connectivity();
   final _fbService = FirebaseService();
   StreamSubscription<List<ConnectivityResult>>? _subscription;
 
-  /// Uses stream concurrency to listen to connectivity changes
+  /// Initialize with empty list and listen to connectivity changes
   @override
-  String? build() {
-    state = null;
+  List<ProjectApplication> build() {
+    state = [];
 
     _subscription = _connectivity.onConnectivityChanged.listen((status) {
       if (status[0] != ConnectivityResult.none) {
-        if (state != null) {
-          tryUpload(state!);
+        // When connection is restored, try uploading queued applications
+        if (state.isNotEmpty) {
+          processQueue();
         }
       }
     });
@@ -32,25 +33,67 @@ class ProjectApplyUploadNotifier extends Notifier<String?> {
     return state;
   }
 
-  Future<TaskSnapshot?> enqueueProjectApplyUpload(
+  /// Add application to queue and attempt upload
+  /// Returns true if uploaded successfully, false if queued for later
+  Future<bool?> enqueueProjectApplyUpload(
     String userId,
     String projectId,
     String createdById,
   ) async {
-    state = {
-      'userId': userId,
-      'projectId': projectId,
-      'createdById': createdById,
-    }.toString();
-    return await tryUpload(state!);
+    final application = ProjectApplication(
+      userId: userId,
+      projectId: projectId,
+      createdById: createdById,
+    );
+
+    // Try to upload immediately
+    final success = await tryUploadApplication(application);
+
+    if (success) {
+      // Successfully uploaded, no need to queue
+      return true;
+    } else {
+      // Failed to upload, add to queue
+      state = [...state, application];
+      return null; // null indicates queued for later (like TaskSnapshot?)
+    }
   }
 
-  Future<TaskSnapshot?> tryUpload(String path) async {
-    final file = File(path);
-    final uploadResult = await _fbService.uploadPFP(file);
-    if (uploadResult != null) {
-      state = null;
+  /// Process all queued applications
+  Future<void> processQueue() async {
+    if (state.isEmpty) return;
+
+    // Create a copy to avoid modification during iteration
+    final applicationsToProcess = [...state];
+
+    for (final application in applicationsToProcess) {
+      final success = await tryUploadApplication(application);
+      if (success) {
+        removeFromQueue(application);
+      } else {
+        // Stop processing if one fails (no connection)
+        break;
+      }
     }
-    return uploadResult;
+  }
+
+  /// Attempt to upload a single application
+  Future<bool> tryUploadApplication(ProjectApplication app) async {
+    try {
+      await _fbService.addProjectToApplications(
+        userId: app.userId,
+        createdById: app.createdById,
+        projectId: app.projectId,
+      );
+      return true;
+    } catch (e) {
+      debugPrint('Failed to upload application: $e');
+      return false;
+    }
+  }
+
+  /// Remove application from queue
+  void removeFromQueue(ProjectApplication app) {
+    state = state.where((item) => item != app).toList();
   }
 }
