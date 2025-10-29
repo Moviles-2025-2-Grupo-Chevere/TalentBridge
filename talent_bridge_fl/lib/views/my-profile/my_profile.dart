@@ -442,23 +442,33 @@ class _MyProfileState extends ConsumerState<MyProfile> {
     final userEntity = ref.watch(profileProvider);
 
     return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Profile header with image and username
-            Stack(
-              children: [
-                ConstrainedBox(
-                  constraints: BoxConstraints(maxHeight: 200),
-                  child: CachedNetworkImage(
-                    fit: BoxFit.cover,
-                    width: double.infinity,
-                    imageUrl:
-                        'https://dummyimage.com/300x300/888888/ffffff.png',
-                  ),
+      child: Stack(
+        children: [
+          ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: 200),
+            child: Material(
+              color: Colors.transparent, // important!
+              child: Ink.image(
+                image: CachedNetworkImageProvider(
+                  'https://dummyimage.com/300x300/888888/ffffff.png',
                 ),
+                fit: BoxFit.cover,
+                child: InkWell(
+                  onTap: () {
+                    print('Image tapped!');
+                  },
+                  splashColor: Colors.blue.withValues(alpha: 0.3),
+                  highlightColor: Colors.transparent,
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Profile header with image and username
                 Padding(
                   padding: const EdgeInsets.only(top: 100),
                   child: Row(
@@ -523,175 +533,179 @@ class _MyProfileState extends ConsumerState<MyProfile> {
                     ],
                   ),
                 ),
-              ],
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                (userEntity?.headline ?? '').isEmpty
-                    ? TextButton(
-                        onPressed: () => _openEditProfileOverlay(userEntity!),
-                        child: Text(
-                          'Add headline',
-                          style: const TextStyle(color: Colors.blue),
-                        ),
-                      )
-                    : Expanded(
-                        child: Text(
-                          userEntity!.headline!,
-                          textAlign: TextAlign.center,
-                        ),
-                      ),
-              ],
-            ),
-            const SizedBox(height: 16.0),
-            // Contact section
-            const Text(
-              'Contact',
-              style: headerStyle,
-            ),
-            const SizedBox(height: 8.0),
-            Column(
-              children: [
-                ContactItem(label: 'Email', value: userEntity?.email ?? ''),
-                ContactItem(
-                  label: 'Linkedin',
-                  value: userEntity?.linkedin,
-                  fallback: 'Add LinkedIn',
-                  fallbackAction: () => _openEditProfileOverlay(userEntity!),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    (userEntity?.headline ?? '').isEmpty
+                        ? TextButton(
+                            onPressed: () =>
+                                _openEditProfileOverlay(userEntity!),
+                            child: Text(
+                              'Add headline',
+                              style: const TextStyle(color: Colors.blue),
+                            ),
+                          )
+                        : Expanded(
+                            child: Text(
+                              userEntity!.headline!,
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                  ],
                 ),
-                ContactItem(
-                  label: 'Mobile Number',
-                  value: userEntity?.mobileNumber,
-                  fallback: 'Add mobile number',
-                  fallbackAction: () => _openEditProfileOverlay(userEntity!),
+                const SizedBox(height: 16.0),
+                // Contact section
+                const Text(
+                  'Contact',
+                  style: headerStyle,
                 ),
-                ContactItem(
-                  label: 'Major',
-                  value: userEntity?.major,
-                  fallback: 'Add major',
-                  fallbackAction: () => _openEditProfileOverlay(userEntity!),
-                ),
-              ],
-            ),
-
-            // Description section
-            const Text('Your Description', style: headerStyle),
-            const SizedBox(height: 8.0),
-            (userEntity?.description ?? '').isNotEmpty
-                ? Text(userEntity!.description!)
-                : Center(
-                    child: TextButton(
-                      onPressed: () => _openEditProfileOverlay(userEntity!),
-                      child: Text(
-                        'Add description',
-                        style: TextStyle(
-                          color: Colors.blue,
-                        ),
-                      ),
+                const SizedBox(height: 8.0),
+                Column(
+                  children: [
+                    ContactItem(label: 'Email', value: userEntity?.email ?? ''),
+                    ContactItem(
+                      label: 'Linkedin',
+                      value: userEntity?.linkedin,
+                      fallback: 'Add LinkedIn',
+                      fallbackAction: () =>
+                          _openEditProfileOverlay(userEntity!),
                     ),
-                  ),
-            const SizedBox(height: 8.0),
-
-            const Text('My Skills and Topics', style: headerStyle),
-            const SizedBox(height: 8.0),
-            Wrap(
-              spacing: 8.0,
-              runSpacing: 8.0,
-              children: (userEntity?.skillsOrTopics ?? [])
-                  .map((i) => TextBoxWidget(text: i))
-                  .toList(),
-            ),
-            Center(
-              child: TextButton(
-                onPressed: () => _openEditProfileOverlay(userEntity!),
-                child: const Text(
-                  'Add Skills',
-                  style: TextStyle(
-                    color: Colors.blue,
-                  ),
+                    ContactItem(
+                      label: 'Mobile Number',
+                      value: userEntity?.mobileNumber,
+                      fallback: 'Add mobile number',
+                      fallbackAction: () =>
+                          _openEditProfileOverlay(userEntity!),
+                    ),
+                    ContactItem(
+                      label: 'Major',
+                      value: userEntity?.major,
+                      fallback: 'Add major',
+                      fallbackAction: () =>
+                          _openEditProfileOverlay(userEntity!),
+                    ),
+                  ],
                 ),
-              ),
-            ),
-            const SizedBox(height: 24.0),
 
-            // Link sections for CV and Portfolio
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    children: [
-                      AddElementWidget(
-                        title: 'Add CV',
-                        onTap: _pickAndUploadCVs,
-                      ),
-                      const SizedBox(height: 8),
-                      TextButton(
-                        onPressed: _viewUploadedCVs,
-                        child: const Text(
-                          'View My CVs',
-                          style: TextStyle(
-                            color: Colors.blue,
+                // Description section
+                const Text('Your Description', style: headerStyle),
+                const SizedBox(height: 8.0),
+                (userEntity?.description ?? '').isNotEmpty
+                    ? Text(userEntity!.description!)
+                    : Center(
+                        child: TextButton(
+                          onPressed: () => _openEditProfileOverlay(userEntity!),
+                          child: Text(
+                            'Add description',
+                            style: TextStyle(
+                              color: Colors.blue,
+                            ),
                           ),
                         ),
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 16.0),
-                Expanded(
-                  child: AddElementWidget(
-                    title: 'Add Portfolio',
-                    onTap: () {
-                      // Add Portfolio action
-                    },
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 24.0),
+                const SizedBox(height: 8.0),
 
-            // Projects section
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('My Projects', style: headerStyle),
-                Spacer(),
-                SquareAddButton(onTap: _openAddProjectOverlay),
-              ],
-            ),
-            if ((userEntity?.projects ?? []).isEmpty)
-              Center(
-                child: Column(
-                  children: [
-                    SizedBox(
-                      height: 8,
-                    ),
-                    Text(
-                      'No tienes proyectos activos.',
+                const Text('My Skills and Topics', style: headerStyle),
+                const SizedBox(height: 8.0),
+                Wrap(
+                  spacing: 8.0,
+                  runSpacing: 8.0,
+                  children: (userEntity?.skillsOrTopics ?? [])
+                      .map((i) => TextBoxWidget(text: i))
+                      .toList(),
+                ),
+                Center(
+                  child: TextButton(
+                    onPressed: () => _openEditProfileOverlay(userEntity!),
+                    child: const Text(
+                      'Add Skills',
                       style: TextStyle(
-                        fontSize: 14.0,
-                        color: Colors.grey[600],
+                        color: Colors.blue,
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24.0),
+
+                // Link sections for CV and Portfolio
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        children: [
+                          AddElementWidget(
+                            title: 'Add CV',
+                            onTap: _pickAndUploadCVs,
+                          ),
+                          const SizedBox(height: 8),
+                          TextButton(
+                            onPressed: _viewUploadedCVs,
+                            child: const Text(
+                              'View My CVs',
+                              style: TextStyle(
+                                color: Colors.blue,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 16.0),
+                    Expanded(
+                      child: AddElementWidget(
+                        title: 'Add Portfolio',
+                        onTap: () {
+                          // Add Portfolio action
+                        },
                       ),
                     ),
                   ],
                 ),
-              ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: (userEntity?.projects ?? [])
-                  .map(
-                    (i) => ProjectSummary(
-                      project: i,
+                const SizedBox(height: 24.0),
+
+                // Projects section
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('My Projects', style: headerStyle),
+                    Spacer(),
+                    SquareAddButton(onTap: _openAddProjectOverlay),
+                  ],
+                ),
+                if ((userEntity?.projects ?? []).isEmpty)
+                  Center(
+                    child: Column(
+                      children: [
+                        SizedBox(
+                          height: 8,
+                        ),
+                        Text(
+                          'No tienes proyectos activos.',
+                          style: TextStyle(
+                            fontSize: 14.0,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
                     ),
-                  )
-                  .toList(),
+                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: (userEntity?.projects ?? [])
+                      .map(
+                        (i) => ProjectSummary(
+                          project: i,
+                        ),
+                      )
+                      .toList(),
+                ),
+                const SizedBox(height: 40.0),
+              ],
             ),
-            const SizedBox(height: 40.0),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
