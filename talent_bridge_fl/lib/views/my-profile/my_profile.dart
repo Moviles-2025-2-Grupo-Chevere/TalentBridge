@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
@@ -447,63 +448,79 @@ class _MyProfileState extends ConsumerState<MyProfile> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             // Profile header with image and username
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            Stack(
               children: [
-                Spacer(),
-                SizedBox(
-                  child: Column(
-                    children: [
-                      // Profile image
-                      Stack(
-                        children: [
-                          InkWell(
-                            onTap: _showTakePhotoDialog,
-                            child: CircleAvatar(
-                              radius: 60,
-                              backgroundImage: pfpProvider,
-                            ),
-                          ),
-                          if (pendingUpload)
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: Icon(Icons.sync_alt_outlined),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(height: 16.0),
-                      // Username
-                      Row(
-                        children: [
-                          Text(
-                            userEntity?.displayName ?? '',
-                            style: TextStyle(
-                              fontSize: 18.0,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: 'OpenSans',
-                            ),
-                          ),
-                          if (userEntity?.source == Source.local) ...[
-                            SizedBox(
-                              width: 4,
-                            ),
-                            Icon(Icons.cloud_off_outlined),
-                          ],
-                        ],
-                      ),
-                    ],
+                ConstrainedBox(
+                  constraints: BoxConstraints(maxHeight: 200),
+                  child: CachedNetworkImage(
+                    fit: BoxFit.cover,
+                    width: double.infinity,
+                    imageUrl:
+                        'https://dummyimage.com/300x300/888888/ffffff.png',
                   ),
                 ),
-                Expanded(
-                  child: Align(
-                    alignment: Alignment.topRight,
-                    child: IconButton(
-                      onPressed: userEntity != null
-                          ? () => _openEditProfileOverlay(userEntity!)
-                          : () {},
-                      icon: Icon(Icons.edit),
-                    ),
+                Padding(
+                  padding: const EdgeInsets.only(top: 100),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Spacer(),
+                      SizedBox(
+                        child: Column(
+                          children: [
+                            // Profile image
+                            Stack(
+                              children: [
+                                InkWell(
+                                  onTap: _showTakePhotoDialog,
+                                  child: CircleAvatar(
+                                    radius: 60,
+                                    backgroundImage: pfpProvider,
+                                  ),
+                                ),
+                                if (pendingUpload)
+                                  Positioned(
+                                    bottom: 0,
+                                    right: 0,
+                                    child: Icon(Icons.sync_alt_outlined),
+                                  ),
+                              ],
+                            ),
+                            const SizedBox(height: 16.0),
+                            // Username
+                            Row(
+                              children: [
+                                Text(
+                                  userEntity?.displayName ?? '',
+                                  style: TextStyle(
+                                    fontSize: 18.0,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: 'OpenSans',
+                                  ),
+                                ),
+                                if (userEntity?.source == Source.local) ...[
+                                  SizedBox(
+                                    width: 4,
+                                  ),
+                                  Icon(Icons.cloud_off_outlined),
+                                ],
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      Expanded(
+                        child: Align(
+                          alignment: Alignment.bottomRight,
+                          child: IconButton(
+                            onPressed: userEntity != null
+                                ? () => _openEditProfileOverlay(userEntity!)
+                                : () {},
+                            icon: Icon(Icons.edit),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ],
