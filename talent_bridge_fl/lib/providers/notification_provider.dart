@@ -5,7 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 final notificationProvider = NotifierProvider(NotificationNotifier.new);
 
-class NotificationNotifier extends Notifier {
+class NotificationNotifier extends Notifier<RemoteMessage?> {
   final messaging = FirebaseMessaging.instance;
 
   late StreamSubscription<RemoteMessage> _msgSuscription;
@@ -17,7 +17,7 @@ class NotificationNotifier extends Notifier {
       RemoteMessage message,
     ) {
       // Handle when the app is in foreground
-      state = message.notification?.title;
+      state = message;
       print('Notification title: $state');
     });
     ref.onDispose(() => _msgSuscription.cancel());

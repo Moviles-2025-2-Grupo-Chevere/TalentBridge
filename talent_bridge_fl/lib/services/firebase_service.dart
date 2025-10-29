@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:firebase_auth/firebase_auth.dart' as firebase_core;
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:talent_bridge_fl/domain/project_entity.dart';
@@ -96,43 +97,51 @@ class FirebaseService {
 
   // ---------------- PROJECTS ----------------
   Future<List<ProjectEntity>> getAllProjects() async {
-    final querySnapshot = await _db.collection('users').get();
+    try {
+      final querySnapshot = await _db.collection('users').get();
 
-    List<ProjectEntity> allProjects = [];
+      List<ProjectEntity> allProjects = [];
 
-    for (var doc in querySnapshot.docs) {
-      final userData = doc.data();
-      final UserEntity userEntity = UserEntity.fromMap(userData);
-      final UserEntity userWoutProjects = userEntity.copyWith(projects: null);
-      final userProjects = userEntity.projects ?? [];
-      final projectsWithUser = userProjects.map(
-        (e) {
-          e.createdBy = userWoutProjects;
-          return e;
-        },
-      ).toList();
-      allProjects.addAll(projectsWithUser);
+      for (var doc in querySnapshot.docs) {
+        final userData = doc.data();
+        final UserEntity userEntity = UserEntity.fromMap(userData);
+        final UserEntity userWoutProjects = userEntity.copyWith(projects: null);
+        final userProjects = userEntity.projects ?? [];
+        final projectsWithUser = userProjects.map(
+          (e) {
+            e.createdBy = userWoutProjects;
+            return e;
+          },
+        ).toList();
+        allProjects.addAll(projectsWithUser);
+      }
+      allProjects.sort((a, b) {
+        final aDate = a.createdAt ?? DateTime(1970);
+        final bDate = b.createdAt ?? DateTime(1970);
+        return -aDate.compareTo(bDate);
+      });
+
+      return allProjects;
+    } catch (e) {
+      print("Error mapping projects: " + e.toString());
+      rethrow;
     }
-    allProjects.sort((a, b) {
-      final aDate = a.createdAt ?? DateTime(1970);
-      final bDate = b.createdAt ?? DateTime(1970);
-      return -aDate.compareTo(bDate);
-    });
-
-    return allProjects;
   }
 
   Future<void> addProjectToApplications({
     required String userId,
+    required String createdById,
     required String projectId,
   }) async {
     final docRef = _db.collection('users').doc(userId);
     await docRef.update({
-      'applications': FieldValue.arrayUnion([projectId]),
+      'applications': FieldValue.arrayUnion([
+        {"projectId": projectId, "createdById": createdById},
+      ]),
     });
   }
 
-  Future<List<Map<String, String>>> getUsersAppliedToProject({
+  Future<List<Map<String, String>>> getUsersWhoAppliedToProject({
     required String projectId,
   }) async {
     try {
@@ -228,6 +237,7 @@ class FirebaseService {
         },
         SetOptions(merge: true),
       );
+      sendFCMToken();
     }
 
     await _analytics.logLogin(loginMethod: 'email');
@@ -273,6 +283,36 @@ class FirebaseService {
     await _analytics.logSignUp(signUpMethod: 'email');
 
     await logEvent('signup', {});
+  }
+
+  Future<bool> sendFCMToken() async {
+    try {
+      final uid = currentUid();
+      if (uid == null) return false;
+      var messaging = FirebaseMessaging.instance;
+      final token = await messaging.getToken();
+      if (token == null) return false;
+      await _db.collection('users').doc(uid).set(
+        {"fcm": token},
+        SetOptions(merge: true),
+      );
+      return true;
+    } catch (e) {
+      print(e);
+      return false;
+    }
+  }
+
+  Future<void> setupNotifications() async {
+    var messaging = FirebaseMessaging.instance;
+    final notificationSettings = await messaging.requestPermission(
+      alert: true,
+      badge: true,
+      sound: true,
+      provisional: true,
+    );
+    await sendFCMToken();
+    // print("Token: $token");
   }
 
   // ---------------- PIPELINE ----------------

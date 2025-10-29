@@ -2,6 +2,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:talent_bridge_fl/providers/fcm_provider.dart';
+import 'package:talent_bridge_fl/services/firebase_service.dart';
 import 'package:talent_bridge_fl/views/splash_screen.dart';
 import 'services/connectivity_service.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
@@ -18,25 +20,32 @@ void main() async {
   runApp(ProviderScope(child: const TalentBridge()));
 }
 
-class TalentBridge extends StatefulWidget {
+class TalentBridge extends ConsumerStatefulWidget {
   const TalentBridge({super.key});
   @override
-  State<TalentBridge> createState() => _TalentBridgeState();
+  ConsumerState<TalentBridge> createState() => _TalentBridgeState();
 }
 
-class _TalentBridgeState extends State<TalentBridge> {
+class _TalentBridgeState extends ConsumerState<TalentBridge> {
   final ConnectivityService _connectivityService = ConnectivityService();
+  final _fb = FirebaseService();
 
-  Future<void> _setupNotifications() async {
-    var messaging = FirebaseMessaging.instance;
-    final notificationSettings = await messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-      provisional: true,
+  Future setUpInteractedMessage() async {
+    RemoteMessage? initialMessage = await FirebaseMessaging.instance
+        .getInitialMessage();
+    if (initialMessage != null) {
+      _handleMessage(initialMessage);
+    }
+    FirebaseMessaging.onMessageOpenedApp.listen(_handleMessage);
+  }
+
+  void _handleMessage(RemoteMessage message) {
+    print("Opened app from notification: ${message.notification?.title}");
+    FirebaseAnalytics.instance.logAppOpen();
+    FirebaseAnalytics.instance.logEvent(
+      name: 'app_open_from_notification',
+      parameters: {'notification_title': message.notification?.title ?? ''},
     );
-    final token = await messaging.getToken();
-    // print("Token: $token");
   }
 
   @override
@@ -45,7 +54,8 @@ class _TalentBridgeState extends State<TalentBridge> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _connectivityService.initialize(this.context);
     });
-    _setupNotifications();
+    _fb.setupNotifications();
+    setUpInteractedMessage();
   }
 
   @override
@@ -56,6 +66,7 @@ class _TalentBridgeState extends State<TalentBridge> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(fcmTokenProvider, (previous, next) => _fb.sendFCMToken());
     return MaterialApp(
       title: 'Talent Bridge',
       navigatorKey: navigatorKey,

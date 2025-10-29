@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -55,13 +56,14 @@ class _MyProfileState extends ConsumerState<MyProfile> {
       setState(() {
         pfpProvider = FileImage(File(localPath));
       });
+      debugPrint('Obtained Image From Local Storage');
       return;
     }
     try {
       final remotePfpUrl = await fb.getPFPUrl();
       if (remotePfpUrl != null) {
         setState(() {
-          pfpProvider = NetworkImage(remotePfpUrl);
+          pfpProvider = CachedNetworkImageProvider(remotePfpUrl);
         });
         debugPrint('Obtained Image Url from network');
       }
@@ -352,8 +354,10 @@ class _MyProfileState extends ConsumerState<MyProfile> {
             );
           }
         }
-        final evicted = await (pfpProvider as FileImage).evict();
-        debugPrint('Evicted: $evicted');
+        if (pfpProvider != null && pfpProvider is FileImage) {
+          final evicted = await (pfpProvider as FileImage).evict();
+          debugPrint('Evicted: $evicted');
+        }
         setState(() {
           debugPrint("Set Image path to: $localPicturePath");
           pfpProvider = FileImage(File(image.path));

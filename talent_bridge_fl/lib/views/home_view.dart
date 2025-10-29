@@ -45,7 +45,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
               children: [
                 Icon(Icons.notification_important_outlined),
                 SizedBox(width: 8),
-                Text(next),
+                Text(next?.notification?.title ?? ''),
               ],
             ),
           ),
