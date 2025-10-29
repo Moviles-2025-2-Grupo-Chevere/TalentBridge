@@ -32,9 +32,17 @@ class ProjectApplyUploadNotifier extends Notifier<String?> {
     return state;
   }
 
-  Future<TaskSnapshot?> enqueuePfpUpload(String path) async {
-    state = path;
-    return await tryUpload(path);
+  Future<TaskSnapshot?> enqueueProjectApplyUpload(
+    String userId,
+    String projectId,
+    String createdById,
+  ) async {
+    state = {
+      'userId': userId,
+      'projectId': projectId,
+      'createdById': createdById,
+    }.toString();
+    return await tryUpload(state!);
   }
 
   Future<TaskSnapshot?> tryUpload(String path) async {

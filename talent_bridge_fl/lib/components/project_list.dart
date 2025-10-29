@@ -1,20 +1,24 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:talent_bridge_fl/components/project_post.dart';
 import 'package:talent_bridge_fl/components/submit_alert_db.dart';
 import 'package:talent_bridge_fl/domain/project_entity.dart';
+import 'package:talent_bridge_fl/providers/upload_queue_apply_project.dart';
 import 'package:talent_bridge_fl/services/db_service.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
 
-class ProjectList extends StatefulWidget {
+class ProjectList extends ConsumerStatefulWidget {
   const ProjectList({super.key, required this.projects});
 
   final List<ProjectEntity> projects;
 
   @override
-  State<ProjectList> createState() => _ProjectListState();
+  ConsumerState<ProjectList> createState() => _ProjectListState();
 }
 
-class _ProjectListState extends State<ProjectList> {
+class _ProjectListState extends ConsumerState<ProjectList> {
   final firebaseService = FirebaseService();
   final dbService = DbService();
 
@@ -27,19 +31,22 @@ class _ProjectListState extends State<ProjectList> {
     String projectId,
   ) async {
     try {
-      await firebaseService.addProjectToApplications(
-        userId: currentUserId,
-        createdById: createdById,
-        projectId: projectId,
-      );
-      if (context.mounted) {
+      final result = await ref
+          .read(projectApplyUploadProvider.notifier)
+          .enqueueProjectApplyUpload(
+            currentUserId,
+            projectId,
+            createdById,
+          );
+      if (result == null && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Application submitted successfully!'),
+            content: Text('The picture will be uploaded later'),
           ),
         );
       }
     } catch (e) {
+      debugPrint(e.toString());
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
