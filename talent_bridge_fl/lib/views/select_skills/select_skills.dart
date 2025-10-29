@@ -1,14 +1,19 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:talent_bridge_fl/domain/skill_entity.dart';
 
 class SelectSkills extends StatefulWidget {
   SelectSkills({
     super.key,
-    required List<String> skills,
+    required List<SkillEntity> skills,
     required this.selectedSkills,
-  }) : sortedSkills = List.of(skills)..sort();
+  }) : sortedSkills = List.of(skills)
+         ..sort(
+           (a, b) => a.label.compareTo(b.label),
+         );
 
-  final List<String> sortedSkills;
-  final Set<String> selectedSkills;
+  final List<SkillEntity> sortedSkills;
+  final Set<SkillEntity> selectedSkills;
 
   @override
   State<SelectSkills> createState() => _SelectSkillsState();
@@ -16,14 +21,15 @@ class SelectSkills extends StatefulWidget {
 
 class _SelectSkillsState extends State<SelectSkills> {
   final _searchController = TextEditingController();
-  List<String> filteredSkills = [];
+  List<SkillEntity> filteredSkills = [];
 
   void _onQueryChanged() {
     final query = _searchController.text.trim().toLowerCase();
     setState(() {
       filteredSkills = widget.sortedSkills
           .where(
-            (element) => element.toLowerCase().contains(query.toLowerCase()),
+            (element) =>
+                element.label.toLowerCase().contains(query.toLowerCase()),
           )
           .toList();
     });
@@ -57,7 +63,7 @@ class _SelectSkillsState extends State<SelectSkills> {
             child: ListView.builder(
               itemCount: filteredSkills.length,
               itemBuilder: (context, index) => CheckboxListTile(
-                title: Text(filteredSkills[index]),
+                title: Text(filteredSkills[index].label),
                 key: ValueKey(filteredSkills[index]),
                 value: widget.selectedSkills.contains(filteredSkills[index]),
                 onChanged: (value) {

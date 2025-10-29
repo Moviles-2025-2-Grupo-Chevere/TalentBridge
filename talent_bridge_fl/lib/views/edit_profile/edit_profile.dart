@@ -2,6 +2,7 @@ import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:talent_bridge_fl/data/major_service.dart';
+import 'package:talent_bridge_fl/domain/skill_entity.dart';
 import 'package:talent_bridge_fl/domain/update_user_dto.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
 import 'package:talent_bridge_fl/services/skills_service.dart';
@@ -26,7 +27,6 @@ class EditProfile extends StatefulWidget {
 class _EditProfileState extends State<EditProfile> {
   final _fb = FirebaseService();
   final _formKey = GlobalKey<FormState>();
-  final _skills = SkillsService.getSkills();
   var _formIsValid = false;
   // Form values
   String displayName = '';
@@ -35,7 +35,8 @@ class _EditProfileState extends State<EditProfile> {
   String mobileNumber = '';
   String description = '';
   String major = '';
-  final _selectedSkills = HashSet<String>();
+  List<SkillEntity> _skills = SkillsService.getFallbackSkills();
+  final _selectedSkills = HashSet<SkillEntity>();
 
   _submitData() async {
     if (_formKey.currentState!.validate()) {
@@ -45,7 +46,7 @@ class _EditProfileState extends State<EditProfile> {
         headline: headline,
         linkedin: linkedinUrl,
         mobileNumber: mobileNumber,
-        skillsOrTopics: _selectedSkills.toList(),
+        skillsOrTopics: _selectedSkills.map((e) => e.label).toList(),
         description: description,
         major: major,
       );
@@ -60,7 +61,7 @@ class _EditProfileState extends State<EditProfile> {
     }
   }
 
-  void _removeSelectedSkill(String skill) {
+  void _removeSelectedSkill(SkillEntity skill) {
     setState(() {
       _selectedSkills.remove(skill);
     });
@@ -168,7 +169,11 @@ class _EditProfileState extends State<EditProfile> {
   @override
   void initState() {
     super.initState();
-    _selectedSkills.addAll(widget.existingData.skillsOrTopics);
+    _selectedSkills.addAll(
+      widget.existingData.skillsOrTopics.map(
+        (e) => SkillEntity(e, null),
+      ),
+    );
     // 🪄 Schedule validation after first frame
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final currentState = _formKey.currentState;
@@ -303,7 +308,7 @@ class _EditProfileState extends State<EditProfile> {
                   children: _selectedSkills
                       .map(
                         (e) => InputChip(
-                          label: Text(e),
+                          label: Text(e.label),
                           onDeleted: () => _removeSelectedSkill(e),
                         ),
                       )

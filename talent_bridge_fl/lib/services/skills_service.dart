@@ -1,6 +1,8 @@
+import 'package:talent_bridge_fl/domain/skill_entity.dart';
+
 class SkillsService {
-  static List<String> getSkills() {
-    return [
+  static List<SkillEntity> getFallbackSkills() {
+    var skills = [
       'JavaScript',
       'Dart',
       'Flutter',
@@ -22,5 +24,6 @@ class SkillsService {
       'Problem Solving',
       'Leadership',
     ];
+    return skills.map((e) => SkillEntity(e, null)).toList();
   }
 }
