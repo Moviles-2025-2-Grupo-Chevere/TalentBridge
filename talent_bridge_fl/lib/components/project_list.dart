@@ -38,10 +38,11 @@ class _ProjectListState extends ConsumerState<ProjectList> {
             projectId,
             createdById,
           );
+      // Only show queued message if there's no internet ;)
       if (result == null && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('The picture will be uploaded later'),
+            content: Text('The application will be sent later, when online'),
           ),
         );
       }
@@ -189,6 +190,17 @@ class _ProjectListState extends ConsumerState<ProjectList> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen(
+      projectApplyUploadProvider,
+      (prev, next) {
+        if (prev != null && next == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Application uploaded successfully")),
+          );
+        }
+      },
+    );
+
     return ListView.builder(
       itemCount: projects.length,
       itemBuilder: (ctx, index) => Dismissible(
