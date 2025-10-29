@@ -20,6 +20,12 @@ class _ProjectPostPfpState extends State<ProjectPostPfp> {
         await SharedPreferences.getInstance(); //Key-value DB for light data
     final storage = FirebaseStorage.instance;
     final localUrl = shared_preferences.getString(cacheKey);
+
+    if (mounted) {
+      setState(() {
+        url = localUrl; // Uses cached URL first
+      });
+    }
   }
 
   final storageRef = FirebaseStorage.instance.ref();
