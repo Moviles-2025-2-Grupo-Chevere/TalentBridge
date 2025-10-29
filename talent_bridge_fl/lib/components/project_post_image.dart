@@ -61,11 +61,11 @@ class _ProjectPostImageState extends State<ProjectPostImage> {
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      child: imageUrl == null
-          ? SizedBox.shrink()
-          : ConstrainedBox(
+    return imageUrl == null
+        ? SizedBox.shrink()
+        : Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: ConstrainedBox(
               constraints: BoxConstraints(maxHeight: 300),
               child: CachedNetworkImage(
                 imageUrl: imageUrl!,
@@ -76,6 +76,6 @@ class _ProjectPostImageState extends State<ProjectPostImage> {
                 placeholder: (context, url) => CircularProgressIndicator(),
               ),
             ),
-    );
+          );
   }
 }
