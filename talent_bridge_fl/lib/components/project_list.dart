@@ -39,10 +39,16 @@ class _ProjectListState extends ConsumerState<ProjectList> {
             createdById,
           );
       // Only show queued message if there's no internet ;)
-      if (result == null && mounted) {
+      if (!result && context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('The application will be sent later, when online'),
+          ),
+        );
+      } else if (result && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('The application has been submitted successfully'),
           ),
         );
       }

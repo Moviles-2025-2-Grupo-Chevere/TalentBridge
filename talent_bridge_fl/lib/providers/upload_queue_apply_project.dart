@@ -35,7 +35,7 @@ class ProjectApplyUploadNotifier extends Notifier<List<ProjectApplication>> {
 
   /// Add application to queue and attempt upload
   /// Returns true if uploaded successfully, false if queued for later
-  Future<bool?> enqueueProjectApplyUpload(
+  Future<bool> enqueueProjectApplyUpload(
     String userId,
     String projectId,
     String createdById,
@@ -55,7 +55,7 @@ class ProjectApplyUploadNotifier extends Notifier<List<ProjectApplication>> {
     } else {
       // Failed to upload, add to queue
       state = [...state, application];
-      return null; // null indicates queued for later (like TaskSnapshot?)
+      return false; // null indicates queued for later (like TaskSnapshot?)
     }
   }
 
@@ -80,11 +80,13 @@ class ProjectApplyUploadNotifier extends Notifier<List<ProjectApplication>> {
   /// Attempt to upload a single application
   Future<bool> tryUploadApplication(ProjectApplication app) async {
     try {
-      await _fbService.addProjectToApplications(
-        userId: app.userId,
-        createdById: app.createdById,
-        projectId: app.projectId,
-      );
+      await _fbService
+          .addProjectToApplications(
+            userId: app.userId,
+            createdById: app.createdById,
+            projectId: app.projectId,
+          )
+          .timeout(Duration(seconds: 5));
       return true;
     } catch (e) {
       debugPrint('Failed to upload application: $e');
@@ -94,6 +96,7 @@ class ProjectApplyUploadNotifier extends Notifier<List<ProjectApplication>> {
 
   /// Remove application from queue
   void removeFromQueue(ProjectApplication app) {
+    debugPrint('Removing application from queue: $app');
     state = state.where((item) => item != app).toList();
   }
 }
