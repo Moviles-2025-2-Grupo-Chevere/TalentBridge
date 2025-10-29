@@ -16,15 +16,35 @@ class _ProjectPostPfpState extends State<ProjectPostPfp> {
   late String cacheKey;
 
   Future<void> setImageUrl() async {
-    final shared_preferences =
+    final sharedPreferences =
         await SharedPreferences.getInstance(); //Key-value DB for light data
     final storage = FirebaseStorage.instance;
-    final localUrl = shared_preferences.getString(cacheKey);
+    final localUrl = sharedPreferences.getString(cacheKey);
 
     if (mounted) {
+      //mounted is used to only call setState if the widget is still in the widget tree
       setState(() {
         url = localUrl; // Uses cached URL first
       });
+    }
+
+    try {
+      final remoteUrl = await storage
+          .ref()
+          .child('profile_pictures/$cacheKey')
+          .getDownloadURL()
+          .then((value) {
+            sharedPreferences.setString(cacheKey, value);
+            return value;
+          })
+          .timeout(Duration(seconds: 10));
+      if (mounted) {
+        setState(() {
+          url = remoteUrl;
+        });
+      }
+    } catch (e) {
+      print(e); // Silently fails, keeps using cached URL
     }
   }
 
