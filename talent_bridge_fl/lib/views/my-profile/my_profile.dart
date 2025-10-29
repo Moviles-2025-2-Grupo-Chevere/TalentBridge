@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:firebase_storage/firebase_storage.dart' as firebase_core;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -40,6 +41,7 @@ class MyProfile extends ConsumerStatefulWidget {
 
 class _MyProfileState extends ConsumerState<MyProfile> {
   ImageProvider? pfpProvider;
+  String? _bannerImageUrl;
   bool syncingImage = false;
   final fb = FirebaseService();
   final projectService = ProjectService();
@@ -99,6 +101,73 @@ class _MyProfileState extends ConsumerState<MyProfile> {
         );
       },
     );
+  }
+
+  void _showPickBannerImageDialog(String uid, BuildContext outerContext) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Pick Banner Image'),
+          content: const Text('Do you want to pick a new banner image?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Cancel
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _pickBannerImage(uid).then(
+                  (value) {
+                    if (outerContext.mounted) {
+                      ScaffoldMessenger.of(outerContext).showSnackBar(
+                        SnackBar(content: Text('Banner Image uploaded')),
+                      );
+                    }
+                  },
+                ); // Accept
+              },
+              child: const Text('Accept'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future _pickBannerImage(String uid) async {
+    final picker = ImagePicker();
+    final storage = FirebaseStorage.instance;
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+
+    if (image != null) {
+      print('Picked file path: ${image.path}');
+      var ref = storage.ref().child('banner_images/$uid');
+      try {
+        await ref.putFile(File(image.path));
+        final downloadUrl = await storage
+            .ref()
+            .child('banner_images/$uid')
+            .getDownloadURL();
+        if (mounted) {
+          setState(() {
+            _bannerImageUrl = downloadUrl;
+          });
+        }
+      } on firebase_core.FirebaseException catch (e) {
+        print('Firebase error: ${e.code} - ${e.message}');
+        if (e.code == 'retry-limit-exceeded') {
+          print('No internet connection.');
+        } else {
+          rethrow;
+        }
+      } catch (e) {
+        rethrow;
+      }
+    }
   }
 
   // Handle PDF selection and upload
@@ -448,19 +517,28 @@ class _MyProfileState extends ConsumerState<MyProfile> {
             constraints: BoxConstraints(maxHeight: 200),
             child: Material(
               color: Colors.transparent, // important!
-              child: Ink.image(
-                image: CachedNetworkImageProvider(
-                  'https://dummyimage.com/300x300/888888/ffffff.png',
-                ),
-                fit: BoxFit.cover,
-                child: InkWell(
-                  onTap: () {
-                    print('Image tapped!');
-                  },
-                  splashColor: Colors.blue.withValues(alpha: 0.3),
-                  highlightColor: Colors.transparent,
-                ),
-              ),
+              child: _bannerImageUrl == null
+                  ? Container(
+                      decoration: BoxDecoration(color: Colors.teal),
+                      child: InkWell(
+                        onTap: () =>
+                            _showPickBannerImageDialog(userEntity!.id, context),
+                        splashColor: Colors.blue.withValues(alpha: 0.3),
+                        highlightColor: Colors.transparent,
+                      ),
+                    )
+                  : Ink.image(
+                      image: CachedNetworkImageProvider(
+                        _bannerImageUrl!,
+                      ),
+                      fit: BoxFit.cover,
+                      child: InkWell(
+                        onTap: () =>
+                            _showPickBannerImageDialog(userEntity!.id, context),
+                        splashColor: Colors.blue.withValues(alpha: 0.3),
+                        highlightColor: Colors.transparent,
+                      ),
+                    ),
             ),
           ),
           Padding(
@@ -481,13 +559,28 @@ class _MyProfileState extends ConsumerState<MyProfile> {
                             // Profile image
                             Stack(
                               children: [
-                                InkWell(
-                                  onTap: _showTakePhotoDialog,
-                                  child: CircleAvatar(
-                                    radius: 60,
-                                    backgroundImage: pfpProvider,
+                                if (pfpProvider != null)
+                                  ClipOval(
+                                    child: Material(
+                                      color: Colors
+                                          .transparent, // to show image background
+                                      child: Ink.image(
+                                        image: pfpProvider!,
+                                        fit: BoxFit.cover,
+                                        width: 120,
+                                        height: 120,
+                                        child: InkWell(
+                                          onTap: _showTakePhotoDialog,
+                                          splashColor: Colors.blue.withValues(
+                                            alpha: 0.3,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            60,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
                                   ),
-                                ),
                                 if (pendingUpload)
                                   Positioned(
                                     bottom: 0,
