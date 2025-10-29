@@ -50,6 +50,7 @@ class _MyProfileState extends ConsumerState<MyProfile> {
   void initState() {
     super.initState();
     getPfP();
+    setBannerFromUrl(FirebaseStorage.instance, fb.currentUid()!);
   }
 
   /// Uses offline first, online fallback for getting the profile picture.
@@ -148,15 +149,7 @@ class _MyProfileState extends ConsumerState<MyProfile> {
       var ref = storage.ref().child('banner_images/$uid');
       try {
         await ref.putFile(File(image.path));
-        final downloadUrl = await storage
-            .ref()
-            .child('banner_images/$uid')
-            .getDownloadURL();
-        if (mounted) {
-          setState(() {
-            _bannerImageUrl = downloadUrl;
-          });
-        }
+        await setBannerFromUrl(storage, uid);
       } on firebase_core.FirebaseException catch (e) {
         print('Firebase error: ${e.code} - ${e.message}');
         if (e.code == 'retry-limit-exceeded') {
@@ -167,6 +160,21 @@ class _MyProfileState extends ConsumerState<MyProfile> {
       } catch (e) {
         rethrow;
       }
+    }
+  }
+
+  Future<void> setBannerFromUrl(
+    firebase_core.FirebaseStorage storage,
+    String uid,
+  ) async {
+    final downloadUrl = await storage
+        .ref()
+        .child('banner_images/$uid')
+        .getDownloadURL();
+    if (mounted) {
+      setState(() {
+        _bannerImageUrl = downloadUrl;
+      });
     }
   }
 
