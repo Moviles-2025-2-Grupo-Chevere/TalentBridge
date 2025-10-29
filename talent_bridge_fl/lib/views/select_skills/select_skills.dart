@@ -1,6 +1,8 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:talent_bridge_fl/domain/skill_entity.dart';
+import 'package:talent_bridge_fl/views/select_skills/skill_image.dart';
 
 class SelectSkills extends StatefulWidget {
   SelectSkills({
@@ -64,6 +66,9 @@ class _SelectSkillsState extends State<SelectSkills> {
               itemCount: filteredSkills.length,
               itemBuilder: (context, index) => CheckboxListTile(
                 title: Text(filteredSkills[index].label),
+                secondary: filteredSkills[index].icon == null
+                    ? null
+                    : SkillImage(icon: filteredSkills[index].icon!),
                 key: ValueKey(filteredSkills[index]),
                 value: widget.selectedSkills.contains(filteredSkills[index]),
                 onChanged: (value) {

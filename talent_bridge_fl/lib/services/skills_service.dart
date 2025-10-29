@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:talent_bridge_fl/domain/skill_entity.dart';
 
 class SkillsService {
@@ -25,5 +26,15 @@ class SkillsService {
       'Leadership',
     ];
     return skills.map((e) => SkillEntity(e, null)).toList();
+  }
+
+  static Future<List<SkillEntity>> getRemoteSkills() async {
+    final store = FirebaseFirestore.instance;
+    final data = (await store.collection('skills').get()).docs
+        .map(
+          (e) => SkillEntity.fromMap(e.data()),
+        )
+        .toList();
+    return data;
   }
 }

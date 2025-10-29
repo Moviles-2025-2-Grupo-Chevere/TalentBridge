@@ -28,7 +28,7 @@ class _AddProjectState extends State<AddProject> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   // final _skillsController = TextEditingController();
-  final _skills = SkillsService.getFallbackSkills();
+  var _skills = SkillsService.getFallbackSkills();
   final _selectedSkills = HashSet<SkillEntity>();
   String? _imagePath;
 
@@ -113,6 +113,20 @@ class _AddProjectState extends State<AddProject> {
         _imagePath = image.path;
       });
     }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    SkillsService.getRemoteSkills().then(
+      (value) {
+        if (mounted) {
+          setState(() {
+            _skills = value;
+          });
+        }
+      },
+    );
   }
 
   @override

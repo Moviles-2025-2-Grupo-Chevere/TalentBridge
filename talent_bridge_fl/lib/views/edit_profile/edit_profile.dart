@@ -169,6 +169,15 @@ class _EditProfileState extends State<EditProfile> {
   @override
   void initState() {
     super.initState();
+    SkillsService.getRemoteSkills().then(
+      (value) {
+        if (mounted) {
+          setState(() {
+            _skills = value;
+          });
+        }
+      },
+    );
     _selectedSkills.addAll(
       widget.existingData.skillsOrTopics.map(
         (e) => SkillEntity(e, null),
