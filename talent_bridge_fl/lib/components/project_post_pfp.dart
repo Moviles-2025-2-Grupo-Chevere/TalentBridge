@@ -48,20 +48,11 @@ class _ProjectPostPfpState extends State<ProjectPostPfp> {
     }
   }
 
-  final storageRef = FirebaseStorage.instance.ref();
   @override
   void initState() {
     super.initState();
-    final imageRef = storageRef.child('profile_pictures/${widget.uid}');
-    imageRef.getDownloadURL().then(
-      (value) {
-        if (mounted) {
-          setState(() {
-            url = value;
-          });
-        }
-      },
-    );
+    cacheKey = widget.uid;
+    setImageUrl();
   }
 
   @override
