@@ -60,8 +60,11 @@ class _ProjectPostPfpState extends State<ProjectPostPfp> {
     return CircleAvatar(
       radius: 24,
       backgroundImage: url != null
-          ? NetworkImage(url!)
-          : AssetImage('assets/images/gumball.jpg'),
+          ? CachedNetworkImageProvider(
+              url!,
+              cacheKey: cacheKey,
+            )
+          : AssetImage('assets/images/gumball.jpg') as ImageProvider,
     );
   }
 }
