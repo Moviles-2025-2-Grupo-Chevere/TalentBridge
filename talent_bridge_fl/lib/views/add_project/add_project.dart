@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:talent_bridge_fl/data/project_service.dart';
 import 'package:talent_bridge_fl/domain/project_entity.dart';
+import 'package:talent_bridge_fl/domain/skill_entity.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
 import 'package:talent_bridge_fl/services/skills_service.dart';
 import 'package:talent_bridge_fl/views/select_skills/select_skills.dart';
@@ -27,14 +28,14 @@ class _AddProjectState extends State<AddProject> {
   final _titleController = TextEditingController();
   final _descriptionController = TextEditingController();
   // final _skillsController = TextEditingController();
-  final _skills = SkillsService.getSkills();
-  final _selectedSkills = HashSet<String>();
+  var _skills = SkillsService.getFallbackSkills();
+  final _selectedSkills = HashSet<SkillEntity>();
   String? _imagePath;
 
   void _submitData() {
     final title = _titleController.text;
     final description = _descriptionController.text;
-    final List<String> skills = _selectedSkills.toList();
+    final List<SkillEntity> skills = _selectedSkills.toList();
     final uid = firebaseService.currentUid();
 
     if (title.isEmpty || uid == null) {
@@ -64,7 +65,11 @@ class _AddProjectState extends State<AddProject> {
         createdById: uid,
         title: title,
         description: description,
-        skills: skills,
+        skills: skills
+            .map(
+              (e) => e.label,
+            )
+            .toList(),
       ),
       _imagePath,
     );
@@ -92,7 +97,7 @@ class _AddProjectState extends State<AddProject> {
     );
   }
 
-  void _removeSelectedSkill(String skill) {
+  void _removeSelectedSkill(SkillEntity skill) {
     setState(() {
       _selectedSkills.remove(skill);
     });
@@ -108,6 +113,20 @@ class _AddProjectState extends State<AddProject> {
         _imagePath = image.path;
       });
     }
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    SkillsService.getRemoteSkills().then(
+      (value) {
+        if (mounted) {
+          setState(() {
+            _skills = value;
+          });
+        }
+      },
+    );
   }
 
   @override
@@ -160,7 +179,7 @@ class _AddProjectState extends State<AddProject> {
                 children: _selectedSkills
                     .map(
                       (e) => InputChip(
-                        label: Text(e),
+                        label: Text(e.label),
                         onDeleted: () => _removeSelectedSkill(e),
                       ),
                     )

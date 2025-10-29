@@ -17,9 +17,13 @@ class _ProjectPostPfpState extends State<ProjectPostPfp> {
     super.initState();
     final imageRef = storageRef.child('profile_pictures/${widget.uid}');
     imageRef.getDownloadURL().then(
-      (value) => setState(() {
-        url = value;
-      }),
+      (value) {
+        if (mounted) {
+          setState(() {
+            url = value;
+          });
+        }
+      },
     );
   }
 
