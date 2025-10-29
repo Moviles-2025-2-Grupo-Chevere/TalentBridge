@@ -1,0 +1,22 @@
+[
+  { "label": "JavaScript" },
+  { "label": "Dart" },
+  { "label": "Flutter" },
+  { "label": "React" },
+  { "label": "Node.js" },
+  { "label": "Firebase" },
+  { "label": "SQL" },
+  { "label": "RESTful APIs" },
+  { "label": "Git" },
+  { "label": "Agile Methodologies" },
+  { "label": "UI/UX Design" },
+  { "label": "Test-Driven Development" },
+  { "label": "Continuous Integration" },
+  { "label": "Cloud Computing" },
+  { "label": "Android Development" },
+  { "label": "iOS Development" },
+  { "label": "Performance Optimization" },
+  { "label": "Data Structures & Algorithms" },
+  { "label": "Problem Solving" },
+  { "label": "Leadership" }
+]
