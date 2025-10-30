@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
 import android.net.Uri
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.Timestamp
+import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.tasks.await
 import java.util.UUID
 
@@ -28,6 +29,7 @@ class ProjectsViewModel(
 
 
     // Usuario actual (si no hay sesión, usa "guest")
+    private val auth: FirebaseAuth = FirebaseAuth.getInstance()
     private val userId: String = FirebaseAuth.getInstance().currentUser?.uid ?: "guest"
 
     // Firestore
@@ -39,9 +41,21 @@ class ProjectsViewModel(
     private val _savedProjects = MutableStateFlow<List<ProjectEntity>>(emptyList())
     val savedProjects: StateFlow<List<ProjectEntity>> = _savedProjects
 
+    private var projectsListener: ListenerRegistration? = null
+
     init {
         refresh()
+        listenProjectsRealtime()
         loadSavedProjects()
+    }
+
+    private fun listenProjectsRealtime() {
+        projectsListener?.remove()
+        projectsListener = firestoreRepo.listenAllProjects { list ->
+            projects.value = list
+            loading.value = false
+            error.value = null
+        }
     }
 
     /* -------- Firestore -------- */
@@ -55,6 +69,11 @@ class ProjectsViewModel(
         } finally {
             loading.value = false
         }
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        projectsListener?.remove()
     }
 
     /* ---------- Room ----------- */
