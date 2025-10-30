@@ -47,6 +47,8 @@ import android.app.Application
 import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
+import coil.compose.AsyncImage
+
 private fun projectsVmFactory(app: Application) =
     object : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
@@ -148,9 +150,9 @@ fun StudentFeedScreen(
                             subtitle = p.subtitle ?: "",
                             description = p.description,
                             tags = p.skills,
-                            imageRes = null, // Si luego guardas URL, cámbialo por AsyncImage con p.imgUrl
-                            saved = isSaved,                        // 👈 NUEVO
-                            onSaveClick = { vm.toggleFavorite(p) }, // 👈 NUEVO
+                            imageUrl = p.imgUrl,
+                            saved = isSaved,
+                            onSaveClick = { vm.toggleFavorite(p) },
                             onApplyClick = { showSubmitted = true },
                             onSomeOneElseProfile = onSomeOneElseProfile
                         )
@@ -217,7 +219,7 @@ private fun ProjectCardSimple(
     subtitle: String,
     description: String,
     tags: List<String>,
-    imageRes: Int?,
+    imageUrl: String?,
     saved: Boolean,
     onSaveClick: () -> Unit,
     onApplyClick: () -> Unit,
@@ -250,11 +252,11 @@ private fun ProjectCardSimple(
         Spacer(Modifier.height(8.dp))
         Text(description, fontSize = 12.sp, color = Color.DarkGray)
 
-        if (imageRes != null) {
+        if (!imageUrl.isNullOrBlank()) {
             Spacer(Modifier.height(10.dp))
-            Image(
-                painter = painterResource(id = imageRes),
-                contentDescription = null,
+            AsyncImage(
+                model = imageUrl,
+                contentDescription = "project image",
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(1f)
