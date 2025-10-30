@@ -49,6 +49,9 @@ import kotlinx.coroutines.sync.Mutex
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import android.app.Application
@@ -66,6 +69,7 @@ fun LeaderFeedScreen(
     onHome: () -> Unit = {},
     onSearch: () -> Unit = {},
     onFav: () -> Unit = {},
+    onInitiativeProfile: () -> Unit = {},
     onStudentClick: (uid: String) -> Unit = {}
 ) {
 
@@ -121,7 +125,7 @@ fun LeaderFeedScreen(
             BottomBarCustom(
                 onHome = onHome,
                 onSearch = onSearch,
-                onMenu = onOpenMenu,
+                onInitiativeProfile = onInitiativeProfile,
                 onFav = onFav
             )
         }
@@ -289,7 +293,7 @@ private fun TopBarCustom(
 private fun BottomBarCustom(
     onHome: () -> Unit,
     onSearch: () -> Unit,
-    onMenu: () -> Unit,
+    onInitiativeProfile: () -> Unit,
     onFav: () -> Unit
 ) {
     Box(
@@ -307,7 +311,7 @@ private fun BottomBarCustom(
         ) {
             IconButton(onClick = onHome)  { Icon(Icons.Filled.Home,  contentDescription = "Home",  tint = TitleGreen) }
             IconButton(onClick = onSearch){ Icon(Icons.Filled.Search,contentDescription = "Search",tint = TitleGreen) }
-            IconButton(onClick = onMenu)  { Icon(Icons.Filled.Menu,  contentDescription = "Menu",  tint = TitleGreen) }
+            IconButton(onClick = onInitiativeProfile)  { Icon(Icons.Filled.Person,  contentDescription = "Profile",  tint = TitleGreen) }
             IconButton(onClick = onFav)   { Icon(Icons.Filled.FavoriteBorder, contentDescription = "Fav", tint = TitleGreen) }
         }
     }
