@@ -109,6 +109,7 @@ class MainActivity : ComponentActivity() {
                     } else {
                         snack.currentSnackbarData?.dismiss()
                         showNoNetDialog = false
+                        projectsVm.syncPendingProjects()
                     }
                 }
 

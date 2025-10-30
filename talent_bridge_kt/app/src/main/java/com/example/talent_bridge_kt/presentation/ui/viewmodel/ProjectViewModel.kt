@@ -13,11 +13,19 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
 import android.net.Uri
+import com.example.talent_bridge_kt.data.local.entities.PendingProjectEntity
 import com.google.firebase.storage.FirebaseStorage
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.tasks.await
 import java.util.UUID
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import com.example.talent_bridge_kt.data.local.AppDatabase
+import com.google.firebase.firestore.SetOptions
+import com.google.firebase.storage.ktx.storage
+import com.google.firebase.ktx.Firebase
 
 class ProjectsViewModel(
     app: Application,
@@ -31,6 +39,9 @@ class ProjectsViewModel(
     // Usuario actual (si no hay sesión, usa "guest")
     private val auth: FirebaseAuth = FirebaseAuth.getInstance()
     private val userId: String = FirebaseAuth.getInstance().currentUser?.uid ?: "guest"
+
+    private val db = AppDatabase.getInstance(app)
+    private val pendingDao = db.pendingProjectDao()
 
     // Firestore
     val projects = MutableStateFlow<List<Project>>(emptyList())
@@ -57,6 +68,83 @@ class ProjectsViewModel(
             error.value = null
         }
     }
+
+    private fun isCurrentlyOnline(): Boolean {
+        val cm = getApplication<Application>()
+            .getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
+        // API 23+
+        val network = cm.activeNetwork ?: return false
+        val caps = cm.getNetworkCapabilities(network) ?: return false
+        return caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
+                caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+    }
+
+    private suspend fun uploadAndSaveProjectOnline(
+        userId: String,
+        title: String,
+        description: String,
+        skills: List<String>,
+        imageUri: String?
+    ) {
+        val projectId = UUID.randomUUID().toString()
+
+        val finalImgUrl = if (!imageUri.isNullOrBlank()) {
+            val uri = Uri.parse(imageUri)
+            val ref = storage.reference
+                .child("project_images")
+                .child(projectId)
+            ref.putFile(uri).await()
+            ref.downloadUrl.await().toString()
+        } else {
+            null
+        }
+
+        val projectMap = mapOf(
+            "id" to projectId,
+            "title" to title,
+            "description" to description,
+            "imgUrl" to finalImgUrl,
+            "skills" to skills,
+            "createdAt" to Timestamp.now(),
+            "createdById" to userId
+        )
+
+        usersDb.collection("users")
+            .document(userId)
+            .set(
+                mapOf(
+                    "projects" to com.google.firebase.firestore.FieldValue.arrayUnion(projectMap)
+                ),
+                SetOptions.merge()
+            )
+            .await()
+    }
+
+    fun syncPendingProjects() = viewModelScope.launch {
+        val pending = pendingDao.getAllPending()
+        if (pending.isEmpty()) return@launch
+
+        for (item in pending) {
+            try {
+                uploadAndSaveProjectOnline(
+                    userId = item.userId,
+                    title = item.title,
+                    description = item.description,
+                    skills = if (item.skillsCsv.isBlank()) emptyList()
+                    else item.skillsCsv.split(",").map { it.trim() },
+                    imageUri = item.imageUri
+                )
+                // si se subió bien, lo quitamos de la cola
+                pendingDao.deletePending(item.localId)
+            } catch (e: Exception) {
+                // si falla uno, seguimos con el siguiente
+                e.printStackTrace()
+            }
+        }
+    }
+
 
     /* -------- Firestore -------- */
     fun refresh() = viewModelScope.launch {
@@ -113,7 +201,6 @@ class ProjectsViewModel(
         userId = userId
     )
 
-    // (opcional) para reusar UI con entities
     private fun ProjectEntity.toDomain() = Project(
         id = id,
         title = title,
@@ -129,53 +216,43 @@ class ProjectsViewModel(
         title: String,
         description: String,
         skills: List<String>,
-        imageUri: String?,                   // viene del popup
+        imageUri: String?,
         onResult: (Boolean, Throwable?) -> Unit = { _, _ -> }
     ) = viewModelScope.launch {
-        try {
-            val uid = FirebaseAuth.getInstance().currentUser?.uid
-                ?: throw IllegalStateException("No hay usuario autenticado")
+        val uid = auth.currentUser?.uid
+        if (uid == null) {
+            onResult(false, IllegalStateException("No hay usuario autenticado"))
+            return@launch
+        }
 
-            val projectId = UUID.randomUUID().toString()
+        val isOnline = isCurrentlyOnline()
 
-
-            val finalImgUrl: String? = if (!imageUri.isNullOrBlank()) {
-                val uri = Uri.parse(imageUri)
-
-                val ref = storage.reference
-                    .child("project_images")
-                    .child(projectId)
-
-                ref.putFile(uri).await()
-
-                ref.downloadUrl.await().toString()
-            } else {
-                null
+        if (isOnline) {
+            try {
+                uploadAndSaveProjectOnline(
+                    userId = uid,
+                    title = title,
+                    description = description,
+                    skills = skills,
+                    imageUri = imageUri
+                )
+                onResult(true, null)
+            } catch (e: Throwable) {
+                onResult(false, e)
             }
-
-            val projectMap = mapOf(
-                "id" to projectId,
-                "title" to title,
-                "description" to description,
-                "imgUrl" to finalImgUrl,
-                "skills" to skills,
-                "createdAt" to Timestamp.now(),
-                "createdById" to uid
+        } else {
+            // guardar en cola local
+            val pending = PendingProjectEntity(
+                localId = UUID.randomUUID().toString(),
+                userId = uid,
+                title = title,
+                description = description,
+                skillsCsv = skills.joinToString(","),
+                imageUri = imageUri,
+                createdAt = System.currentTimeMillis()
             )
-
-            val userRef = usersDb.collection("users").document(uid)
-            userRef.set(
-                mapOf(
-                    "projects" to com.google.firebase.firestore.FieldValue.arrayUnion(projectMap)
-                ),
-                com.google.firebase.firestore.SetOptions.merge()
-            ).await()
-
-            refresh()
-
-            onResult(true, null)
-        } catch (t: Throwable) {
-            onResult(false, t)
+            pendingDao.insertPending(pending)
+            onResult(true, null)   // ✅ para la UI es “ok, quedó guardado”
         }
     }
 }
