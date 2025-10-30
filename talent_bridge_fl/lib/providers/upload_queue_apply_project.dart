@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:talent_bridge_fl/providers/project_application.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 final projectApplyUploadProvider =
     NotifierProvider<ProjectApplyUploadNotifier, List<ProjectApplication>>(
@@ -14,6 +15,10 @@ class ProjectApplyUploadNotifier extends Notifier<List<ProjectApplication>> {
   final _connectivity = Connectivity();
   final _fbService = FirebaseService();
   StreamSubscription<List<ConnectivityResult>>? _subscription;
+
+  static const String hiveBoxName = 'project_apply_upload_queue';
+  static const String _queueKey = 'pending_applications';
+  Box? _hiveBox;
 
   /// Initialize with empty list and listen to connectivity changes
   @override
