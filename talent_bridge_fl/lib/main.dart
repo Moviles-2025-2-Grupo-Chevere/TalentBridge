@@ -8,11 +8,16 @@ import 'package:talent_bridge_fl/views/splash_screen.dart';
 import 'services/connectivity_service.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'firebase_options.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 // Global navigator key
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // await deleteDatabase(join(await getDatabasesPath(), 'talent_bridge.db'));
+
+  await Hive.initFlutter(); // Initialize Hive for local storage
+
   // await deleteDatabase(join(await getDatabasesPath(), 'talent_bridge.db'));
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
