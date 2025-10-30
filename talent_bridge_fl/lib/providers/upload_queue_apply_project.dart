@@ -18,12 +18,12 @@ class ProjectApplyUploadNotifier extends Notifier<List<ProjectApplication>> {
 
   static const String hiveBoxName = 'project_apply_upload_queue';
   static const String _queueKey = 'pending_applications';
-  Box? _hiveBox;
+  Box? _box;
 
   /// Initialize with empty list and listen to connectivity changes
   @override
   List<ProjectApplication> build() {
-    state = [];
+    _initializeHive();
 
     _subscription = _connectivity.onConnectivityChanged.listen((status) {
       if (status[0] != ConnectivityResult.none) {
@@ -34,8 +34,45 @@ class ProjectApplyUploadNotifier extends Notifier<List<ProjectApplication>> {
       }
     });
 
-    ref.onDispose(() => _subscription?.cancel());
+    ref.onDispose(() {
+      _subscription?.cancel();
+      _box?.close();
+    });
     return state;
+  }
+
+  Future<void> _initializeHive() async {
+    try {
+      _box = await Hive.openBox(hiveBoxName);
+      await _loadQueueFromHive();
+    } catch (e) {
+      debugPrint('Error initializing Hive box: $e');
+      state = [];
+    }
+  }
+
+  Future<void> _loadQueueFromHive() async {
+    final storedData = _box?.get(_queueKey);
+
+    if (storedData != null && storedData is List) {
+      state = storedData
+          .map(
+            (item) =>
+                ProjectApplication.fromMap(Map<String, dynamic>.from(item)),
+          )
+          .toList();
+
+      debugPrint('Loaded ${state.length} applications from Hive');
+
+      // Try to process queue immediately if there's connectivity
+      final connectivityResult = await _connectivity.checkConnectivity();
+      if (connectivityResult[0] != ConnectivityResult.none &&
+          state.isNotEmpty) {
+        processQueue();
+      }
+    } else {
+      state = [];
+    }
   }
 
   /// Add application to queue and attempt upload
