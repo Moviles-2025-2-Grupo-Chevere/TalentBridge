@@ -9,7 +9,7 @@ import com.example.talent_bridge_kt.data.local.entities.FeedProjectEntity
 import com.example.talent_bridge_kt.data.local.entities.FeedStudentEntity
 import com.example.talent_bridge_kt.data.local.entities.ProjectEntity
 
-@Database(entities = [ProjectEntity::class, FeedProjectEntity::class, FeedStudentEntity::class], version = 4)
+@Database(entities = [ProjectEntity::class, FeedProjectEntity::class, FeedStudentEntity::class], version = 5)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun projectDao(): ProjectDao
     abstract fun feedProjectDao(): FeedProjectDao
