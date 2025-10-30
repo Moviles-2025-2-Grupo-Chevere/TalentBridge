@@ -46,15 +46,17 @@ import com.example.talent_bridge_kt.ui.theme.CreamBackground
 import com.example.talent_bridge_kt.ui.theme.LinkGreen
 import com.example.talent_bridge_kt.ui.theme.TitleGreen
 import kotlinx.coroutines.sync.Mutex
-import com.google.firebase.firestore.ListenerRegistration
-import com.example.talent_bridge_kt.data.firebase.FirebaseUsersRepository
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.DisposableEffect
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.filled.Person
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.viewmodel.compose.viewModel
+import android.app.Application
+import androidx.compose.ui.platform.LocalContext
+import com.example.talent_bridge_kt.presentation.ui.viewmodel.StudentsViewModel
 
 /* ======================= Pantalla ======================= */
 
@@ -71,15 +73,14 @@ fun LeaderFeedScreen(
     onStudentClick: (uid: String) -> Unit = {}
 ) {
 
-    var students by remember { mutableStateOf<List<StudentListItem>>(emptyList()) }
+    val context = LocalContext.current
+    val vm: StudentsViewModel = viewModel(
+        factory = studentsVmFactory(context.applicationContext as Application)
+    )
 
-    DisposableEffect(Unit) {
-        val repo = FirebaseUsersRepository()
-        val registration = repo.listenPublicStudents { list ->
-            students = list
-        }
-        onDispose { registration.remove() }
-    }
+    val students by vm.students.collectAsState()
+    val loading by vm.loading.collectAsState()
+    val error by vm.error.collectAsState()
 
     Surface(color = Color.White, modifier = Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
@@ -93,6 +94,13 @@ fun LeaderFeedScreen(
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                if (loading) {
+                    item { Text("Loading…", color = Color.Gray) }
+                }
+                if (error != null) {
+                    item { Text(error ?: "", color = Color.Red) }
+                }
+
                 items(students, key = { it.uid }) { s ->
                     StudentCard(
                         item = s,
@@ -101,7 +109,6 @@ fun LeaderFeedScreen(
                 }
 
                 item { Spacer(Modifier.height(8.dp)) }
-
 
                 item {
                     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {

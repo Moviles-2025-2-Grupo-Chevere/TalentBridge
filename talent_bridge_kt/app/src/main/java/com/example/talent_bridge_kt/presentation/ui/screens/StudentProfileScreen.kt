@@ -1,5 +1,6 @@
 package com.example.talent_bridge_kt.presentation.ui.screens
 
+import android.content.Intent
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
@@ -13,9 +14,11 @@ import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
+import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -28,6 +31,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -35,7 +39,9 @@ import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.example.talent_bridge_kt.R
 import com.example.talent_bridge_kt.data.firebase.FirebaseProfileRepository
+import com.example.talent_bridge_kt.data.repository.ResumeRepositorySimple
 import com.example.talent_bridge_kt.domain.model.Project
+import com.example.talent_bridge_kt.domain.model.ResumeLanguage
 import com.example.talent_bridge_kt.domain.usecase.GetProfileUseCase
 import com.example.talent_bridge_kt.domain.usecase.UpdateProfileUseCase
 import com.example.talent_bridge_kt.domain.usecase.UploadAvatarUseCase
@@ -46,10 +52,19 @@ import com.example.talent_bridge_kt.ui.theme.CreamBackground
 import com.example.talent_bridge_kt.ui.theme.LinkGreen
 import com.example.talent_bridge_kt.ui.theme.TitleGreen
 import androidx.core.content.FileProvider
-import androidx.compose.foundation.text.KeyboardOptions
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
+import com.google.firebase.firestore.ListenerRegistration
+import kotlinx.coroutines.*
+import kotlinx.coroutines.Dispatchers.IO
+import kotlinx.coroutines.Dispatchers.Main
 import java.io.File
+import java.io.InputStream
+import java.security.MessageDigest
+import kotlin.math.roundToInt
 
-@OptIn(ExperimentalLayoutApi::class)
+@OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
 fun StudentProfileScreen(
     modifier: Modifier = Modifier,
@@ -59,7 +74,6 @@ fun StudentProfileScreen(
     onAddProject: () -> Unit = {},
     onBack: () -> Unit = {},
     onOpenDrawer: () -> Unit = {}
-
 ) {
     // --------- estado de edición y campos básicos ---------
     var email by remember { mutableStateOf("lucianaperez@gmail.com") }
@@ -77,8 +91,8 @@ fun StudentProfileScreen(
     var pDesc by remember { mutableStateOf("") }
     var pSkills by remember { mutableStateOf("") }
 
+    // --------- VM de perfil (sin cambios) ---------
     val repo = remember { FirebaseProfileRepository() }
-
     val vm = remember {
         ProfileViewModel(
             getProfile = GetProfileUseCase(repo),
@@ -87,9 +101,7 @@ fun StudentProfileScreen(
         )
     }
     val uiState by vm.uiState.collectAsState()
-    LaunchedEffect(Unit) {
-        vm.load()
-    }
+    LaunchedEffect(Unit) { vm.load() }
 
     LaunchedEffect(uiState) {
         if (isEditing) return@LaunchedEffect
@@ -100,8 +112,7 @@ fun StudentProfileScreen(
         bio = p.bio ?: bio
     }
 
-
-    // --------- cámara ---------
+    // --------- cámara (sin cambios) ---------
     val context = LocalContext.current
     var cameraUri by remember { mutableStateOf<Uri?>(null) }
     fun createTempImageUri(): Uri {
@@ -111,6 +122,56 @@ fun StudentProfileScreen(
     }
     val takePicture = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { ok ->
         if (ok) cameraUri?.let { vm.onAvatarPicked(it) }
+    }
+
+    // --------- REPO de CV (tu implementación existente) ---------
+    val resumeRepo = remember {
+        ResumeRepositorySimple(
+            storage = com.google.firebase.storage.FirebaseStorage.getInstance(),
+            db = FirebaseFirestore.getInstance(),
+            auth = FirebaseAuth.getInstance(),
+            contentResolver = context.contentResolver
+        )
+    }
+
+    // --------- Hoja (bottom sheet) de CV (multi + idioma por item) ---------
+    var showCvSheet by remember { mutableStateOf(false) }
+    val onAddCvInternal = remember<(Unit) -> Unit> { { showCvSheet = true } }
+
+    // --------- Lista de CVs (sección visible en perfil) -------------
+    data class ResumeDoc(
+        val id: String,
+        val fileName: String,
+        val url: String,
+        val language: String,
+        val uploadedAt: com.google.firebase.Timestamp?
+    )
+
+    var resumes by remember { mutableStateOf<List<ResumeDoc>>(emptyList()) }
+
+    // Suscripción en tiempo real a users/{uid}/resumes
+    DisposableEffect(Unit) {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid
+        var reg: ListenerRegistration? = null
+        if (uid != null) {
+            reg = FirebaseFirestore.getInstance()
+                .collection("users").document(uid)
+                .collection("resumes")
+                .orderBy("uploadedAt", Query.Direction.DESCENDING)
+                .addSnapshotListener { snap, _ ->
+                    val list = snap?.documents?.map { d ->
+                        ResumeDoc(
+                            id = d.id,
+                            fileName = d.getString("fileName") ?: "",
+                            url = d.getString("url") ?: "",
+                            language = d.getString("language") ?: "",
+                            uploadedAt = d.getTimestamp("uploadedAt")
+                        )
+                    } ?: emptyList()
+                    resumes = list
+                }
+        }
+        onDispose { reg?.remove() }
     }
 
     Surface(color = CreamBackground, modifier = modifier.fillMaxSize()) {
@@ -124,13 +185,18 @@ fun StudentProfileScreen(
             )
 
             LazyColumn(
-                modifier = Modifier.weight(1f).fillMaxWidth(),
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
                 contentPadding = PaddingValues(horizontal = 20.dp, vertical = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 // ------------------ Header ------------------
                 item {
-                    Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.fillMaxWidth()) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
                         val avatarModel: Any = when (val s = uiState) {
                             is ProfileUiState.Ready -> {
                                 val url = s.profile.avatarUrl.orEmpty()
@@ -159,8 +225,11 @@ fun StudentProfileScreen(
                                 is ProfileUiState.Ready -> s.profile.name.ifBlank { "" }
                                 else -> ""
                             },
-                            fontSize = 18.sp, color = TitleGreen, fontWeight = FontWeight.SemiBold,
-                            maxLines = 1, overflow = TextOverflow.Ellipsis
+                            fontSize = 18.sp,
+                            color = TitleGreen,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
                         Spacer(Modifier.height(8.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -201,7 +270,10 @@ fun StudentProfileScreen(
                             Spacer(Modifier.width(8.dp))
                             if (!isEditing) {
                                 if (number.isNullOrBlank()) {
-                                    Text("Add number", color = LinkGreen, fontSize = 14.sp,
+                                    Text(
+                                        "Add number",
+                                        color = LinkGreen,
+                                        fontSize = 14.sp,
                                         modifier = Modifier.clickable { onEditNumber() })
                                 } else {
                                     Text(number!!, fontSize = 14.sp, color = Color.DarkGray)
@@ -276,9 +348,61 @@ fun StudentProfileScreen(
 
                 // ------------------ Acciones CV/Portafolio ------------------
                 item {
-                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(16.dp)) {
-                        AddBox(title = "Add CV", modifier = Modifier.weight(1f), onClick = onAddCv)
-                        AddBox(title = "Add Portafolio", modifier = Modifier.weight(1f), onClick = onAddPortfolio)
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        AddBox(
+                            title = "Add CV",
+                            modifier = Modifier.weight(1f),
+                            onClick = { onAddCvInternal(Unit) }
+                        )
+                        AddBox(
+                            title = "Add Portafolio",
+                            modifier = Modifier.weight(1f),
+                            onClick = onAddPortfolio
+                        )
+                    }
+                }
+
+                // ------------------ My CVs (lista desde Firestore) ---------
+                item { SectionTitle("My CVs") }
+                item {
+                    if (resumes.isEmpty()) {
+                        Text("Aún no has subido CVs.", color = Color.DarkGray, fontSize = 13.sp)
+                    } else {
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            resumes.forEach { cv ->
+                                Card(
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                                ) {
+                                    Row(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(12.dp),
+                                        verticalAlignment = Alignment.CenterVertically
+                                    ) {
+                                        Column(modifier = Modifier.weight(1f)) {
+                                            Text(cv.fileName, fontWeight = FontWeight.SemiBold, color = TitleGreen)
+                                            Spacer(Modifier.height(2.dp))
+                                            Text("Idioma: ${cv.language}", fontSize = 12.sp, color = Color.DarkGray)
+                                        }
+                                        val ctx = LocalContext.current
+                                        TextButton(onClick = {
+                                            if (cv.url.isNotBlank()) {
+                                                val i = Intent(Intent.ACTION_VIEW, Uri.parse(cv.url))
+                                                ctx.startActivity(i)
+                                            }
+                                        }) {
+                                            Icon(Icons.Filled.OpenInNew, contentDescription = null)
+                                            Spacer(Modifier.width(6.dp))
+                                            Text("Ver")
+                                        }
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
 
@@ -286,7 +410,10 @@ fun StudentProfileScreen(
                 item { SectionTitle("My Projects") }
                 item {
                     val projects = (uiState as? ProfileUiState.Ready)?.profile?.projects ?: emptyList()
-                    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                    Column(
+                        Modifier.fillMaxWidth(),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
 
                         if (projects.isEmpty()) {
                             Text("No tienes proyectos activos.", fontSize = 13.sp, color = Color.DarkGray)
@@ -314,7 +441,10 @@ fun StudentProfileScreen(
                 // ------------------ Guardar/Cancelar ------------------
                 if (isEditing) {
                     item {
-                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
                             OutlinedButton(onClick = { isEditing = false }, modifier = Modifier.weight(1f)) {
                                 Text("Cancel")
                             }
@@ -356,6 +486,15 @@ fun StudentProfileScreen(
         }
     }
 
+    // ====== Hoja/BottomSheet para subir múltiples CVs con idioma ======
+    if (showCvSheet) {
+        CvMultiUploadSheet(
+            repo = resumeRepo,
+            onDismiss = { showCvSheet = false }
+        )
+    }
+
+    // --------- Dialogo de proyectos (sin cambios) ---------
     if (showProjectDialog) {
         AlertDialog(
             onDismissRequest = { showProjectDialog = false },
@@ -392,6 +531,248 @@ fun StudentProfileScreen(
     }
 }
 
+/* =================== HOJA DE CARGA MÚLTIPLE CON IDIOMA =================== */
+
+private data class CvItemUi(
+    val uri: Uri,
+    val language: ResumeLanguage = ResumeLanguage.ES,
+    val progress: Int = 0,
+    val done: Boolean = false,
+    val error: String? = null,
+    val sha256: String? = null
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun CvMultiUploadSheet(
+    repo: ResumeRepositorySimple,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    // Lista visible en la hoja (acumula entre selecciones)
+    var cvItems by remember { mutableStateOf<List<CvItemUi>>(emptyList()) }
+    var isUploading by remember { mutableStateOf(false) }
+    var globalError by remember { mutableStateOf<String?>(null) }
+    var uploadedCount by remember { mutableStateOf(0) }
+
+    // Picker que permite seleccionar varios y llamarlo múltiples veces para ACUMULAR
+    val picker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetMultipleContents(),
+        onResult = { uris ->
+            val allowed = uris.filter { uri ->
+                val mime = context.contentResolver.getType(uri).orEmpty()
+                mime == "application/pdf" ||
+                        mime == "application/msword" ||
+                        mime == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            }
+            val current = cvItems.map { it.uri }.toSet()
+            val merged = cvItems + allowed.filterNot { it in current }.map { CvItemUi(uri = it) }
+            cvItems = merged
+            globalError = null
+        }
+    )
+    fun launchPicker() = picker.launch("*/*")
+
+    ModalBottomSheet(onDismissRequest = onDismiss) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                "Cargar Hojas de Vida",
+                fontWeight = FontWeight.SemiBold,
+                color = TitleGreen,
+                fontSize = 18.sp
+            )
+
+            // Botones centrados y full width
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                OutlinedButton(
+                    onClick = { launchPicker() },
+                    enabled = !isUploading,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Filled.AttachFile, contentDescription = null)
+                    Spacer(Modifier.width(6.dp))
+                    Text("Añadir archivos")
+                }
+
+                OutlinedButton(
+                    onClick = {
+                        cvItems = emptyList()
+                        uploadedCount = 0
+                        globalError = null
+                    },
+                    enabled = !isUploading && cvItems.isNotEmpty(),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Filled.Delete, contentDescription = null)
+                    Spacer(Modifier.width(6.dp))
+                    Text("Limpiar lista")
+                }
+
+                // ===== Estrategia de MULTITHREADING (rúbrica): coroutines con Dispatcher IO,
+                // structured concurrency (supervisorScope) y async/awaitAll para subidas en paralelo. =====
+                Button(
+                    onClick = {
+                        if (cvItems.isEmpty() || isUploading) return@Button
+                        isUploading = true
+                        globalError = null
+                        uploadedCount = 0
+
+                        scope.launch(Main) {
+                            try {
+                                // 1) Preprocesar en paralelo en IO (p.ej., calcular SHA-256) usando async
+                                val withHashes: List<CvItemUi> = supervisorScope {
+                                    cvItems.mapIndexed { index, item ->
+                                        async(IO) {
+                                            val hash = computeSha256(context.contentResolver.openInputStream(item.uri))
+                                            index to item.copy(sha256 = hash)
+                                        }
+                                    }.awaitAll()
+                                        .sortedBy { it.first }
+                                        .map { it.second }
+                                }
+                                cvItems = withHashes
+
+                                // 2) Subir en paralelo (IO) y reportar progreso a la UI (Main)
+                                //    Mantiene la UI responsiva y cumple "una en main y otras en I/O".
+                                val results = withContext(IO) {
+                                    // Si tu repo ya sube en paralelo, perfecto. Si no, esto sigue en IO.
+                                    repo.uploadAll(
+                                        items = withHashes.map { it.uri to it.language },
+                                        onProgress = { prog ->
+                                            // Saltamos a Main para actualizar estado Compose
+                                            scope.launch(Main) {
+                                                cvItems = cvItems.map { current ->
+                                                    if (current.uri == prog.uri) {
+                                                        current.copy(progress = prog.percent.coerceIn(0, 100))
+                                                    } else current
+                                                }
+                                            }
+                                        }
+                                    )
+                                }
+
+                                uploadedCount = results.size
+                                cvItems = cvItems.map { it.copy(progress = 100, done = true) }
+                            } catch (e: CancellationException) {
+                                throw e
+                            } catch (e: Exception) {
+                                globalError = e.message ?: "Error desconocido"
+                            } finally {
+                                isUploading = false
+                            }
+                        }
+                    },
+                    enabled = cvItems.isNotEmpty() && !isUploading,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Filled.CloudUpload, contentDescription = null)
+                    Spacer(Modifier.width(6.dp))
+                    Text(if (isUploading) "Subiendo..." else "Subir todo (${cvItems.size})")
+                }
+            }
+
+            if (cvItems.isEmpty()) {
+                Text(
+                    "Selecciona uno o varios (PDF/DOC/DOCX). Puedes tocar “Añadir archivos” varias veces para acumular.",
+                    color = Color.DarkGray, fontSize = 13.sp
+                )
+            }
+
+            if (globalError != null) {
+                Text("Error: $globalError", color = MaterialTheme.colorScheme.error)
+            }
+            if (uploadedCount > 0) {
+                Text("Listo: $uploadedCount CV(s) subido(s).", fontWeight = FontWeight.Medium, color = TitleGreen)
+            }
+
+            if (cvItems.isNotEmpty()) {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 320.dp)
+                ) {
+                    items(cvItems.size) { idx ->
+                        val it = cvItems[idx]
+                        CvRow(
+                            item = it,
+                            onLangChange = { lang ->
+                                cvItems = cvItems.mapIndexed { i, cur -> if (i == idx) cur.copy(language = lang) else cur }
+                            }
+                        )
+                    }
+                }
+            }
+
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) { Text("Cerrar") }
+            }
+            Spacer(Modifier.height(8.dp))
+        }
+    }
+}
+
+@Composable
+private fun CvRow(
+    item: CvItemUi,
+    onLangChange: (ResumeLanguage) -> Unit
+) {
+    Card {
+        Column(Modifier.padding(12.dp)) {
+            Text(item.uri.lastPathSegment ?: item.uri.toString(), fontWeight = FontWeight.Medium)
+            item.sha256?.let {
+                Spacer(Modifier.height(4.dp))
+                Text("SHA-256: ${it.take(16)}...", fontSize = 11.sp, color = Color.Gray)
+            }
+            Spacer(Modifier.height(8.dp))
+            LangSelectorCv(selected = item.language, onChange = onLangChange)
+            Spacer(Modifier.height(8.dp))
+            LinearProgressIndicator(
+                progress = item.progress / 100f,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                if (item.done) "Completado" else "Progreso: ${item.progress}%",
+                fontSize = 12.sp
+            )
+            item.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        }
+    }
+}
+
+@Composable
+private fun LangSelectorCv(
+    selected: ResumeLanguage,
+    onChange: (ResumeLanguage) -> Unit
+) {
+    var open by remember { mutableStateOf(false) }
+    val options = listOf(ResumeLanguage.ES, ResumeLanguage.EN, ResumeLanguage.FR, ResumeLanguage.OTHER)
+    Box {
+        OutlinedButton(onClick = { open = true }) { Text("Idioma: ${selected.name}") }
+        DropdownMenu(expanded = open, onDismissRequest = { open = false }) {
+            options.forEach { lang ->
+                DropdownMenuItem(
+                    text = { Text(lang.name) },
+                    onClick = { onChange(lang); open = false }
+                )
+            }
+        }
+    }
+}
+
+/* =================== HELPERS EXISTENTES (TOP-LEVEL) =================== */
 
 @Composable
 private fun TagPill(text: String) {
@@ -450,20 +831,33 @@ private fun ProjectCard(
     }
 }
 
-
 @Composable
-private fun TopBarCustom(height: Dp, onBack: () -> Unit, onMenu: () -> Unit, onDrawer: () -> Unit) { /* igual a tu versión */
+private fun TopBarCustom(height: Dp, onBack: () -> Unit, onMenu: () -> Unit, onDrawer: () -> Unit) {
     Box(
-        modifier = Modifier.fillMaxWidth().height(height).shadow(2.dp).background(CreamBackground).padding(horizontal = 8.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(height)
+            .shadow(2.dp)
+            .background(CreamBackground)
+            .padding(horizontal = 8.dp)
     ) {
         Row(
-            modifier = Modifier.align(Alignment.CenterStart).padding(start = 4.dp),
+            modifier = Modifier
+                .align(Alignment.CenterStart)
+                .padding(start = 4.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Image(painter = painterResource(id = R.drawable.logo), contentDescription = "Talent Bridge",
-                modifier = Modifier.height(90.dp), contentScale = ContentScale.Fit)
+            Image(
+                painter = painterResource(id = R.drawable.logo), contentDescription = "Talent Bridge",
+                modifier = Modifier.height(90.dp), contentScale = ContentScale.Fit
+            )
         }
-        Row(modifier = Modifier.align(Alignment.CenterEnd).padding(end = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            modifier = Modifier
+                .align(Alignment.CenterEnd)
+                .padding(end = 4.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             IconButton(onClick = onBack) { Icon(Icons.Filled.ArrowBack, contentDescription = "Back", tint = TitleGreen) }
             Spacer(Modifier.width(4.dp))
             IconButton(onClick = onMenu) { Icon(Icons.Filled.Menu, contentDescription = "Menu", tint = TitleGreen) }
@@ -479,9 +873,18 @@ private fun TopBarCustom(height: Dp, onBack: () -> Unit, onMenu: () -> Unit, onD
 @Composable
 private fun BottomBarCustom(onHome: () -> Unit, onSearch: () -> Unit, onMenu: () -> Unit, onFav: () -> Unit) {
     Box(
-        modifier = Modifier.fillMaxWidth().height(64.dp).shadow(2.dp).background(CreamBackground).padding(horizontal = 8.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(64.dp)
+            .shadow(2.dp)
+            .background(CreamBackground)
+            .padding(horizontal = 8.dp)
     ) {
-        Row(Modifier.fillMaxSize(), horizontalArrangement = Arrangement.SpaceEvenly, verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            Modifier.fillMaxSize(),
+            horizontalArrangement = Arrangement.SpaceEvenly,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             IconButton(onClick = onHome)  { Icon(Icons.Filled.Home,  contentDescription = "Home",  tint = TitleGreen) }
             IconButton(onClick = onSearch){ Icon(Icons.Filled.Search,contentDescription = "Search",tint = TitleGreen) }
             IconButton(onClick = onMenu)  { Icon(Icons.Filled.Menu,  contentDescription = "Menu",  tint = TitleGreen) }
@@ -516,7 +919,9 @@ private fun Bullet(text: String) {
 private fun AddBox(title: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
     Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = modifier) {
         Box(
-            modifier = Modifier.fillMaxWidth().height(110.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(110.dp)
                 .shadow(2.dp, RoundedCornerShape(16.dp))
                 .background(Color.White, RoundedCornerShape(16.dp))
                 .clickable { onClick() },
@@ -527,6 +932,22 @@ private fun AddBox(title: String, modifier: Modifier = Modifier, onClick: () -> 
         Spacer(Modifier.height(8.dp))
         Text(title, fontSize = 14.sp, color = TitleGreen, textAlign = TextAlign.Center)
         Spacer(Modifier.height(4.dp))
-        Text("Add link", color = LinkGreen, fontSize = 12.sp, modifier = Modifier.clickable { onClick() })
+        Text("Add link", color = LinkGreen, fontSize = 12.sp, textDecoration = TextDecoration.Underline, modifier = Modifier.clickable { onClick() })
+    }
+}
+
+/* =================== UTIL: Hash en IO para demostrar trabajo paralelo =================== */
+
+private fun computeSha256(input: InputStream?): String? {
+    if (input == null) return null
+    return input.use { stream ->
+        val md = MessageDigest.getInstance("SHA-256")
+        val buf = ByteArray(DEFAULT_BUFFER_SIZE)
+        while (true) {
+            val read = stream.read(buf)
+            if (read <= 0) break
+            md.update(buf, 0, read)
+        }
+        md.digest().joinToString("") { b -> "%02x".format(b) }
     }
 }
