@@ -24,7 +24,7 @@ class _ProjectListState extends ConsumerState<ProjectList> {
 
   late final List<ProjectEntity> projects;
 
-  void submitProjectApplication(
+  Future<void> submitProjectApplication(
     BuildContext context,
     String currentUserId,
     String createdById,
@@ -175,6 +175,7 @@ class _ProjectListState extends ConsumerState<ProjectList> {
   ) {
     showDialog(
       context: context,
+      barrierDismissible: false,
       builder: (BuildContext dialogContext) => SubmitAlertDb(
         userId: currentUserId,
         projectId: projectId,
