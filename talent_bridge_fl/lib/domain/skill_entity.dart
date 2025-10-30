@@ -11,4 +11,13 @@ class SkillEntity {
       m['icon']?.toString(),
     );
   }
+
+  @override
+  bool operator ==(Object other) {
+    if (identical(this, other)) return true;
+    return other is SkillEntity && other.label == label;
+  }
+
+  @override
+  int get hashCode => label.hashCode;
 }
