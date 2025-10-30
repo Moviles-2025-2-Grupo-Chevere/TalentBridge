@@ -12,12 +12,20 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.launch
+import android.net.Uri
+import com.google.firebase.storage.FirebaseStorage
+import com.google.firebase.Timestamp
+import kotlinx.coroutines.tasks.await
+import java.util.UUID
 
 class ProjectsViewModel(
     app: Application,
     private val firestoreRepo: FirestoreProjectsRepository = FirestoreProjectsRepository(),
-    private val localRepo: ProjectRepository = ProjectRepository(app)
+    private val localRepo: ProjectRepository = ProjectRepository(app),
+    private val storage: FirebaseStorage = FirebaseStorage.getInstance(),
+    private val usersDb: com.google.firebase.firestore.FirebaseFirestore = com.google.firebase.firestore.FirebaseFirestore.getInstance()
 ) : AndroidViewModel(app) {
+
 
     // Usuario actual (si no hay sesión, usa "guest")
     private val userId: String = FirebaseAuth.getInstance().currentUser?.uid ?: "guest"
@@ -97,4 +105,58 @@ class ProjectsViewModel(
         createdAt = null,
         createdById = createdById
     )
+
+    fun createProject(
+        title: String,
+        description: String,
+        skills: List<String>,
+        imageUri: String?,                   // viene del popup
+        onResult: (Boolean, Throwable?) -> Unit = { _, _ -> }
+    ) = viewModelScope.launch {
+        try {
+            val uid = FirebaseAuth.getInstance().currentUser?.uid
+                ?: throw IllegalStateException("No hay usuario autenticado")
+
+            val projectId = UUID.randomUUID().toString()
+
+
+            val finalImgUrl: String? = if (!imageUri.isNullOrBlank()) {
+                val uri = Uri.parse(imageUri)
+
+                val ref = storage.reference
+                    .child("project_images")
+                    .child(projectId)
+
+                ref.putFile(uri).await()
+
+                ref.downloadUrl.await().toString()
+            } else {
+                null
+            }
+
+            val projectMap = mapOf(
+                "id" to projectId,
+                "title" to title,
+                "description" to description,
+                "imgUrl" to finalImgUrl,
+                "skills" to skills,
+                "createdAt" to Timestamp.now(),
+                "createdById" to uid
+            )
+
+            val userRef = usersDb.collection("users").document(uid)
+            userRef.set(
+                mapOf(
+                    "projects" to com.google.firebase.firestore.FieldValue.arrayUnion(projectMap)
+                ),
+                com.google.firebase.firestore.SetOptions.merge()
+            ).await()
+
+            refresh()
+
+            onResult(true, null)
+        } catch (t: Throwable) {
+            onResult(false, t)
+        }
+    }
 }

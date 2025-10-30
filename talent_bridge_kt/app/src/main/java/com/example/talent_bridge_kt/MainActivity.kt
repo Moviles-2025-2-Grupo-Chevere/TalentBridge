@@ -51,6 +51,7 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewmodel.initializer
 import com.example.talent_bridge_kt.presentation.ui.components.HomeWithDrawer
 import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.dialog
 import com.example.talent_bridge_kt.data.AnalyticsManager
@@ -85,6 +86,17 @@ class MainActivity : ComponentActivity() {
                 // Snackbar + popup control
                 val snack = remember { SnackbarHostState() }
                 var showNoNetDialog by remember { mutableStateOf(false) }
+
+                val context = LocalContext.current
+                val projectsVm: com.example.talent_bridge_kt.presentation.ui.viewmodel.ProjectsViewModel =
+                    androidx.lifecycle.viewmodel.compose.viewModel(
+                        factory = viewModelFactory {
+                            initializer {
+                                val app = context.applicationContext as android.app.Application
+                                com.example.talent_bridge_kt.presentation.ui.viewmodel.ProjectsViewModel(app)
+                            }
+                        }
+                    )
 
                 LaunchedEffect(isConnected) {
                     if (!isConnected) {
@@ -127,6 +139,10 @@ class MainActivity : ComponentActivity() {
                 Scaffold(Modifier.fillMaxSize(),
                     snackbarHost = { SnackbarHost(snack) }
                 ) { inner ->
+
+                    val projectsVm: com.example.talent_bridge_kt.presentation.ui.viewmodel.ProjectsViewModel =
+                        androidx.lifecycle.viewmodel.compose.viewModel()
+
                     NavHost(
                         navController = navController,
                         startDestination = Routes.Login,
@@ -157,8 +173,21 @@ class MainActivity : ComponentActivity() {
                         dialog("createProject") {
                             CreateProjectPopUp(
                                 onDismiss = { navController.popBackStack() },
-                                onSave = { draft ->
-                                    navController.popBackStack()
+                                { draft ->
+                                    // 2) aquí usamos el VM que obtuvimos arriba
+                                    projectsVm.createProject(
+                                        title = draft.title,
+                                        description = draft.description,
+                                        skills = draft.skills,
+                                        imageUri = draft.imageUri
+                                    ) { ok, err ->
+                                        if (ok) {
+                                            println("✅ Proyecto creado con éxito")
+                                            navController.popBackStack()
+                                        } else {
+                                            println("❌ Error creando proyecto: ${err?.message}")
+                                        }
+                                    }
                                 }
                             )
                         }
@@ -210,7 +239,8 @@ class MainActivity : ComponentActivity() {
                             HomeWithDrawer(navController = navController) { openDrawer ->
                                 StudentProfileScreen(
                                     onBack = { navController.popBackStack() },
-                                    onOpenDrawer = { openDrawer() }
+                                    onOpenDrawer = { openDrawer() },
+                                    onAddProject = { navController.navigate("createProject") }
                                 )
                             }
                         }
