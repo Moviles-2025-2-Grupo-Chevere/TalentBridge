@@ -6,6 +6,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -81,6 +82,19 @@ fun StudentFeedScreen(
 
 
     var showSubmitted by remember { mutableStateOf(false) }
+    var showAlreadyApplied by remember { mutableStateOf(false) }
+    var applyError by remember { mutableStateOf<String?>(null) }
+
+    val appEvent by vm.applicationEvent.collectAsState()
+    var showInfo by remember { mutableStateOf(false) }
+    var infoMessage by remember { mutableStateOf("") }
+
+    LaunchedEffect(appEvent) {
+        appEvent?.let {
+            infoMessage = it
+            showInfo = true
+        }
+    }
 
     Surface(color = Color.White, modifier = Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
@@ -92,7 +106,10 @@ fun StudentFeedScreen(
                 onDrawer = onOpenDrawer
             )
 
+            val listState = rememberLazyListState()
+
             LazyColumn(
+                state = listState,
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth(),
@@ -122,13 +139,14 @@ fun StudentFeedScreen(
                 }
 
                 // Estado: Error
-                if (error != null) {
+                if (error != null || applyError != null) {
+                    val err = error ?: applyError
                     item {
                         Column(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Text("Failed to load: $error", color = Color.Red)
+                            Text("Failed: $err", color = Color.Red)
                             Spacer(Modifier.height(8.dp))
                             OutlinedButton(onClick = { vm.refresh() }) {
                                 Text("Retry")
@@ -141,6 +159,7 @@ fun StudentFeedScreen(
                 if (!loading && error == null) {
                     items(projects, key = { it.id }) { p ->
                         val isSaved = savedIds.contains(p.id)
+                        val isApplied = vm.appliedProjectIds.collectAsState().value.contains(p.id)
 
                         ProjectCardSimple(
                             time = p.createdAt?.let { prettySince(it.toDate().time) } ?: "—",
@@ -148,10 +167,19 @@ fun StudentFeedScreen(
                             subtitle = p.subtitle ?: "",
                             description = p.description,
                             tags = p.skills,
-                            imageRes = null, // Si luego guardas URL, cámbialo por AsyncImage con p.imgUrl
-                            saved = isSaved,                        // 👈 NUEVO
-                            onSaveClick = { vm.toggleFavorite(p) }, // 👈 NUEVO
-                            onApplyClick = { showSubmitted = true },
+                            imageRes = null,
+                            saved = isSaved,
+                            applied = isApplied,
+                            onSaveClick = { vm.toggleFavorite(p) },
+                            onApplyClick = {
+                                vm.toggleApplication(
+                                    p,
+                                    onApplied = { showSubmitted = true; applyError = null },
+                                    onUnapplied = { /* opcional: snack/Toast */ },
+                                    onError = { msg -> applyError = msg },
+                                    onQueuedOffline = { applyError = null }
+                                )
+                            },
                             onSomeOneElseProfile = onSomeOneElseProfile
                         )
                     }
@@ -186,6 +214,14 @@ fun StudentFeedScreen(
             onKeepExploring = { showSubmitted = false }
         )
     }
+
+    if (showAlreadyApplied) {
+        AlreadyAppliedDialog(onOk = { showAlreadyApplied = false })
+    }
+
+    if (showInfo) {
+        InfoDialog(message = infoMessage, onOk = { showInfo = false; infoMessage = "" })
+    }
 }
 
 /* ============================ Helpers ============================ */
@@ -211,6 +247,43 @@ private fun prettySince(thenMs: Long): String {
 /* ============================ COMPONENTES ============================ */
 
 @Composable
+private fun AlreadyAppliedDialog(onOk: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.55f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier
+                .widthIn(min = 240.dp, max = 320.dp)
+                .shadow(8.dp, RoundedCornerShape(16.dp))
+                .background(Color(0xFF0F6A7A), RoundedCornerShape(16.dp))
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                "Ya aplicaste a este proyecto",
+                color = Color.White,
+                fontSize = 18.sp,
+                lineHeight = 22.sp,
+                textAlign = TextAlign.Center,
+                fontWeight = FontWeight.SemiBold
+            )
+            Spacer(Modifier.height(12.dp))
+            Button(
+                onClick = onOk,
+                shape = RoundedCornerShape(24.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.White,
+                    contentColor = Color(0xFF0F6A7A)
+                )
+            ) { Text("Entendido", fontSize = 12.sp) }
+        }
+    }
+}
+
+@Composable
 private fun ProjectCardSimple(
     time: String,
     title: String,
@@ -219,6 +292,7 @@ private fun ProjectCardSimple(
     tags: List<String>,
     imageRes: Int?,
     saved: Boolean,
+    applied: Boolean,
     onSaveClick: () -> Unit,
     onApplyClick: () -> Unit,
     onSomeOneElseProfile: () -> Unit
@@ -268,7 +342,7 @@ private fun ProjectCardSimple(
 
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally) // centra las chips y mantiene espacio
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
         ) {
             tags.forEach { tag ->
                 Box(
@@ -280,7 +354,6 @@ private fun ProjectCardSimple(
                 }
             }
         }
-
 
         // Acciones
         Spacer(Modifier.height(10.dp))
@@ -299,9 +372,8 @@ private fun ProjectCardSimple(
                 )
             ) { Text(if (saved) "Saved" else "Save", fontSize = 12.sp) }
 
-
             OutlinedButton(
-                onClick = { /* guardar */ },
+                onClick = { /* comments */ },
                 shape = RoundedCornerShape(20.dp),
                 colors = ButtonDefaults.outlinedButtonColors(
                     containerColor = Color.White,
@@ -313,11 +385,10 @@ private fun ProjectCardSimple(
                 onClick = onApplyClick,
                 shape = RoundedCornerShape(20.dp),
                 colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = Color.White,
+                    containerColor = if (applied) TitleGreen.copy(alpha = 0.08f) else Color.White,
                     contentColor = TitleGreen
                 )
-            ) { Text("Apply", fontSize = 12.sp) }
-
+            ) { Text(if (applied) "Applied" else "Apply", fontSize = 12.sp) }
         }
     }
 }
@@ -381,6 +452,43 @@ private fun ApplicationSubmittedDialog(
                     )
                 ) { Text("Keep Exploring", fontSize = 12.sp) }
             }
+        }
+    }
+}
+
+@Composable
+private fun InfoDialog(message: String, onOk: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.55f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier
+                .widthIn(min = 240.dp, max = 320.dp)
+                .shadow(8.dp, RoundedCornerShape(16.dp))
+                .background(Color(0xFF0F6A7A), RoundedCornerShape(16.dp))
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                message,
+                color = Color.White,
+                fontSize = 16.sp,
+                lineHeight = 20.sp,
+                textAlign = TextAlign.Center,
+                fontWeight = FontWeight.Medium
+            )
+            Spacer(Modifier.height(12.dp))
+            Button(
+                onClick = onOk,
+                shape = RoundedCornerShape(24.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.White,
+                    contentColor = Color(0xFF0F6A7A)
+                )
+            ) { Text("OK", fontSize = 12.sp) }
         }
     }
 }
