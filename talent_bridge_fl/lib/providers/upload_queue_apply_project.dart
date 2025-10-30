@@ -75,6 +75,16 @@ class ProjectApplyUploadNotifier extends Notifier<List<ProjectApplication>> {
     }
   }
 
+  Future<void> _saveQueueToHive() async {
+    try {
+      final dataToStore = state.map((app) => app.toMap()).toList();
+      await _box?.put(_queueKey, dataToStore);
+      debugPrint('Saved ${state.length} applications to Hive');
+    } catch (e) {
+      debugPrint('Error saving queue to Hive: $e');
+    }
+  }
+
   /// Add application to queue and attempt upload
   /// Returns true if uploaded successfully, false if queued for later
   Future<bool> enqueueProjectApplyUpload(
@@ -97,6 +107,8 @@ class ProjectApplyUploadNotifier extends Notifier<List<ProjectApplication>> {
     } else {
       // Failed to upload, add to queue
       state = [...state, application];
+      await _saveQueueToHive();
+      debugPrint('Application queued: $application');
       return false; // null indicates queued for later (like TaskSnapshot?)
     }
   }
@@ -104,6 +116,8 @@ class ProjectApplyUploadNotifier extends Notifier<List<ProjectApplication>> {
   /// Process all queued applications
   Future<void> processQueue() async {
     if (state.isEmpty) return;
+
+    debugPrint('Processing upload queue with ${state.length} applications');
 
     // Create a copy to avoid modification during iteration
     final applicationsToProcess = [...state];
@@ -137,8 +151,9 @@ class ProjectApplyUploadNotifier extends Notifier<List<ProjectApplication>> {
   }
 
   /// Remove application from queue
-  void removeFromQueue(ProjectApplication app) {
+  Future<void> removeFromQueue(ProjectApplication app) async {
     debugPrint('Removing application from queue: $app');
     state = state.where((item) => item != app).toList();
+    await _saveQueueToHive();
   }
 }
