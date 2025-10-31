@@ -16,6 +16,9 @@ import com.google.firebase.firestore.FieldValue
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.firestore.ktx.firestore
 import android.net.Uri
+import com.example.talent_bridge_kt.data.firebase.FirebaseProfileRepository
+import com.example.talent_bridge_kt.data.firebase.FirebaseStorageRepository
+import com.example.talent_bridge_kt.domain.repository.ProfileRepository
 import java.util.UUID
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
