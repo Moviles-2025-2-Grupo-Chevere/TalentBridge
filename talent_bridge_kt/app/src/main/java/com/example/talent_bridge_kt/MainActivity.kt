@@ -55,6 +55,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.currentBackStackEntryAsState
 import com.example.talent_bridge_kt.data.AnalyticsManager
 import com.example.talent_bridge_kt.data.repository.ProfileRepository
+import com.google.firebase.auth.FirebaseAuth
 
 
 
@@ -141,9 +142,16 @@ class MainActivity : ComponentActivity() {
                     val projectsVm: com.example.talent_bridge_kt.presentation.ui.viewmodel.ProjectsViewModel =
                         androidx.lifecycle.viewmodel.compose.viewModel()
 
+                    val firebaseUser = FirebaseAuth.getInstance().currentUser
+                    val startDest = if (firebaseUser != null) {
+                        Routes.StudentFeed
+                    } else {
+                        Routes.Login
+                    }    
+
                     NavHost(
                         navController = navController,
-                        startDestination = Routes.Login,
+                        startDestination = startDest,
                         modifier = Modifier.padding(inner)
                     ) {
                         composable(Routes.Login) {
