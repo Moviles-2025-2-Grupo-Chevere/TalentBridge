@@ -30,6 +30,7 @@ import com.example.talent_bridge_kt.presentation.ui.screens.SomeElseProfileScree
 import com.example.talent_bridge_kt.presentation.ui.screens.CreditsScreen
 import com.example.talent_bridge_kt.presentation.ui.screens.NavegationScreen
 import com.example.talent_bridge_kt.presentation.ui.screens.InitiativeDetailScreen
+import com.example.talent_bridge_kt.presentation.ui.components.OfflineConnectionDialog
 import com.example.talent_bridge_kt.ui.theme.Talent_bridge_ktTheme
 
 
@@ -122,6 +123,13 @@ class MainActivity : ComponentActivity() {
                     AnalyticsManager.logScreenView(newRoute)
                 }
 
+                // Show offline connection dialog when connection is lost
+                if (showNoNetDialog) {
+                    OfflineConnectionDialog(
+                        onDismiss = { showNoNetDialog = false }
+                    )
+                }
+
                 Scaffold(Modifier.fillMaxSize(),
                     snackbarHost = { SnackbarHost(snack) }
                 ) { inner ->
@@ -177,19 +185,19 @@ class MainActivity : ComponentActivity() {
                             val vm: SearchViewModel = viewModel(
                                 factory = SearchViewModelFactory(repo)
                             )
-                                SearchScreen(
-                                    vm = vm,
-                                    onBack = { navController.popBackStack() },
-                                    onSearch = { navController.navigate(Routes.Search) },
-                                    onProfile = { navController.navigate(Routes.StudentProfile) },
-                                    onHome = { navController.navigate(Routes.StudentFeed) },
-                                    onStudentClick = { uid ->
-                                        navController.navigate(Routes.someoneElse(uid))
-                                    }
+                            SearchScreen(
+                                vm = vm,
+                                onBack = { navController.popBackStack() },
+                                onSearch = { navController.navigate(Routes.Search) },
+                                onProfile = { navController.navigate(Routes.StudentProfile) },
+                                onHome = { navController.navigate(Routes.StudentFeed) },
+                                onStudentClick = { uid ->
+                                    navController.navigate(Routes.someoneElse(uid))
+                                }
 
 
-                                )
-                            }
+                            )
+                        }
 
 
                         composable(Routes.StudentProfile) {
