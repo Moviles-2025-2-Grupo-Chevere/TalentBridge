@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import com.example.talent_bridge_kt.data.analytics.ProfileAnalytics
 import com.example.talent_bridge_kt.data.repository.EventualConnectivityProfileRepository
+import com.example.talent_bridge_kt.data.firebase.analytics.FeatureUsageAnalytics
 
 sealed class ProfileUiState {
     data object Loading : ProfileUiState()
@@ -70,6 +71,10 @@ class ProfileViewModel(
                 _uiState.value = ProfileUiState.Ready(res.data, "Saved")
                 ProfileAnalytics.pushUserProperties(res.data)
                 ProfileAnalytics.logProfileSaved(res.data)
+                
+                // Trackear como feature usage (edit profile)
+                FeatureUsageAnalytics.logEditProfile()
+                
                 if (projectsChanged) {
                     com.example.talent_bridge_kt.data.analytics.ProfileAnalytics
                         .logProjectsUpdated(res.data.projects.size)
@@ -93,6 +98,10 @@ class ProfileViewModel(
 
     fun addProject(project: Project) {
         val cur = (uiState.value as? ProfileUiState.Ready)?.profile ?: return
+        
+        // Trackear feature usage (create project)
+        FeatureUsageAnalytics.logCreateProject(project.id)
+        
         update(cur.copy(projects = cur.projects + project))
     }
 

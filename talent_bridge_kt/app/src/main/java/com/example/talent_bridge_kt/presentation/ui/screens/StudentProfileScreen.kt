@@ -689,6 +689,7 @@ fun StudentProfileScreen(
                     }
                 }
 
+
                 // ------------------ My Projects ------------------
                 item { SectionTitle("My Projects") }
                 item {
@@ -718,6 +719,19 @@ fun StudentProfileScreen(
                         if (isEditing) {
                             Button(onClick = { showProjectDialog = true }) { Text("Add proyecto") }
                         }
+                    }
+                }
+
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        AddBox(
+                            title = "Add Project",
+                            modifier = Modifier.weight(1f),
+                            onClick = onAddProject
+                        )
                     }
                 }
 
