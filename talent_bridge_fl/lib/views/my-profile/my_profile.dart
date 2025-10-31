@@ -21,6 +21,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:talent_bridge_fl/views/edit_profile/edit_profile.dart';
 import 'package:talent_bridge_fl/views/my-profile/contact_item.dart';
 import 'package:talent_bridge_fl/views/my-profile/project_summary.dart';
+import 'package:firebase_performance/firebase_performance.dart';
 
 const darkBlue = Color(0xFF3E6990);
 
@@ -42,11 +43,27 @@ class _MyProfileState extends ConsumerState<MyProfile> {
   bool syncingImage = false;
   final fb = FirebaseService();
   final projectService = ProjectService();
+  static Trace? _ttfcProfile;
+  static bool _ttfcStarted = false;
+  static bool _ttfcStopped = false;
 
   @override
   void initState() {
     super.initState();
     getPfP();
+    // start una sola vez cuando entras a esta pantalla
+    if (!_ttfcStarted) {
+      _ttfcStarted = true;
+      _ttfcProfile = FirebasePerformance.instance.newTrace('ttfc_profile')
+        ..start();
+      // stop en el primer frame pintado
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!_ttfcStopped) {
+          _ttfcStopped = true;
+          _ttfcProfile?.stop();
+        }
+      });
+    }
   }
 
   /// Uses offline first, online fallback for getting the profile picture.

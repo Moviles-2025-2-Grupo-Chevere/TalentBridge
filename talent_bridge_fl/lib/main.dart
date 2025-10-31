@@ -6,6 +6,7 @@ import 'package:talent_bridge_fl/services/firebase_service.dart';
 import 'package:talent_bridge_fl/views/splash_screen.dart';
 import 'services/connectivity_service.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
+import 'package:firebase_performance/firebase_performance.dart';
 import 'firebase_options.dart';
 
 // Global navigator key
@@ -16,6 +17,15 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
+  // Habilita Performance en runtime (sin romper si falla)
+  try {
+    await FirebasePerformance.instance.setPerformanceCollectionEnabled(true);
+  } catch (e) {
+    // No bloquees el arranque por telemetría
+    debugPrint('No se pudo habilitar Firebase Performance: $e');
+  }
+
   runApp(ProviderScope(child: const TalentBridge()));
 }
 

@@ -10,8 +10,6 @@ import 'package:talent_bridge_fl/views/main-feed/main_feed.dart';
 import 'package:talent_bridge_fl/views/my-profile/my_profile.dart';
 import 'package:talent_bridge_fl/views/saved-projects/saved_projects.dart';
 import 'package:talent_bridge_fl/views/search/search.dart';
-
-// ⬇️ NUEVO
 import 'package:firebase_performance/firebase_performance.dart';
 
 const kBg = Color(0xFFFEF7E6);
@@ -26,37 +24,30 @@ class HomeView extends ConsumerStatefulWidget {
 class _HomeViewState extends ConsumerState<HomeView> {
   final _fb = FirebaseService();
   int _selectedPageIdx = 0;
-
-  // ---- BQ: Trace TTFC Home (mínimo y seguro contra rebuilds) ----
-  static Trace? _ttfcHome;
-  static bool _started = false;
-  static bool _stopped = false;
+  static Trace? _navTrace;
 
   @override
   void initState() {
     super.initState();
-
-    // arranca el trace solo una vez
-    if (!_started) {
-      _started = true;
-      _ttfcHome = FirebasePerformance.instance.newTrace('ttfc_home')
-        ..putAttribute('screen', 'Home') // etiqueta opcional
-        ..start();
-    }
-
-    // lo detenemos cuando el primer frame del Home ya se pintó
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!_stopped) {
-        _stopped = true;
-        _ttfcHome?.stop();
-      }
-    });
   }
-  // ---------------------------------------------------------------
 
   void _selectPage(int idx) {
+    final names = ['nav_home', 'nav_search', 'nav_profile'];
+    final traceName = (idx >= 0 && idx < names.length)
+        ? names[idx]
+        : 'nav_unknown';
+
+    final trace = FirebasePerformance.instance.newTrace(traceName);
+    trace.start();
+    debugPrint('[PERF] start $traceName');
+
     setState(() {
       _selectedPageIdx = idx;
+    });
+
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      await trace.stop();
+      debugPrint('[PERF] stop $traceName');
     });
   }
 
