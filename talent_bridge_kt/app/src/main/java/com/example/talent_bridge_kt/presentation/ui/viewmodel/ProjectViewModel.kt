@@ -9,6 +9,7 @@ import com.example.talent_bridge_kt.data.repository.FeedRepository
 import com.example.talent_bridge_kt.data.repository.ProjectRepository
 import com.example.talent_bridge_kt.data.repository.ApplicationsLocalRepository
 import com.example.talent_bridge_kt.domain.model.Project
+import com.example.talent_bridge_kt.data.firebase.analytics.ApplicationAnalytics
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.ktx.Firebase
@@ -133,6 +134,10 @@ class ProjectsViewModel(
                 try {
                     userRef.update("applications", FieldValue.arrayUnion(application)).await()
                     appliedProjectIds.value = appliedProjectIds.value + project.id
+                    
+                    // Trackear en Firebase Analytics
+                    trackApplicationAnalytics(uid, project.id, project.title)
+                    
                     onSuccess()
                 } catch (e: Exception) {
                     // Falló el update: guardar localmente y notificar
@@ -190,6 +195,9 @@ class ProjectsViewModel(
                     applicationsLocal.remove(item.id)
                     appliedProjectIds.value = appliedProjectIds.value + item.projectId
                     applicationEvent.value = "Ya se envió la aplicación al proyecto \"${item.projectTitle}\" debido a que ya se conectó a internet"
+                    
+                    // Trackear en Firebase Analytics (aplicación sincronizada offline)
+                    trackApplicationAnalytics(uid, item.projectId, item.projectTitle)
                 } catch (_: Exception) {
                     // Dejar en cola para próximo intento
                 }
@@ -304,4 +312,39 @@ class ProjectsViewModel(
         createdAt = null,
         createdById = createdById
     )
+    
+    /**
+     * Obtiene el major del usuario y envía evento a Firebase Analytics
+     * Nota: El semester se calcula automáticamente desde la fecha actual (período de 6 meses),
+     * no desde datos del usuario.
+     */
+    private suspend fun trackApplicationAnalytics(uid: String, projectId: String, projectTitle: String?) {
+        try {
+            val userDoc = usersCol.document(uid).get().await()
+            
+            // Intentar obtener major de diferentes formas
+            val majorRaw = userDoc.getString("major")
+            val major = majorRaw?.trim()?.takeIf { it.isNotEmpty() && it != "\"\"" } 
+                ?: "unknown"
+            
+            // Debug: verificar qué valores tiene el documento
+            android.util.Log.d("ProjectViewModel", 
+                "trackApplicationAnalytics: majorRaw='$majorRaw', major='$major', projectId='$projectId'")
+            android.util.Log.d("ProjectViewModel", 
+                "Full user doc data keys: ${userDoc.data?.keys?.joinToString()}")
+            
+            // El semester se calcula automáticamente desde la fecha actual (no del usuario)
+            ApplicationAnalytics.logProjectApplication(
+                semester = null,  // Se calcula automáticamente
+                major = major,
+                projectId = projectId,
+                projectTitle = projectTitle,
+                lastLoginAt = null  // No se usa
+            )
+        } catch (e: Exception) {
+            // Error al obtener datos del usuario o enviar analytics, no es crítico
+            android.util.Log.e("ProjectViewModel", "Error in trackApplicationAnalytics", e)
+            e.printStackTrace()
+        }
+    }
 }
