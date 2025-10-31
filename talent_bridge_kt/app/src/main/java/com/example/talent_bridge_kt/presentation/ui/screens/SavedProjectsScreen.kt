@@ -15,16 +15,14 @@ import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -33,6 +31,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -80,6 +79,20 @@ fun SavedProjectsScreen(
     val savedList by vm.savedProjects.collectAsState()
     val nonEmptySaved = remember(savedList) { savedList.isNotEmpty() }
 
+    // Estado de aplicaciones existentes
+    val appliedIds by vm.appliedProjectIds.collectAsState()
+
+    // Eventos informativos (cola offline / sync ok)
+    val appEvent by vm.applicationEvent.collectAsState()
+    var showInfo by remember { mutableStateOf(false) }
+    var infoMessage by remember { mutableStateOf("") }
+    LaunchedEffect(appEvent) {
+        appEvent?.let {
+            infoMessage = it
+            showInfo = true
+        }
+    }
+
     Surface(color = Color.White, modifier = Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
 
@@ -95,7 +108,7 @@ fun SavedProjectsScreen(
                     .weight(1f)
                     .fillMaxWidth(),
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                verticalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(12.dp)
             ) {
                 item {
                     Text(
@@ -128,13 +141,26 @@ fun SavedProjectsScreen(
                             e.skills.split(",").map { it.trim() }.filter { it.isNotEmpty() }
                         }
 
+                        val asDomain = e.toDomain()
+                        val isApplied = appliedIds.contains(e.id)
+
                         SavedProjectCard(
                             time = e.createdAt ?: "—",
                             title = e.title,
                             subtitle = e.subtitle ?: "",
                             description = e.description,
                             tags = tags,
-                            onRemove = { vm.toggleFavorite(e.toDomain()) } // desmarca favorito
+                            applied = isApplied,
+                            onApplyToggle = {
+                                vm.toggleApplication(
+                                    asDomain,
+                                    onApplied = { /* opcional */ },
+                                    onUnapplied = { /* opcional */ },
+                                    onError = { /* opcional */ },
+                                    onQueuedOffline = { /* Info llega por appEvent */ }
+                                )
+                            },
+                            onRemove = { vm.toggleFavorite(asDomain) } // desmarca favorito
                         )
                     }
                 }
@@ -150,9 +176,50 @@ fun SavedProjectsScreen(
             )
         }
     }
+
+    if (showInfo) {
+        InfoDialog(message = infoMessage, onOk = { showInfo = false; infoMessage = "" })
+    }
 }
 
 /* =================== Componentes de UI =================== */
+
+@Composable
+private fun InfoDialog(message: String, onOk: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.55f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier
+                .widthIn(min = 240.dp, max = 320.dp)
+                .shadow(8.dp, RoundedCornerShape(16.dp))
+                .background(Color(0xFF0F6A7A), RoundedCornerShape(16.dp))
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                message,
+                color = Color.White,
+                fontSize = 16.sp,
+                lineHeight = 20.sp,
+                textAlign = TextAlign.Center,
+                fontWeight = FontWeight.Medium
+            )
+            Spacer(Modifier.height(12.dp))
+            Button(
+                onClick = onOk,
+                shape = RoundedCornerShape(24.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.White,
+                    contentColor = Color(0xFF0F6A7A)
+                )
+            ) { Text("OK", fontSize = 12.sp) }
+        }
+    }
+}
 
 @Composable
 private fun SavedProjectCard(
@@ -161,6 +228,8 @@ private fun SavedProjectCard(
     subtitle: String,
     description: String,
     tags: List<String>,
+    applied: Boolean,
+    onApplyToggle: () -> Unit,
     onRemove: () -> Unit
 ) {
     Column(
@@ -195,7 +264,7 @@ private fun SavedProjectCard(
         if (tags.isNotEmpty()) {
             Spacer(Modifier.height(10.dp))
             Row(
-                horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
+                horizontalArrangement = androidx.compose.foundation.layout.Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally),
                 modifier = Modifier.fillMaxWidth()
             ) {
                 tags.forEach { ChipTag(it) }
@@ -206,14 +275,18 @@ private fun SavedProjectCard(
         Spacer(Modifier.height(10.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(
-                text = "Comments(0)",
-                fontSize = 12.sp,
-                color = LinkGreen
-            )
+            // Apply / Applied toggle
+            OutlinedButton(
+                onClick = onApplyToggle,
+                shape = RoundedCornerShape(20.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = if (applied) TitleGreen.copy(alpha = 0.08f) else Color.White,
+                    contentColor = TitleGreen
+                )
+            ) { Text(if (applied) "Applied" else "Apply", fontSize = 12.sp) }
 
             // Remove (unsave)
             OutlinedButton(
@@ -308,7 +381,7 @@ private fun BottomBarCustom(
     ) {
         Row(
             modifier = Modifier.fillMaxSize(),
-            horizontalArrangement = Arrangement.SpaceEvenly,
+            horizontalArrangement = androidx.compose.foundation.layout.Arrangement.SpaceEvenly,
             verticalAlignment = Alignment.CenterVertically
         ) {
             IconButton(onClick = onHome)  { Icon(Icons.Filled.Home,  contentDescription = "Home",  tint = TitleGreen) }
@@ -321,8 +394,6 @@ private fun BottomBarCustom(
 
 /* =================== Helpers / Mappers =================== */
 
-// Mapper local para poder reutilizar toggleFavorite(Project) del ViewModel.
-// (Tu ProjectEntity guarda createdAt como String; lo dejamos en null aquí.)
 private fun ProjectEntity.toDomain(): Project = Project(
     id = id,
     title = title,
@@ -330,6 +401,6 @@ private fun ProjectEntity.toDomain(): Project = Project(
     description = description,
     skills = if (skills.isBlank()) emptyList() else skills.split(",").map { it.trim() },
     imgUrl = imgUrl,
-    createdAt = null,       // si quieres, puedes reconvertir a Timestamp
+    createdAt = null,
     createdById = createdById
 )
