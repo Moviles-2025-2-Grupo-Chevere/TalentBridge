@@ -1,6 +1,8 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:cached_network_image/cached_network_image.dart';
+import 'package:firebase_storage/firebase_storage.dart' as firebase_core;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
@@ -40,6 +42,7 @@ class MyProfile extends ConsumerStatefulWidget {
 
 class _MyProfileState extends ConsumerState<MyProfile> {
   ImageProvider? pfpProvider;
+  String? _bannerImageUrl;
   bool syncingImage = false;
   final fb = FirebaseService();
   final projectService = ProjectService();
@@ -51,6 +54,7 @@ class _MyProfileState extends ConsumerState<MyProfile> {
   void initState() {
     super.initState();
     getPfP();
+    setBannerFromUrl(FirebaseStorage.instance, fb.currentUid()!);
     // start una sola vez cuando entras a esta pantalla
     if (!_ttfcStarted) {
       _ttfcStarted = true;
@@ -115,6 +119,80 @@ class _MyProfileState extends ConsumerState<MyProfile> {
         );
       },
     );
+  }
+
+  void _showPickBannerImageDialog(String uid, BuildContext outerContext) {
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Pick Banner Image'),
+          content: const Text('Do you want to pick a new banner image?'),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop(); // Cancel
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _pickBannerImage(uid).then(
+                  (value) {
+                    if (outerContext.mounted) {
+                      ScaffoldMessenger.of(outerContext).showSnackBar(
+                        SnackBar(content: Text('Banner Image uploaded')),
+                      );
+                    }
+                  },
+                ); // Accept
+              },
+              child: const Text('Accept'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future _pickBannerImage(String uid) async {
+    final picker = ImagePicker();
+    final storage = FirebaseStorage.instance;
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+
+    if (image != null) {
+      print('Picked file path: ${image.path}');
+      var ref = storage.ref().child('banner_images/$uid');
+      try {
+        await ref.putFile(File(image.path));
+        await setBannerFromUrl(storage, uid);
+      } on firebase_core.FirebaseException catch (e) {
+        print('Firebase error: ${e.code} - ${e.message}');
+        if (e.code == 'retry-limit-exceeded') {
+          print('No internet connection.');
+        } else {
+          rethrow;
+        }
+      } catch (e) {
+        rethrow;
+      }
+    }
+  }
+
+  Future<void> setBannerFromUrl(
+    firebase_core.FirebaseStorage storage,
+    String uid,
+  ) async {
+    final downloadUrl = await storage
+        .ref()
+        .child('banner_images/$uid')
+        .getDownloadURL();
+    if (mounted) {
+      setState(() {
+        _bannerImageUrl = downloadUrl;
+      });
+    }
   }
 
   // Handle PDF selection and upload
@@ -351,9 +429,12 @@ class _MyProfileState extends ConsumerState<MyProfile> {
           image.path,
         );
         try {
+          // TODO mira esto deivid
           final result = await ref
               .read(pfpUploadProvider.notifier)
-              .enqueuePfpUpload(localPicturePath);
+              .enqueuePfpUpload(
+                localPicturePath,
+              ); // <<<<<<<<- TODO mira esto deivid
           if (result == null && mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
@@ -458,240 +539,294 @@ class _MyProfileState extends ConsumerState<MyProfile> {
     final userEntity = ref.watch(profileProvider);
 
     return SingleChildScrollView(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Profile header with image and username
-            Row(
+      child: Stack(
+        children: [
+          ConstrainedBox(
+            constraints: BoxConstraints(maxHeight: 200),
+            child: Material(
+              color: Colors.transparent, // important!
+              child: _bannerImageUrl == null
+                  ? Container(
+                      decoration: BoxDecoration(color: Colors.teal),
+                      child: InkWell(
+                        onTap: () =>
+                            _showPickBannerImageDialog(userEntity!.id, context),
+                        splashColor: Colors.blue.withValues(alpha: 0.3),
+                        highlightColor: Colors.transparent,
+                      ),
+                    )
+                  : Ink.image(
+                      image: CachedNetworkImageProvider(
+                        _bannerImageUrl!,
+                      ),
+                      fit: BoxFit.cover,
+                      child: InkWell(
+                        onTap: () =>
+                            _showPickBannerImageDialog(userEntity!.id, context),
+                        splashColor: Colors.blue.withValues(alpha: 0.3),
+                        highlightColor: Colors.transparent,
+                      ),
+                    ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 20),
+            child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Spacer(),
-                SizedBox(
-                  child: Column(
+                // Profile header with image and username
+                Padding(
+                  padding: const EdgeInsets.only(top: 100),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      // Profile image
-                      Stack(
-                        children: [
-                          InkWell(
-                            onTap: _showTakePhotoDialog,
-                            child: CircleAvatar(
-                              radius: 60,
-                              backgroundImage: pfpProvider,
+                      Spacer(),
+                      SizedBox(
+                        child: Column(
+                          children: [
+                            // Profile image
+                            Stack(
+                              children: [
+                                if (pfpProvider != null)
+                                  ClipOval(
+                                    child: Material(
+                                      color: Colors
+                                          .transparent, // to show image background
+                                      child: Ink.image(
+                                        image: pfpProvider!,
+                                        fit: BoxFit.cover,
+                                        width: 120,
+                                        height: 120,
+                                        child: InkWell(
+                                          onTap: _showTakePhotoDialog,
+                                          splashColor: Colors.blue.withValues(
+                                            alpha: 0.3,
+                                          ),
+                                          borderRadius: BorderRadius.circular(
+                                            60,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                if (pendingUpload)
+                                  Positioned(
+                                    bottom: 0,
+                                    right: 0,
+                                    child: Icon(Icons.sync_alt_outlined),
+                                  ),
+                              ],
                             ),
-                          ),
-                          if (pendingUpload)
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: Icon(Icons.sync_alt_outlined),
+                            const SizedBox(height: 16.0),
+                            // Username
+                            Row(
+                              children: [
+                                Text(
+                                  userEntity?.displayName ?? '',
+                                  style: TextStyle(
+                                    fontSize: 18.0,
+                                    fontWeight: FontWeight.bold,
+                                    fontFamily: 'OpenSans',
+                                  ),
+                                ),
+                                if (userEntity?.source == Source.local) ...[
+                                  SizedBox(
+                                    width: 4,
+                                  ),
+                                  Icon(Icons.cloud_off_outlined),
+                                ],
+                              ],
                             ),
-                        ],
-                      ),
-                      const SizedBox(height: 16.0),
-                      // Username
-                      Row(
-                        children: [
-                          Text(
-                            userEntity?.displayName ?? '',
-                            style: TextStyle(
-                              fontSize: 18.0,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: 'OpenSans',
-                            ),
-                          ),
-                          if (userEntity?.source == Source.local) ...[
-                            SizedBox(
-                              width: 4,
-                            ),
-                            Icon(Icons.cloud_off_outlined),
                           ],
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-                Expanded(
-                  child: Align(
-                    alignment: Alignment.topRight,
-                    child: IconButton(
-                      onPressed: userEntity != null
-                          ? () => _openEditProfileOverlay(userEntity!)
-                          : () {},
-                      icon: Icon(Icons.edit),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                (userEntity?.headline ?? '').isEmpty
-                    ? TextButton(
-                        onPressed: () => _openEditProfileOverlay(userEntity!),
-                        child: Text(
-                          'Add headline',
-                          style: const TextStyle(color: Colors.blue),
-                        ),
-                      )
-                    : Expanded(
-                        child: Text(
-                          userEntity!.headline!,
-                          textAlign: TextAlign.center,
                         ),
                       ),
-              ],
-            ),
-            const SizedBox(height: 16.0),
-            // Contact section
-            const Text(
-              'Contact',
-              style: headerStyle,
-            ),
-            const SizedBox(height: 8.0),
-            Column(
-              children: [
-                ContactItem(label: 'Email', value: userEntity?.email ?? ''),
-                ContactItem(
-                  label: 'Linkedin',
-                  value: userEntity?.linkedin,
-                  fallback: 'Add LinkedIn',
-                  fallbackAction: () => _openEditProfileOverlay(userEntity!),
-                ),
-                ContactItem(
-                  label: 'Mobile Number',
-                  value: userEntity?.mobileNumber,
-                  fallback: 'Add mobile number',
-                  fallbackAction: () => _openEditProfileOverlay(userEntity!),
-                ),
-                ContactItem(
-                  label: 'Major',
-                  value: userEntity?.major,
-                  fallback: 'Add major',
-                  fallbackAction: () => _openEditProfileOverlay(userEntity!),
-                ),
-              ],
-            ),
-
-            // Description section
-            const Text('Your Description', style: headerStyle),
-            const SizedBox(height: 8.0),
-            (userEntity?.description ?? '').isNotEmpty
-                ? Text(userEntity!.description!)
-                : Center(
-                    child: TextButton(
-                      onPressed: () => _openEditProfileOverlay(userEntity!),
-                      child: Text(
-                        'Add description',
-                        style: TextStyle(
-                          color: Colors.blue,
-                        ),
-                      ),
-                    ),
-                  ),
-            const SizedBox(height: 8.0),
-
-            const Text('My Skills and Topics', style: headerStyle),
-            const SizedBox(height: 8.0),
-            Wrap(
-              spacing: 8.0,
-              runSpacing: 8.0,
-              children: (userEntity?.skillsOrTopics ?? [])
-                  .map((i) => TextBoxWidget(text: i))
-                  .toList(),
-            ),
-            Center(
-              child: TextButton(
-                onPressed: () => _openEditProfileOverlay(userEntity!),
-                child: const Text(
-                  'Add Skills',
-                  style: TextStyle(
-                    color: Colors.blue,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: 24.0),
-
-            // Link sections for CV and Portfolio
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    children: [
-                      AddElementWidget(
-                        title: 'Add CV',
-                        onTap: _pickAndUploadCVs,
-                      ),
-                      const SizedBox(height: 8),
-                      TextButton(
-                        onPressed: _viewUploadedCVs,
-                        child: const Text(
-                          'View My CVs',
-                          style: TextStyle(
-                            color: Colors.blue,
+                      Expanded(
+                        child: Align(
+                          alignment: Alignment.bottomRight,
+                          child: IconButton(
+                            onPressed: userEntity != null
+                                ? () => _openEditProfileOverlay(userEntity!)
+                                : () {},
+                            icon: Icon(Icons.edit),
                           ),
                         ),
                       ),
                     ],
                   ),
                 ),
-                const SizedBox(width: 16.0),
-                Expanded(
-                  child: AddElementWidget(
-                    title: 'Add Portfolio',
-                    onTap: () {
-                      // Add Portfolio action
-                    },
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    (userEntity?.headline ?? '').isEmpty
+                        ? TextButton(
+                            onPressed: () =>
+                                _openEditProfileOverlay(userEntity!),
+                            child: Text(
+                              'Add headline',
+                              style: const TextStyle(color: Colors.blue),
+                            ),
+                          )
+                        : Expanded(
+                            child: Text(
+                              userEntity!.headline!,
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                  ],
+                ),
+                const SizedBox(height: 16.0),
+                // Contact section
+                const Text(
+                  'Contact',
+                  style: headerStyle,
+                ),
+                const SizedBox(height: 8.0),
+                Column(
+                  children: [
+                    ContactItem(label: 'Email', value: userEntity?.email ?? ''),
+                    ContactItem(
+                      label: 'Linkedin',
+                      value: userEntity?.linkedin,
+                      fallback: 'Add LinkedIn',
+                      fallbackAction: () =>
+                          _openEditProfileOverlay(userEntity!),
+                    ),
+                    ContactItem(
+                      label: 'Mobile Number',
+                      value: userEntity?.mobileNumber,
+                      fallback: 'Add mobile number',
+                      fallbackAction: () =>
+                          _openEditProfileOverlay(userEntity!),
+                    ),
+                    ContactItem(
+                      label: 'Major',
+                      value: userEntity?.major,
+                      fallback: 'Add major',
+                      fallbackAction: () =>
+                          _openEditProfileOverlay(userEntity!),
+                    ),
+                  ],
+                ),
+
+                // Description section
+                const Text('Your Description', style: headerStyle),
+                const SizedBox(height: 8.0),
+                (userEntity?.description ?? '').isNotEmpty
+                    ? Text(userEntity!.description!)
+                    : Center(
+                        child: TextButton(
+                          onPressed: () => _openEditProfileOverlay(userEntity!),
+                          child: Text(
+                            'Add description',
+                            style: TextStyle(
+                              color: Colors.blue,
+                            ),
+                          ),
+                        ),
+                      ),
+                const SizedBox(height: 8.0),
+
+                const Text('My Skills and Topics', style: headerStyle),
+                const SizedBox(height: 8.0),
+                Wrap(
+                  spacing: 8.0,
+                  runSpacing: 8.0,
+                  children: (userEntity?.skillsOrTopics ?? [])
+                      .map((i) => TextBoxWidget(text: i))
+                      .toList(),
+                ),
+                Center(
+                  child: TextButton(
+                    onPressed: () => _openEditProfileOverlay(userEntity!),
+                    child: const Text(
+                      'Add Skills',
+                      style: TextStyle(
+                        color: Colors.blue,
+                      ),
+                    ),
                   ),
                 ),
-              ],
-            ),
-            const SizedBox(height: 24.0),
+                const SizedBox(height: 24.0),
 
-            // Projects section
-            Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text('My Projects', style: headerStyle),
-                Spacer(),
-                SquareAddButton(onTap: _openAddProjectOverlay),
-              ],
-            ),
-            if ((userEntity?.projects ?? []).isEmpty)
-              Center(
-                child: Column(
+                // Link sections for CV and Portfolio
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    SizedBox(
-                      height: 8,
+                    Expanded(
+                      child: Column(
+                        children: [
+                          AddElementWidget(
+                            title: 'Add CV',
+                            onTap: _pickAndUploadCVs,
+                          ),
+                          const SizedBox(height: 8),
+                          TextButton(
+                            onPressed: _viewUploadedCVs,
+                            child: const Text(
+                              'View My CVs',
+                              style: TextStyle(
+                                color: Colors.blue,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                    Text(
-                      'No tienes proyectos activos.',
-                      style: TextStyle(
-                        fontSize: 14.0,
-                        color: Colors.grey[600],
+                    const SizedBox(width: 16.0),
+                    Expanded(
+                      child: AddElementWidget(
+                        title: 'Add Portfolio',
+                        onTap: () {
+                          // Add Portfolio action
+                        },
                       ),
                     ),
                   ],
                 ),
-              ),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: (userEntity?.projects ?? [])
-                  .map(
-                    (i) => ProjectSummary(
-                      project: i,
+                const SizedBox(height: 24.0),
+
+                // Projects section
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('My Projects', style: headerStyle),
+                    Spacer(),
+                    SquareAddButton(onTap: _openAddProjectOverlay),
+                  ],
+                ),
+                if ((userEntity?.projects ?? []).isEmpty)
+                  Center(
+                    child: Column(
+                      children: [
+                        SizedBox(
+                          height: 8,
+                        ),
+                        Text(
+                          'No tienes proyectos activos.',
+                          style: TextStyle(
+                            fontSize: 14.0,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                      ],
                     ),
-                  )
-                  .toList(),
+                  ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: (userEntity?.projects ?? [])
+                      .map(
+                        (i) => ProjectSummary(
+                          project: i,
+                        ),
+                      )
+                      .toList(),
+                ),
+                const SizedBox(height: 40.0),
+              ],
             ),
-            const SizedBox(height: 40.0),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

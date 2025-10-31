@@ -66,7 +66,7 @@ class ProjectSummary extends StatelessWidget {
       builder: (BuildContext context) {
         return Dialog(
           child: FutureBuilder<List<Map<String, String>>>(
-            future: firebaseService.getUsersAppliedToProject(
+            future: firebaseService.getUsersWhoAppliedToProject(
               projectId: project.id ?? '',
             ),
             builder: (context, snapshot) {

@@ -15,7 +15,6 @@ class ProjectPost extends StatelessWidget {
     required this.showRemoveModal,
   });
 
-  final _storage = FirebaseStorage.instance;
   final ProjectEntity project;
   final void Function(String, String, String) showApplyModal;
   final void Function(ProjectEntity) showSaveModal;
@@ -27,17 +26,7 @@ class ProjectPost extends StatelessWidget {
         ? project.createdBy!.displayName
         : 'Anon user';
     var minutesAgo = project.timeAgo;
-    Future<String?>? imageUrl;
-    if (project.id != null) {
-      try {
-        imageUrl = _storage
-            .ref()
-            .child('project_images/${project.id}')
-            .getDownloadURL();
-      } catch (e) {
-        imageUrl = null;
-      }
-    }
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
@@ -82,7 +71,9 @@ class ProjectPost extends StatelessWidget {
                 ),
               ],
             ),
-            if (imageUrl != null) ProjectPostImage(imageUrlFuture: imageUrl),
+            ProjectPostImage(
+              project: project, //Gets the image by project ID
+            ),
             Wrap(
               spacing: 4,
               children: [
