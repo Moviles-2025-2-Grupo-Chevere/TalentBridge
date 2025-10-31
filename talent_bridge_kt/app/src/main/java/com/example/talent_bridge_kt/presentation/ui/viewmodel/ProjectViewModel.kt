@@ -7,6 +7,7 @@ import com.example.talent_bridge_kt.core.conectivity.AndroidConnectivityObserver
 import com.example.talent_bridge_kt.data.local.entities.ProjectEntity
 import com.example.talent_bridge_kt.data.repository.FeedRepository
 import com.example.talent_bridge_kt.data.repository.ProjectRepository
+import com.example.talent_bridge_kt.data.repository.ApplicationsLocalRepository
 import com.example.talent_bridge_kt.domain.model.Project
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
@@ -25,7 +26,8 @@ class ProjectsViewModel(
         app,
         connectivityObserver = AndroidConnectivityObserver(app)
     ),
-    private val localRepo: ProjectRepository = ProjectRepository(app)
+    private val localRepo: ProjectRepository = ProjectRepository(app),
+    private val applicationsLocal: ApplicationsLocalRepository = ApplicationsLocalRepository(app)
 ) : AndroidViewModel(app) {
 
     private val userId: String = FirebaseAuth.getInstance().currentUser?.uid ?: "guest"
@@ -56,6 +58,7 @@ class ProjectsViewModel(
                     isOffline.value = !connected
 
                     if (connected && wasOffline && !loading.value) {
+                        syncPendingApplications()
                         refresh()
                         loadAppliedIds()
                     } else if (!connected && !wasOffline) {
@@ -87,21 +90,41 @@ class ProjectsViewModel(
                 val uid = FirebaseAuth.getInstance().currentUser?.uid
                     ?: throw IllegalStateException("Debes iniciar sesión para aplicar")
 
+                // Si ya está marcado como offline en el estado, guardar directamente
+                if (isOffline.value) {
+                    applicationsLocal.enqueue(project.id, project.createdById, project.title)
+                    appliedProjectIds.value = appliedProjectIds.value + project.id
+                    applicationEvent.value = "Cuando tengas internet se enviará la aplicación al proyecto \"${project.title}\""
+                    onQueuedOffline()
+                    return@launch
+                }
+
                 val userRef = usersCol.document(uid)
 
+                // Intentar obtener aplicaciones existentes
                 val existingIds: Set<String> = try {
                     val snap = userRef.get().await()
                     val existing = (snap.get("applications") as? List<*>)
                         ?.mapNotNull { it as? Map<*, *> }
                         ?: emptyList()
                     existing.mapNotNull { it["projectId"] as? String }.toSet()
-                } catch (_: Exception) { emptySet() }
+                } catch (e: Exception) {
+                    // Si falla el get, probablemente estamos offline
+                    // Guardar localmente y notificar
+                    applicationsLocal.enqueue(project.id, project.createdById, project.title)
+                    appliedProjectIds.value = appliedProjectIds.value + project.id
+                    applicationEvent.value = "Cuando tengas internet se enviará la aplicación al proyecto \"${project.title}\""
+                    onQueuedOffline()
+                    return@launch
+                }
 
+                // Verificar si ya aplicó
                 if (existingIds.contains(project.id) || appliedProjectIds.value.contains(project.id)) {
                     onAlreadyApplied()
                     return@launch
                 }
 
+                // Intentar aplicar
                 val application = mapOf(
                     "projectId" to project.id,
                     "createdById" to project.createdById,
@@ -111,8 +134,11 @@ class ProjectsViewModel(
                     userRef.update("applications", FieldValue.arrayUnion(application)).await()
                     appliedProjectIds.value = appliedProjectIds.value + project.id
                     onSuccess()
-                } catch (_: Exception) {
-                    applicationEvent.value = "Tu aplicación a \"${project.title}\" se enviará cuando tengas internet."
+                } catch (e: Exception) {
+                    // Falló el update: guardar localmente y notificar
+                    applicationsLocal.enqueue(project.id, project.createdById, project.title)
+                    appliedProjectIds.value = appliedProjectIds.value + project.id
+                    applicationEvent.value = "Cuando tengas internet se enviará la aplicación al proyecto \"${project.title}\""
                     onQueuedOffline()
                 }
             } catch (e: Exception) {
@@ -144,6 +170,31 @@ class ProjectsViewModel(
             }
         )
         loading.value = false
+    }
+
+    private fun syncPendingApplications() = viewModelScope.launch {
+        try {
+            val uid = FirebaseAuth.getInstance().currentUser?.uid ?: return@launch
+            val list = applicationsLocal.list()
+            if (list.isEmpty()) return@launch
+
+            val userRef = usersCol.document(uid)
+            for (item in list) {
+                val application = mapOf(
+                    "projectId" to item.projectId,
+                    "createdById" to item.createdById,
+                    "appliedAt" to com.google.firebase.Timestamp.now()
+                )
+                try {
+                    userRef.update("applications", FieldValue.arrayUnion(application)).await()
+                    applicationsLocal.remove(item.id)
+                    appliedProjectIds.value = appliedProjectIds.value + item.projectId
+                    applicationEvent.value = "Ya se envió la aplicación al proyecto \"${item.projectTitle}\" debido a que ya se conectó a internet"
+                } catch (_: Exception) {
+                    // Dejar en cola para próximo intento
+                }
+            }
+        } catch (_: Exception) { }
     }
 
     private fun loadCachedProjectsOnly() = viewModelScope.launch {
@@ -204,7 +255,11 @@ class ProjectsViewModel(
                             appliedProjectIds.value = appliedProjectIds.value + project.id
                             onApplied()
                         },
-                        onQueuedOffline = { onQueuedOffline() }
+                        onQueuedOffline = {
+                            // Actualizar estado local incluso si se encoló offline
+                            appliedProjectIds.value = appliedProjectIds.value + project.id
+                            onQueuedOffline()
+                        }
                     )
                 } else {
                     if (isOffline.value) {

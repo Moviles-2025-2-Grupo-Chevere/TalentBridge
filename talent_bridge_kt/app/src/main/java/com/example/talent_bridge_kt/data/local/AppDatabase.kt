@@ -4,21 +4,25 @@ import androidx.room.Database
 import androidx.room.RoomDatabase
 import com.example.talent_bridge_kt.data.local.dao.FeedProjectDao
 import com.example.talent_bridge_kt.data.local.dao.FeedStudentDao
+import com.example.talent_bridge_kt.data.local.dao.PendingApplicationDao
 import com.example.talent_bridge_kt.data.local.dao.ProjectDao
 import com.example.talent_bridge_kt.data.local.entities.FeedProjectEntity
 import com.example.talent_bridge_kt.data.local.entities.FeedStudentEntity
+import com.example.talent_bridge_kt.data.local.entities.PendingApplicationEntity
 import com.example.talent_bridge_kt.data.local.entities.ProjectEntity
 
 @Database(
     entities = [
         ProjectEntity::class,
         FeedProjectEntity::class,
-        FeedStudentEntity::class
+        FeedStudentEntity::class,
+        PendingApplicationEntity::class
     ],
-    version = 5
+    version = 6
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun projectDao(): ProjectDao
     abstract fun feedProjectDao(): FeedProjectDao
     abstract fun feedStudentDao(): FeedStudentDao
+    abstract fun pendingApplicationDao(): PendingApplicationDao
 }
