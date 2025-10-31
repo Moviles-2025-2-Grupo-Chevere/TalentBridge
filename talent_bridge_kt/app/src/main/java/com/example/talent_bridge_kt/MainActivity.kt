@@ -51,9 +51,12 @@ import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewmodel.initializer
 import com.example.talent_bridge_kt.presentation.ui.components.HomeWithDrawer
 import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.dialog
 import com.example.talent_bridge_kt.data.AnalyticsManager
 import com.example.talent_bridge_kt.data.repository.ProfileRepository
+import com.example.talent_bridge_kt.presentation.ui.screens.CreateProjectPopUp
 import kotlin.system.measureTimeMillis
 
 
@@ -84,6 +87,17 @@ class MainActivity : ComponentActivity() {
                 val snack = remember { SnackbarHostState() }
                 var showNoNetDialog by remember { mutableStateOf(false) }
 
+                val context = LocalContext.current
+                val projectsVm: com.example.talent_bridge_kt.presentation.ui.viewmodel.ProjectsViewModel =
+                    androidx.lifecycle.viewmodel.compose.viewModel(
+                        factory = viewModelFactory {
+                            initializer {
+                                val app = context.applicationContext as android.app.Application
+                                com.example.talent_bridge_kt.presentation.ui.viewmodel.ProjectsViewModel(app)
+                            }
+                        }
+                    )
+
                 LaunchedEffect(isConnected) {
                     if (!isConnected) {
                         showNoNetDialog = true
@@ -95,6 +109,7 @@ class MainActivity : ComponentActivity() {
                     } else {
                         snack.currentSnackbarData?.dismiss()
                         showNoNetDialog = false
+                        projectsVm.syncPendingProjects()
                     }
                 }
 
@@ -125,6 +140,10 @@ class MainActivity : ComponentActivity() {
                 Scaffold(Modifier.fillMaxSize(),
                     snackbarHost = { SnackbarHost(snack) }
                 ) { inner ->
+
+                    val projectsVm: com.example.talent_bridge_kt.presentation.ui.viewmodel.ProjectsViewModel =
+                        androidx.lifecycle.viewmodel.compose.viewModel()
+
                     NavHost(
                         navController = navController,
                         startDestination = Routes.Login,
@@ -146,10 +165,34 @@ class MainActivity : ComponentActivity() {
                             HomeWithDrawer(navController = navController) { openDrawer ->
                                 InitiativeProfileSceen(
                                     onBack = { navController.popBackStack() },
-                                    onOpenDrawer = { openDrawer() }
+                                    onOpenDrawer = { openDrawer() },
+                                    onAddProject = { navController.navigate("createProject") }
                                 )
                             }
                         }
+
+                        dialog("createProject") {
+                            CreateProjectPopUp(
+                                onDismiss = { navController.popBackStack() },
+                                { draft ->
+                                    // 2) aquí usamos el VM que obtuvimos arriba
+                                    projectsVm.createProject(
+                                        title = draft.title,
+                                        description = draft.description,
+                                        skills = draft.skills,
+                                        imageUri = draft.imageUri
+                                    ) { ok, err ->
+                                        if (ok) {
+                                            println("✅ Proyecto creado con éxito")
+                                            navController.popBackStack()
+                                        } else {
+                                            println("❌ Error creando proyecto: ${err?.message}")
+                                        }
+                                    }
+                                }
+                            )
+                        }
+
                         composable(Routes.LeaderFeed) {
                             HomeWithDrawer(navController = navController) { openDrawer ->
                                 LeaderFeedScreen(
@@ -157,7 +200,8 @@ class MainActivity : ComponentActivity() {
                                     onOpenDrawer = { openDrawer() },
                                     onStudentClick = { uid ->
                                         navController.navigate(Routes.someoneElse(uid))
-                                    }
+                                    },
+                                    onInitiativeProfile = {navController.navigate(Routes.InitiativeProfile)}
 
                                 )
                             }
@@ -196,7 +240,8 @@ class MainActivity : ComponentActivity() {
                             HomeWithDrawer(navController = navController) { openDrawer ->
                                 StudentProfileScreen(
                                     onBack = { navController.popBackStack() },
-                                    onOpenDrawer = { openDrawer() }
+                                    onOpenDrawer = { openDrawer() },
+                                    onAddProject = { navController.navigate("createProject") }
                                 )
                             }
                         }
