@@ -31,6 +31,7 @@ import com.example.talent_bridge_kt.presentation.ui.screens.SomeElseProfileScree
 import com.example.talent_bridge_kt.presentation.ui.screens.CreditsScreen
 import com.example.talent_bridge_kt.presentation.ui.screens.NavegationScreen
 import com.example.talent_bridge_kt.presentation.ui.screens.InitiativeDetailScreen
+import com.example.talent_bridge_kt.presentation.ui.components.OfflineConnectionDialog
 import com.example.talent_bridge_kt.ui.theme.Talent_bridge_ktTheme
 
 
@@ -44,9 +45,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.Text
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import com.example.talent_bridge_kt.presentation.ui.components.HomeWithDrawer
@@ -134,6 +132,14 @@ class MainActivity : ComponentActivity() {
                     screenStartMs = now
 
                     AnalyticsManager.logScreenView(newRoute)
+                }
+
+                // Show offline connection dialog when connection is lost
+                // But NOT when in StudentProfile screen (it has its own custom dialog)
+                if (showNoNetDialog && currentRoute != Routes.StudentProfile) {
+                    OfflineConnectionDialog(
+                        onDismiss = { showNoNetDialog = false }
+                    )
                 }
 
                 Scaffold(Modifier.fillMaxSize(),
@@ -239,19 +245,19 @@ class MainActivity : ComponentActivity() {
                             val vm: SearchViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
                                 factory = SearchViewModelFactory(repo, connectivityVm, feedStudentDao)
                             )
-                                SearchScreen(
-                                    vm = vm,
-                                    onBack = { navController.popBackStack() },
-                                    onSearch = { navController.navigate(Routes.Search) },
-                                    onProfile = { navController.navigate(Routes.StudentProfile) },
-                                    onHome = { navController.navigate(Routes.StudentFeed) },
-                                    onStudentClick = { uid ->
-                                        navController.navigate(Routes.someoneElse(uid))
-                                    }
+                            SearchScreen(
+                                vm = vm,
+                                onBack = { navController.popBackStack() },
+                                onSearch = { navController.navigate(Routes.Search) },
+                                onProfile = { navController.navigate(Routes.StudentProfile) },
+                                onHome = { navController.navigate(Routes.StudentFeed) },
+                                onStudentClick = { uid ->
+                                    navController.navigate(Routes.someoneElse(uid))
+                                }
 
 
-                                )
-                            }
+                            )
+                        }
 
 
                         composable(Routes.StudentProfile) {
@@ -304,18 +310,7 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
-                if (showNoNetDialog) {
-                    AlertDialog(
-                        onDismissRequest = { showNoNetDialog = false }, // permite cerrarlo
-                        title = { Text("Sin conexión a Internet") },
-                        text = { Text("No estás conectado a internet") },
-                        confirmButton = {
-                            TextButton(onClick = { showNoNetDialog = false }) {
-                                Text("Entendido")
-                            }
-                        }
-                    )
-                }
+                
                 DisposableEffect(Unit) {
                     onDispose {
                         val now = System.currentTimeMillis()
@@ -332,5 +327,4 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-
 }

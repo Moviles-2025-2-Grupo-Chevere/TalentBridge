@@ -15,7 +15,7 @@ class ProjectRepository(context: Context) {
         AppDatabase::class.java,
         "projects_db"
     )
-        // Útil en desarrollo tras cambiar el schema; quítalo si agregas migraciones
+
         .fallbackToDestructiveMigration()
         .build()
 

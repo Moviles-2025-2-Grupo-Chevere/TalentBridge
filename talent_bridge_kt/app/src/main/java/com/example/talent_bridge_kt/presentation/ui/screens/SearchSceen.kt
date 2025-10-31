@@ -10,11 +10,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FavoriteBorder
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Menu
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -38,14 +35,11 @@ import com.example.talent_bridge_kt.presentation.ui.screens.SearchViewModel
 import com.example.talent_bridge_kt.ui.theme.AccentYellow
 import com.example.talent_bridge_kt.ui.theme.CreamBackground
 import com.example.talent_bridge_kt.ui.theme.TitleGreen
+import com.example.talent_bridge_kt.presentation.ui.components.OfflineConnectionDialog
+import com.example.talent_bridge_kt.core.conectivity.AndroidConnectivityObserver
+import androidx.compose.ui.platform.LocalContext
 
-/**
- * Pantalla de búsqueda conectada al ViewModel.
- * - Escribe habilidades/temas separados por coma (ej: "android,kotlin").
- * - Botón Apply -> búsqueda modo ANY (coincide con alguna).
- * - Botón ALL -> búsqueda modo ALL (deben coincidir todas).
- * - Muestra loading, error y resultados.
- */
+
 @Composable
 fun SearchScreen(
     vm: SearchViewModel,
@@ -61,7 +55,33 @@ fun SearchScreen(
     var query by remember { mutableStateOf("") }
     val recents = listOf("Daniel Triviño", "ROBOCOL", "Proyectos Inteligencia Artificial")
     val state = vm.uiState
+    
 
+    val context = LocalContext.current
+    val connectivityObserver = remember { AndroidConnectivityObserver(context) }
+    var isConnected by remember { mutableStateOf(true) }
+    var showOfflineDialog by remember { mutableStateOf(false) }
+    
+    LaunchedEffect(connectivityObserver) {
+        connectivityObserver.isConnected.collect { connected ->
+            val wasConnected = isConnected
+            isConnected = connected
+            // Only show dialog when transitioning from connected to disconnected
+            if (wasConnected && !connected) {
+                showOfflineDialog = true
+            } else if (connected) {
+                showOfflineDialog = false
+            }
+        }
+    }
+
+    // [SEARCH-CACHE] Show offline dialog when connection is lost
+    if (showOfflineDialog) {
+        OfflineConnectionDialog(
+            onDismiss = { showOfflineDialog = false }
+        )
+    }
+    
     Surface(color = CreamBackground, modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
@@ -162,6 +182,20 @@ fun SearchScreen(
                 Spacer(Modifier.height(12.dp))
                 LinearProgressIndicator(Modifier.fillMaxWidth())
             }
+            
+
+            if (state.termProgress.isNotEmpty()) {
+                Spacer(Modifier.height(8.dp))
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    state.termProgress.forEach { progress ->
+                        TermProgressRow(progress = progress)
+                    }
+                }
+            }
+            
             state.error?.let {
                 Spacer(Modifier.height(8.dp))
                 Text("Error: $it", color = MaterialTheme.colorScheme.error)
@@ -182,7 +216,6 @@ fun SearchScreen(
                 }
             }
             Spacer(Modifier.height(150.dp))
-            // Menú inferior fijo
             BottomBarCustom(
                 onHome = onHome,
                 onSearch = onSearch,
@@ -305,6 +338,86 @@ private fun FilterIcon(
     }
 }
 
+
+
+@Composable
+private fun TermProgressRow(
+    progress: com.example.talent_bridge_kt.data.repository.FirestoreSearchRepository.TermSearchProgress
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        // Status icon
+        Box(
+            modifier = Modifier.size(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            when (progress.status) {
+                com.example.talent_bridge_kt.data.repository.FirestoreSearchRepository.TermSearchProgress.Status.PENDING -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(12.dp),
+                        strokeWidth = 2.dp,
+                        color = Color.Gray
+                    )
+                }
+                com.example.talent_bridge_kt.data.repository.FirestoreSearchRepository.TermSearchProgress.Status.SEARCHING -> {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(12.dp),
+                        strokeWidth = 2.dp,
+                        color = AccentYellow
+                    )
+                }
+                com.example.talent_bridge_kt.data.repository.FirestoreSearchRepository.TermSearchProgress.Status.COMPLETED -> {
+                    Icon(
+                        imageVector = Icons.Filled.CheckCircle,
+                        contentDescription = "Completed",
+                        modifier = Modifier.size(16.dp),
+                        tint = TitleGreen
+                    )
+                }
+                com.example.talent_bridge_kt.data.repository.FirestoreSearchRepository.TermSearchProgress.Status.FAILED -> {
+                    Icon(
+                        imageVector = Icons.Filled.Error,
+                        contentDescription = "Failed",
+                        modifier = Modifier.size(16.dp),
+                        tint = MaterialTheme.colorScheme.error
+                    )
+                }
+            }
+        }
+        
+
+        Text(
+            text = "\"${progress.term}\"",
+            fontSize = 12.sp,
+            color = Color.DarkGray,
+            modifier = Modifier.weight(1f)
+        )
+        
+
+        Text(
+            text = when (progress.status) {
+                com.example.talent_bridge_kt.data.repository.FirestoreSearchRepository.TermSearchProgress.Status.COMPLETED -> 
+                    "${progress.resultsCount} results"
+                com.example.talent_bridge_kt.data.repository.FirestoreSearchRepository.TermSearchProgress.Status.SEARCHING -> 
+                    "Searching..."
+                com.example.talent_bridge_kt.data.repository.FirestoreSearchRepository.TermSearchProgress.Status.FAILED -> 
+                    "Error"
+                else -> ""
+            },
+            fontSize = 11.sp,
+            color = when (progress.status) {
+                com.example.talent_bridge_kt.data.repository.FirestoreSearchRepository.TermSearchProgress.Status.COMPLETED -> TitleGreen
+                com.example.talent_bridge_kt.data.repository.FirestoreSearchRepository.TermSearchProgress.Status.FAILED -> MaterialTheme.colorScheme.error
+                else -> Color.DarkGray
+            }
+        )
+    }
+}
 
 @Composable
 private fun BottomBarCustom(

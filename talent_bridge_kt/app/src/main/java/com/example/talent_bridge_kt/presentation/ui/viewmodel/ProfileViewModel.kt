@@ -13,6 +13,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import com.example.talent_bridge_kt.data.analytics.ProfileAnalytics
+import com.example.talent_bridge_kt.data.repository.EventualConnectivityProfileRepository
+import com.example.talent_bridge_kt.data.firebase.analytics.FeatureUsageAnalytics
 
 sealed class ProfileUiState {
     data object Loading : ProfileUiState()
@@ -23,7 +25,8 @@ sealed class ProfileUiState {
 class ProfileViewModel(
     private val getProfile: GetProfileUseCase,
     private val updateProfile: UpdateProfileUseCase,
-    private val uploadAvatar: UploadAvatarUseCase
+    private val uploadAvatar: UploadAvatarUseCase,
+    private val eventualRepo: EventualConnectivityProfileRepository? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<ProfileUiState>(ProfileUiState.Loading)
@@ -68,6 +71,10 @@ class ProfileViewModel(
                 _uiState.value = ProfileUiState.Ready(res.data, "Saved")
                 ProfileAnalytics.pushUserProperties(res.data)
                 ProfileAnalytics.logProfileSaved(res.data)
+                
+                // Trackear como feature usage (edit profile)
+                FeatureUsageAnalytics.logEditProfile()
+                
                 if (projectsChanged) {
                     com.example.talent_bridge_kt.data.analytics.ProfileAnalytics
                         .logProjectsUpdated(res.data.projects.size)
@@ -91,11 +98,37 @@ class ProfileViewModel(
 
     fun addProject(project: Project) {
         val cur = (uiState.value as? ProfileUiState.Ready)?.profile ?: return
+        
+        // Trackear feature usage (create project)
+        FeatureUsageAnalytics.logCreateProject(project.id)
+        
         update(cur.copy(projects = cur.projects + project))
     }
 
     fun removeProject(projectId: String) {
         val cur = (uiState.value as? ProfileUiState.Ready)?.profile ?: return
         update(cur.copy(projects = cur.projects.filterNot { it.id == projectId }))
+    }
+
+    /**
+     * Syncs local changes to remote when connectivity is available.
+     * Exposes the syncNow() method from the eventual connectivity repository.
+     */
+    fun syncNow() = viewModelScope.launch {
+        val result = eventualRepo?.syncNow()
+        when (result) {
+            is Resource.Success -> {
+                // Reload profile after sync
+                load()
+                val current = (uiState.value as? ProfileUiState.Ready)?.profile
+                if (current != null) {
+                    _uiState.value = ProfileUiState.Ready(current, "Sincronizado")
+                }
+            }
+            is Resource.Error -> {
+                _uiState.value = ProfileUiState.Error(result.message)
+            }
+            else -> {}
+        }
     }
 }

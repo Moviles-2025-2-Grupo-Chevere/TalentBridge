@@ -10,9 +10,7 @@ import com.example.talent_bridge_kt.data.repository.ProjectRepository
 import com.example.talent_bridge_kt.data.repository.ApplicationsLocalRepository
 import com.example.talent_bridge_kt.domain.model.Project
 import com.example.talent_bridge_kt.data.firebase.analytics.ApplicationAnalytics
-import com.example.talent_bridge_kt.data.firebase.FirebaseStorageRepository
-import com.example.talent_bridge_kt.domain.repository.ProfileRepository
-import com.example.talent_bridge_kt.data.firebase.FirebaseProfileRepository
+import com.example.talent_bridge_kt.data.firebase.analytics.FeatureUsageAnalytics
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.ktx.Firebase
@@ -142,8 +140,11 @@ class ProjectsViewModel(
                     userRef.update("applications", FieldValue.arrayUnion(application)).await()
                     appliedProjectIds.value = appliedProjectIds.value + project.id
                     
-                    // Trackear en Firebase Analytics
+                    // Trackear en Firebase Analytics (con major)
                     trackApplicationAnalytics(uid, project.id, project.title)
+                    
+                    // Trackear como feature usage
+                    FeatureUsageAnalytics.logApplyProject(project.id)
                     
                     onSuccess()
                 } catch (e: Exception) {
@@ -205,6 +206,9 @@ class ProjectsViewModel(
                     
                     // Trackear en Firebase Analytics (aplicación sincronizada offline)
                     trackApplicationAnalytics(uid, item.projectId, item.projectTitle)
+                    
+                    // Trackear como feature usage
+                    FeatureUsageAnalytics.logApplyProject(item.projectId)
                 } catch (_: Exception) {
                     // Dejar en cola para próximo intento
                 }
