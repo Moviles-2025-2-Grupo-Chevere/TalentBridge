@@ -75,7 +75,7 @@ fun StudentFeedScreen(
     onFav: () -> Unit = {},
     // Navegación desde el pop-up (opcional)
     onGoToApplications: () -> Unit = {},
-    onSomeOneElseProfile: () -> Unit = {},
+    onSomeOneElseProfile: (String) -> Unit = {},
     onExploreStudents: () -> Unit = {},
     onProfile: () -> Unit = {}
 ) {
@@ -185,7 +185,7 @@ fun StudentFeedScreen(
                                     onQueuedOffline = { applyError = null }
                                 )
                             },
-                            onSomeOneElseProfile = onSomeOneElseProfile
+                            onSomeOneElseProfile = { onSomeOneElseProfile(p.createdById) }
                         )
                     }
 

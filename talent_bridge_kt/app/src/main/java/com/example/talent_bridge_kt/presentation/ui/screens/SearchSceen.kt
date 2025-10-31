@@ -113,7 +113,7 @@ fun SearchScreen(
                     },
                     shape = RoundedCornerShape(50),
                     singleLine = true,
-                    placeholder = { Text("Escribe habilidades separadas por coma…") },
+                    placeholder = { Text("Buscar por nombre o habilidades (separadas por coma)…") },
                     modifier = Modifier
                         .weight(1f)
                         .height(52.dp),
