@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -20,6 +21,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.runtime.*
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,6 +53,7 @@ import com.example.talent_bridge_kt.ui.theme.AccentYellow
 import com.example.talent_bridge_kt.ui.theme.CreamBackground
 import com.example.talent_bridge_kt.ui.theme.LinkGreen
 import com.example.talent_bridge_kt.ui.theme.TitleGreen
+import com.example.talent_bridge_kt.presentation.ui.components.OfflineConnectionDialog
 import androidx.core.content.FileProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -59,10 +62,12 @@ import com.google.firebase.firestore.ListenerRegistration
 import kotlinx.coroutines.*
 import kotlinx.coroutines.Dispatchers.IO
 import kotlinx.coroutines.Dispatchers.Main
+import kotlinx.coroutines.flow.collect
 import java.io.File
 import java.io.InputStream
 import java.security.MessageDigest
 import kotlin.math.roundToInt
+import android.util.Log
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -76,10 +81,10 @@ fun StudentProfileScreen(
     onOpenDrawer: () -> Unit = {}
 ) {
     // --------- estado de edición y campos básicos ---------
-    var email by remember { mutableStateOf("lucianaperez@gmail.com") }
-    var linkedin by remember { mutableStateOf("lucianap23") }
+    var email by remember { mutableStateOf("") }
+    var linkedin by remember { mutableStateOf("") }
     var number by remember { mutableStateOf<String?>(null) }
-    var bio by remember { mutableStateOf("Interesado en proyectos con paga con relación a la IA.") }
+    var bio by remember { mutableStateOf("") }
     var isEditing by remember { mutableStateOf(false) }
 
     // entrada para nuevo tag
@@ -91,29 +96,79 @@ fun StudentProfileScreen(
     var pDesc by remember { mutableStateOf("") }
     var pSkills by remember { mutableStateOf("") }
 
-    // --------- VM de perfil (sin cambios) ---------
-    val repo = remember { FirebaseProfileRepository() }
+    // --------- VM de perfil (eventual connectivity) ---------
+    val context = LocalContext.current
+    val eventualRepo = remember { 
+        com.example.talent_bridge_kt.data.repository.EventualConnectivityProfileRepository(context)
+    }
     val vm = remember {
         ProfileViewModel(
-            getProfile = GetProfileUseCase(repo),
-            updateProfile = UpdateProfileUseCase(repo),
-            uploadAvatar = UploadAvatarUseCase(repo)
+            getProfile = GetProfileUseCase(eventualRepo),
+            updateProfile = UpdateProfileUseCase(eventualRepo),
+            uploadAvatar = UploadAvatarUseCase(eventualRepo),
+            eventualRepo = eventualRepo
         )
     }
     val uiState by vm.uiState.collectAsState()
-    LaunchedEffect(Unit) { vm.load() }
+    
 
-    LaunchedEffect(uiState) {
-        if (isEditing) return@LaunchedEffect
-        val p = (uiState as? ProfileUiState.Ready)?.profile ?: return@LaunchedEffect
-        email = p.email
-        linkedin = p.linkedin.orEmpty()
-        number = p.phone
-        bio = p.bio ?: bio
+    val connectivityObserver = remember {
+        com.example.talent_bridge_kt.core.conectivity.AndroidConnectivityObserver(context)
+    }
+    var isConnected by remember { mutableStateOf(false) }
+    var showOfflineDialog by remember { mutableStateOf(false) }
+    
+    LaunchedEffect(Unit) {
+        connectivityObserver.isConnected.collect { connected ->
+            val wasConnected = isConnected
+            isConnected = connected
+            
+            // Solo mostrar el dialog cuando se pierde la conexión (transición de conectado a desconectado)
+            if (wasConnected && !connected) {
+                showOfflineDialog = true
+            } else if (connected) {
+                showOfflineDialog = false
+            }
+            
+            if (connected) {
+                vm.syncNow()
+            }
+        }
+    }
+    
+
+    LaunchedEffect(Unit) { 
+        vm.load() 
     }
 
-    // --------- cámara (sin cambios) ---------
-    val context = LocalContext.current
+
+    LaunchedEffect(isEditing) {
+        if (!isEditing) {
+            vm.refresh()
+        }
+    }
+
+
+    LaunchedEffect(uiState) {
+        when (val state = uiState) {
+            is ProfileUiState.Ready -> {
+
+                if (!isEditing) {
+                    email = state.profile.email.ifEmpty { "" }
+                    linkedin = state.profile.linkedin ?: ""
+                    number = state.profile.phone
+                    bio = state.profile.bio ?: ""
+                }
+            }
+            is ProfileUiState.Loading -> {
+
+            }
+            is ProfileUiState.Error -> {
+            }
+        }
+    }
+
+    // --------- cámara ---------
     var cameraUri by remember { mutableStateOf<Uri?>(null) }
     fun createTempImageUri(): Uri {
         val imagesDir = File(context.cacheDir, "images").apply { mkdirs() }
@@ -124,9 +179,10 @@ fun StudentProfileScreen(
         if (ok) cameraUri?.let { vm.onAvatarPicked(it) }
     }
 
-    // --------- REPO de CV (tu implementación existente) ---------
-    val resumeRepo = remember {
-        ResumeRepositorySimple(
+    // --------- REPO de CV  ---------
+    val offlineResumeRepo = remember {
+        com.example.talent_bridge_kt.data.repository.OfflineFirstResumeRepository(
+            context = context,
             storage = com.google.firebase.storage.FirebaseStorage.getInstance(),
             db = FirebaseFirestore.getInstance(),
             auth = FirebaseAuth.getInstance(),
@@ -144,12 +200,19 @@ fun StudentProfileScreen(
         val fileName: String,
         val url: String,
         val language: String,
-        val uploadedAt: com.google.firebase.Timestamp?
+        val uploadedAt: com.google.firebase.Timestamp?,
+        val storagePath: String? = null
     )
 
     var resumes by remember { mutableStateOf<List<ResumeDoc>>(emptyList()) }
+    var editingResumeId by remember { mutableStateOf<String?>(null) }
+    var editingFileName by remember { mutableStateOf("") }
+    var editingLanguage by remember { mutableStateOf<ResumeLanguage?>(null) }
+    
 
-    // Suscripción en tiempo real a users/{uid}/resumes
+    val resumeScope = rememberCoroutineScope()
+
+
     DisposableEffect(Unit) {
         val uid = FirebaseAuth.getInstance().currentUser?.uid
         var reg: ListenerRegistration? = null
@@ -165,13 +228,69 @@ fun StudentProfileScreen(
                             fileName = d.getString("fileName") ?: "",
                             url = d.getString("url") ?: "",
                             language = d.getString("language") ?: "",
-                            uploadedAt = d.getTimestamp("uploadedAt")
+                            uploadedAt = d.getTimestamp("uploadedAt"),
+                            storagePath = d.getString("storagePath")
                         )
                     } ?: emptyList()
                     resumes = list
+
+                    kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                        val resumesJson = org.json.JSONArray().apply {
+                            list.forEach { resume ->
+                                put(org.json.JSONObject().apply {
+                                    put("id", resume.id)
+                                    put("fileName", resume.fileName)
+                                    put("url", resume.url)
+                                    put("language", resume.language)
+                                    put("uploadedAt", resume.uploadedAt?.toDate()?.time)
+                                    resume.storagePath?.let { put("storagePath", it) }
+                                })
+                            }
+                        }.toString()
+                        offlineResumeRepo.editStore.saveLocalResumes(resumesJson)
+                    }
                 }
         }
         onDispose { reg?.remove() }
+    }
+    
+
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            val localJson = offlineResumeRepo.editStore.getLocalResumes()
+            if (localJson != null && resumes.isEmpty()) {
+                try {
+                    val array = org.json.JSONArray(localJson)
+                    val localResumes = (0 until array.length()).map { i ->
+                        val obj = array.getJSONObject(i)
+                        ResumeDoc(
+                            id = obj.getString("id"),
+                            fileName = obj.getString("fileName"),
+                            url = obj.optString("url", ""),
+                            language = obj.getString("language"),
+                            uploadedAt = obj.optLong("uploadedAt", -1).takeIf { it > 0 }
+                                ?.let { com.google.firebase.Timestamp(java.util.Date(it)) },
+                            storagePath = obj.optString("storagePath").takeIf { obj.has("storagePath") }
+                        )
+                    }
+                    withContext(kotlinx.coroutines.Dispatchers.Main) {
+                        resumes = localResumes
+                    }
+                } catch (e: Exception) {
+
+                }
+            }
+        }
+    }
+    
+
+    LaunchedEffect(isConnected) {
+        if (isConnected) {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                offlineResumeRepo.syncPendingEditsAwait()
+                offlineResumeRepo.syncPendingDeletesAwait()
+            }
+        }
     }
 
     Surface(color = CreamBackground, modifier = modifier.fillMaxSize()) {
@@ -377,27 +496,202 @@ fun StudentProfileScreen(
                                     shape = RoundedCornerShape(12.dp),
                                     colors = CardDefaults.cardColors(containerColor = Color.White),
                                 ) {
-                                    Row(
+                                    Column(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(12.dp),
-                                        verticalAlignment = Alignment.CenterVertically
+                                            .padding(12.dp)
                                     ) {
-                                        Column(modifier = Modifier.weight(1f)) {
-                                            Text(cv.fileName, fontWeight = FontWeight.SemiBold, color = TitleGreen)
-                                            Spacer(Modifier.height(2.dp))
-                                            Text("Idioma: ${cv.language}", fontSize = 12.sp, color = Color.DarkGray)
-                                        }
-                                        val ctx = LocalContext.current
-                                        TextButton(onClick = {
-                                            if (cv.url.isNotBlank()) {
-                                                val i = Intent(Intent.ACTION_VIEW, Uri.parse(cv.url))
-                                                ctx.startActivity(i)
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                if (editingResumeId == cv.id) {
+                                                    // Edit mode
+                                                    OutlinedTextField(
+                                                        value = editingFileName,
+                                                        onValueChange = { editingFileName = it },
+                                                        label = { Text("File Name") },
+                                                        singleLine = true,
+                                                        modifier = Modifier.fillMaxWidth()
+                                                    )
+                                                    Spacer(Modifier.height(8.dp))
+                                                    var showLangDropdown by remember { mutableStateOf(false) }
+                                                    Box {
+                                                        OutlinedButton(onClick = { showLangDropdown = true }) {
+                                                            Text("Language: ${editingLanguage?.name ?: cv.language}")
+                                                        }
+                                                        DropdownMenu(
+                                                            expanded = showLangDropdown,
+                                                            onDismissRequest = { showLangDropdown = false }
+                                                        ) {
+                                                            ResumeLanguage.values().forEach { lang ->
+                                                                DropdownMenuItem(
+                                                                    text = { Text(lang.name) },
+                                                                    onClick = {
+                                                                        editingLanguage = lang
+                                                                        showLangDropdown = false
+                                                                    }
+                                                                )
+                                                            }
+                                                        }
+                                                    }
+                                                    Spacer(Modifier.height(8.dp))
+                                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                                        OutlinedButton(onClick = {
+                                                            editingResumeId = null
+                                                            editingFileName = ""
+                                                            editingLanguage = null
+                                                        }) {
+                                                            Text("Cancel")
+                                                        }
+                                                        Button(onClick = {
+                                                            resumeScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                                                                editingFileName.takeIf { it.isNotBlank() }?.let {
+                                                                    offlineResumeRepo.updateFileName(cv.id, it)
+                                                                }
+                                                                editingLanguage?.let {
+                                                                    offlineResumeRepo.updateLanguage(cv.id, it)
+                                                                }
+                                                                
+                                                                // Reload from local storage to get updated data
+                                                                val localJson = offlineResumeRepo.editStore.getLocalResumes()
+                                                                if (localJson != null) {
+                                                                    try {
+                                                                        val array = org.json.JSONArray(localJson)
+                                                                        val updatedResumes = (0 until array.length()).map { i ->
+                                                                            val obj = array.getJSONObject(i)
+                                                                            ResumeDoc(
+                                                                                id = obj.getString("id"),
+                                                                                fileName = obj.getString("fileName"),
+                                                                                url = obj.optString("url", ""),
+                                                                                language = obj.getString("language"),
+                                                                                uploadedAt = obj.optLong("uploadedAt", -1).takeIf { it > 0 }
+                                                                                    ?.let { com.google.firebase.Timestamp(java.util.Date(it)) },
+                                                                                storagePath = obj.optString("storagePath").takeIf { obj.has("storagePath") }
+                                                                            )
+                                                                        }
+                                                                        withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                                                            resumes = updatedResumes
+                                                                        }
+                                                                    } catch (e: Exception) {
+                                                                        // Fallback: update local state directly
+                                                                        withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                                                            val updatedResumes = resumes.map { r ->
+                                                                                if (r.id == cv.id) {
+                                                                                    r.copy(
+                                                                                        fileName = editingFileName.takeIf { it.isNotBlank() } ?: r.fileName,
+                                                                                        language = editingLanguage?.name ?: r.language
+                                                                                    )
+                                                                                } else r
+                                                                            }
+                                                                            resumes = updatedResumes
+                                                                        }
+                                                                    }
+                                                                } else {
+                                                                    // Fallback: update local state directly
+                                                                    withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                                                        val updatedResumes = resumes.map { r ->
+                                                                            if (r.id == cv.id) {
+                                                                                r.copy(
+                                                                                    fileName = editingFileName.takeIf { it.isNotBlank() } ?: r.fileName,
+                                                                                    language = editingLanguage?.name ?: r.language
+                                                                                )
+                                                                            } else r
+                                                                        }
+                                                                        resumes = updatedResumes
+                                                                    }
+                                                                }
+                                                                
+                                                                withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                                                    editingResumeId = null
+                                                                    editingFileName = ""
+                                                                    editingLanguage = null
+                                                                }
+                                                            }
+                                                        }) {
+                                                            Text("Save")
+                                                        }
+                                                    }
+                                                } else {
+                                                    // Display mode
+                                                    Text(cv.fileName, fontWeight = FontWeight.SemiBold, color = TitleGreen)
+                                                    Spacer(Modifier.height(2.dp))
+                                                    Text("Idioma: ${cv.language}", fontSize = 12.sp, color = Color.DarkGray)
+                                                }
                                             }
-                                        }) {
-                                            Icon(Icons.Filled.OpenInNew, contentDescription = null)
-                                            Spacer(Modifier.width(6.dp))
-                                            Text("Ver")
+                                            if (editingResumeId != cv.id) {
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                ) {
+                                                    if (isEditing) {
+                                                        IconButton(onClick = {
+                                                            editingResumeId = cv.id
+                                                            editingFileName = cv.fileName
+                                                            editingLanguage = ResumeLanguage.values().find { it.name == cv.language }
+                                                        }) {
+                                                            Icon(Icons.Filled.Edit, contentDescription = "Edit", tint = TitleGreen)
+                                                        }
+                                                    }
+                                                    // Trash icon - always visible for easy deletion
+                                                    IconButton(onClick = {
+                                                        resumeScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                                                            offlineResumeRepo.deleteResume(cv.id, cv.storagePath)
+                                                            
+                                                            // Reload from local storage to reflect deletion
+                                                            val localJson = offlineResumeRepo.editStore.getLocalResumes()
+                                                            if (localJson != null) {
+                                                                try {
+                                                                    val array = org.json.JSONArray(localJson)
+                                                                    val updatedResumes = (0 until array.length()).map { i ->
+                                                                        val obj = array.getJSONObject(i)
+                                                                        ResumeDoc(
+                                                                            id = obj.getString("id"),
+                                                                            fileName = obj.getString("fileName"),
+                                                                            url = obj.optString("url", ""),
+                                                                            language = obj.getString("language"),
+                                                                            uploadedAt = obj.optLong("uploadedAt", -1).takeIf { it > 0 }
+                                                                                ?.let { com.google.firebase.Timestamp(java.util.Date(it)) },
+                                                                            storagePath = obj.optString("storagePath").takeIf { obj.has("storagePath") }
+                                                                        )
+                                                                    }
+                                                                    withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                                                        resumes = updatedResumes
+                                                                    }
+                                                                } catch (e: Exception) {
+                                                                    // Fallback: remove from local state directly
+                                                                    withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                                                        resumes = resumes.filter { it.id != cv.id }
+                                                                    }
+                                                                }
+                                                            } else {
+                                                                // Fallback: remove from local state directly
+                                                                withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                                                    resumes = resumes.filter { it.id != cv.id }
+                                                                }
+                                                            }
+                                                        }
+                                                    }) {
+                                                        Icon(
+                                                            Icons.Filled.Delete,
+                                                            contentDescription = "Delete CV",
+                                                            tint = MaterialTheme.colorScheme.error
+                                                        )
+                                                    }
+                                                    val ctx = LocalContext.current
+                                                    TextButton(onClick = {
+                                                        if (cv.url.isNotBlank()) {
+                                                            val i = Intent(Intent.ACTION_VIEW, Uri.parse(cv.url))
+                                                            ctx.startActivity(i)
+                                                        }
+                                                    }) {
+                                                        Icon(Icons.Filled.OpenInNew, contentDescription = null)
+                                                        Spacer(Modifier.width(6.dp))
+                                                        Text("Ver")
+                                                    }
+                                                }
+                                            }
                                         }
                                     }
                                 }
@@ -503,11 +797,18 @@ fun StudentProfileScreen(
     // ====== Hoja/BottomSheet para subir múltiples CVs con idioma ======
     if (showCvSheet) {
         CvMultiUploadSheet(
-            repo = resumeRepo,
+            repo = offlineResumeRepo.baseRepo,
             onDismiss = { showCvSheet = false }
         )
     }
 
+    // --------- Dialogo de conexión offline para Student Profile ---------
+    if (showOfflineDialog) {
+        OfflineConnectionDialog(
+            onDismiss = { showOfflineDialog = false }
+        )
+    }
+    
     // --------- Dialogo de proyectos (sin cambios) ---------
     if (showProjectDialog) {
         AlertDialog(
@@ -545,7 +846,6 @@ fun StudentProfileScreen(
     }
 }
 
-/* =================== HOJA DE CARGA MÚLTIPLE CON IDIOMA =================== */
 
 private data class CvItemUi(
     val uri: Uri,
@@ -565,31 +865,54 @@ private fun CvMultiUploadSheet(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
 
-    // Lista visible en la hoja (acumula entre selecciones)
+
     var cvItems by remember { mutableStateOf<List<CvItemUi>>(emptyList()) }
     var isUploading by remember { mutableStateOf(false) }
     var globalError by remember { mutableStateOf<String?>(null) }
     var uploadedCount by remember { mutableStateOf(0) }
 
-    // Picker que permite seleccionar varios y llamarlo múltiples veces para ACUMULAR
+
     val picker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetMultipleContents(),
         onResult = { uris ->
-            val allowed = uris.filter { uri ->
-                val mime = context.contentResolver.getType(uri).orEmpty()
-                mime == "application/pdf" ||
-                        mime == "application/msword" ||
-                        mime == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+            try {
+                val allowed = uris.filter { uri ->
+                    try {
+                        val mime = context.contentResolver.getType(uri).orEmpty()
+                        mime == "application/pdf" ||
+                                mime == "application/msword" ||
+                                mime == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    } catch (e: Exception) {
+                        Log.e("CvUpload", "Error checking file type for URI: $uri", e)
+                        false
+                    }
+                }
+                val current = cvItems.map { it.uri }.toSet()
+                val merged = cvItems + allowed.filterNot { it in current }.map { CvItemUi(uri = it) }
+                cvItems = merged
+                globalError = null
+            } catch (e: Exception) {
+                Log.e("CvUpload", "Error processing selected files", e)
+                globalError = "Error al procesar archivos: ${e.message}"
             }
-            val current = cvItems.map { it.uri }.toSet()
-            val merged = cvItems + allowed.filterNot { it in current }.map { CvItemUi(uri = it) }
-            cvItems = merged
-            globalError = null
         }
     )
-    fun launchPicker() = picker.launch("*/*")
+    fun launchPicker() {
+        try {
 
-    ModalBottomSheet(onDismissRequest = onDismiss) {
+            picker.launch("*/*")
+        } catch (e: Exception) {
+            Log.e("CvUpload", "Error launching file picker", e)
+            globalError = "Error al abrir el selector de archivos: ${e.message}"
+        }
+    }
+    
+    val sheetState = rememberModalBottomSheetState()
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState
+    ) {
         Column(
             Modifier
                 .fillMaxWidth()
@@ -633,8 +956,7 @@ private fun CvMultiUploadSheet(
                     Text("Limpiar lista")
                 }
 
-                // ===== Estrategia de MULTITHREADING (rúbrica): coroutines con Dispatcher IO,
-                // structured concurrency (supervisorScope) y async/awaitAll para subidas en paralelo. =====
+
                 Button(
                     onClick = {
                         if (cvItems.isEmpty() || isUploading) return@Button
@@ -644,12 +966,17 @@ private fun CvMultiUploadSheet(
 
                         scope.launch(Main) {
                             try {
-                                // 1) Preprocesar en paralelo en IO (p.ej., calcular SHA-256) usando async
+                               
                                 val withHashes: List<CvItemUi> = supervisorScope {
                                     cvItems.mapIndexed { index, item ->
                                         async(IO) {
-                                            val hash = computeSha256(context.contentResolver.openInputStream(item.uri))
-                                            index to item.copy(sha256 = hash)
+                                            try {
+                                                val inputStream = context.contentResolver.openInputStream(item.uri)
+                                                val hash = computeSha256(inputStream)
+                                                index to item.copy(sha256 = hash)
+                                            } catch (e: Exception) {
+                                                index to item.copy(sha256 = null)
+                                            }
                                         }
                                     }.awaitAll()
                                         .sortedBy { it.first }
@@ -657,23 +984,24 @@ private fun CvMultiUploadSheet(
                                 }
                                 cvItems = withHashes
 
-                                // 2) Subir en paralelo (IO) y reportar progreso a la UI (Main)
-                                //    Mantiene la UI responsiva y cumple "una en main y otras en I/O".
+                             
                                 val results = withContext(IO) {
-                                    // Si tu repo ya sube en paralelo, perfecto. Si no, esto sigue en IO.
-                                    repo.uploadAll(
-                                        items = withHashes.map { it.uri to it.language },
-                                        onProgress = { prog ->
-                                            // Saltamos a Main para actualizar estado Compose
-                                            scope.launch(Main) {
-                                                cvItems = cvItems.map { current ->
-                                                    if (current.uri == prog.uri) {
-                                                        current.copy(progress = prog.percent.coerceIn(0, 100))
-                                                    } else current
+                                    try {
+                                        repo.uploadAll(
+                                            items = withHashes.map { it.uri to it.language },
+                                            onProgress = { prog ->
+                                                scope.launch(Main) {
+                                                    cvItems = cvItems.map { current ->
+                                                        if (current.uri == prog.uri) {
+                                                            current.copy(progress = prog.percent.coerceIn(0, 100))
+                                                        } else current
+                                                    }
                                                 }
                                             }
-                                        }
-                                    )
+                                        )
+                                    } catch (e: Exception) {
+                                        throw e
+                                    }
                                 }
 
                                 uploadedCount = results.size
@@ -681,7 +1009,8 @@ private fun CvMultiUploadSheet(
                             } catch (e: CancellationException) {
                                 throw e
                             } catch (e: Exception) {
-                                globalError = e.message ?: "Error desconocido"
+                                Log.e("CvUpload", "Error uploading CVs", e)
+                                globalError = e.message ?: "Error desconocido: ${e.javaClass.simpleName}"
                             } finally {
                                 isUploading = false
                             }
@@ -950,7 +1279,7 @@ private fun AddBox(title: String, modifier: Modifier = Modifier, onClick: () -> 
     }
 }
 
-/* =================== UTIL: Hash en IO para demostrar trabajo paralelo =================== */
+
 
 private fun computeSha256(input: InputStream?): String? {
     if (input == null) return null
