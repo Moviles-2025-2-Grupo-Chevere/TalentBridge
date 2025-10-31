@@ -53,9 +53,12 @@ import com.example.talent_bridge_kt.presentation.ui.components.HomeWithDrawer
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.dialog
 import com.example.talent_bridge_kt.data.AnalyticsManager
 import com.example.talent_bridge_kt.data.repository.ProfileRepository
+import com.example.talent_bridge_kt.presentation.ui.screens.CreateProjectPopUp
 import com.google.firebase.auth.FirebaseAuth
+import kotlin.system.measureTimeMillis
 
 
 
@@ -107,7 +110,7 @@ class MainActivity : ComponentActivity() {
                     } else {
                         snack.currentSnackbarData?.dismiss()
                         showNoNetDialog = false
-                        // Removed syncPendingProjects() as offline queue is not active
+                        projectsVm.syncPendingProjects()
                     }
                 }
 
@@ -147,7 +150,7 @@ class MainActivity : ComponentActivity() {
                         Routes.StudentFeed
                     } else {
                         Routes.Login
-                    }    
+                    }
 
                     NavHost(
                         navController = navController,
@@ -171,12 +174,32 @@ class MainActivity : ComponentActivity() {
                                 InitiativeProfileSceen(
                                     onBack = { navController.popBackStack() },
                                     onOpenDrawer = { openDrawer() },
-                                    onAddProject = { /* disabled for now */ }
+                                    onAddProject = { navController.navigate("createProject") }
                                 )
                             }
                         }
 
-                        // Removed dialog("createProject") as createProject API was removed
+                        dialog("createProject") {
+                            CreateProjectPopUp(
+                                onDismiss = { navController.popBackStack() },
+                                { draft ->
+                                    // 2) aquí usamos el VM que obtuvimos arriba
+                                    projectsVm.createProject(
+                                        title = draft.title,
+                                        description = draft.description,
+                                        skills = draft.skills,
+                                        imageUri = draft.imageUri
+                                    ) { ok, err ->
+                                        if (ok) {
+                                            println(" Proyecto creado con éxito")
+                                            navController.popBackStack()
+                                        } else {
+                                            println(" Error creando proyecto: ${err?.message}")
+                                        }
+                                    }
+                                }
+                            )
+                        }
 
                         composable(Routes.LeaderFeed) {
                             HomeWithDrawer(navController = navController) { openDrawer ->
@@ -203,8 +226,10 @@ class MainActivity : ComponentActivity() {
                         composable(Routes.Search) {
 
                             val repo = FirestoreSearchRepository(FirebaseFirestore.getInstance())
-                            val vm: SearchViewModel = viewModel(
-                                factory = SearchViewModelFactory(repo)
+                            val connectivityVm = viewmodel
+
+                            val vm: SearchViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                                factory = SearchViewModelFactory(repo, connectivityVm)
                             )
                                 SearchScreen(
                                     vm = vm,
@@ -226,7 +251,7 @@ class MainActivity : ComponentActivity() {
                                 StudentProfileScreen(
                                     onBack = { navController.popBackStack() },
                                     onOpenDrawer = { openDrawer() },
-                                    onAddProject = { /* disabled for now */ }
+                                    onAddProject = { navController.navigate("createProject") }
                                 )
                             }
                         }
@@ -299,4 +324,5 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+
 }

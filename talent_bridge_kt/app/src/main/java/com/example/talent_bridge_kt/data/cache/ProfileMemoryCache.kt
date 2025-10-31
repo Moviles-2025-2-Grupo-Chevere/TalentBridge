@@ -30,6 +30,9 @@ object ProfileMemoryCache {
 
     fun clear(key: String) { store.remove(key) }
     fun clearAll() { store.clear() }
+
+    fun snapshot(): Map<String, ProfileSummary> =
+        store.mapValues { it.value.value }
 }
 
 
