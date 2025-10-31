@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:talent_bridge_fl/domain/user_entity.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
 import 'package:talent_bridge_fl/cache/profile_cache_helper.dart';
+import 'package:cached_network_image/cached_network_image.dart'; // <-- NUEVO
 
 // ---- Tokens ----
 const kBg = Color(0xFFFEF7E6); // cream
@@ -102,7 +103,7 @@ class _SearchState extends State<Search> {
       double score = 0;
       final uSkills = (u.skillsOrTopics ?? []).map((i) => i.toLowerCase());
       for (var skill in uSkills) {
-        score += weights[skill] ?? 0;
+        score += (weights[skill] ?? 0);
       }
       scores[u] = score;
     }
@@ -227,7 +228,7 @@ class ProfileResultTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<({String name, String? photoUrl})>(
-      future: getProfileSnippetCacheFirst(uid), // <- uses RAM cache
+      future: getProfileSnippetCacheFirst(uid), // <- usa tu helper compartido
       builder: (_, snap) {
         final has = snap.hasData;
         final data = snap.data;
@@ -253,13 +254,14 @@ class ProfileResultTile extends StatelessWidget {
                 ),
                 child: Row(
                   children: [
+                    // Avatar con caché de imagen persistente (no cambia tu lógica)
                     CircleAvatar(
                       radius: 16,
                       backgroundColor: Colors.purple.shade200,
-                      backgroundImage: photoUrl != null
-                          ? NetworkImage(photoUrl)
+                      backgroundImage: (photoUrl != null && photoUrl.isNotEmpty)
+                          ? CachedNetworkImageProvider(photoUrl)
                           : null,
-                      child: photoUrl == null
+                      child: (photoUrl == null || photoUrl.isEmpty)
                           ? const Icon(
                               Icons.person,
                               size: 18,
