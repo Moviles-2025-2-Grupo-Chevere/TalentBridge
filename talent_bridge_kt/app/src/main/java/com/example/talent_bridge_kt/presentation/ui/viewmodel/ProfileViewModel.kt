@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 import com.example.talent_bridge_kt.data.analytics.ProfileAnalytics
+import com.example.talent_bridge_kt.data.repository.EventualConnectivityProfileRepository
 
 sealed class ProfileUiState {
     data object Loading : ProfileUiState()
@@ -23,7 +24,8 @@ sealed class ProfileUiState {
 class ProfileViewModel(
     private val getProfile: GetProfileUseCase,
     private val updateProfile: UpdateProfileUseCase,
-    private val uploadAvatar: UploadAvatarUseCase
+    private val uploadAvatar: UploadAvatarUseCase,
+    private val eventualRepo: EventualConnectivityProfileRepository? = null
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow<ProfileUiState>(ProfileUiState.Loading)
@@ -97,5 +99,27 @@ class ProfileViewModel(
     fun removeProject(projectId: String) {
         val cur = (uiState.value as? ProfileUiState.Ready)?.profile ?: return
         update(cur.copy(projects = cur.projects.filterNot { it.id == projectId }))
+    }
+
+    /**
+     * Syncs local changes to remote when connectivity is available.
+     * Exposes the syncNow() method from the eventual connectivity repository.
+     */
+    fun syncNow() = viewModelScope.launch {
+        val result = eventualRepo?.syncNow()
+        when (result) {
+            is Resource.Success -> {
+                // Reload profile after sync
+                load()
+                val current = (uiState.value as? ProfileUiState.Ready)?.profile
+                if (current != null) {
+                    _uiState.value = ProfileUiState.Ready(current, "Sincronizado")
+                }
+            }
+            is Resource.Error -> {
+                _uiState.value = ProfileUiState.Error(result.message)
+            }
+            else -> {}
+        }
     }
 }
