@@ -117,7 +117,7 @@ class DownloadProjects extends ConsumerWidget {
     return zipBytes;
   }
 
-  Future<void> _onDownloadFiles(
+  static Future<void> _downloadProjectsToFile(
     BuildContext context,
     WidgetRef ref,
   ) async {
@@ -178,10 +178,10 @@ class DownloadProjects extends ConsumerWidget {
             padding: const EdgeInsets.all(8.0),
             child: Column(
               children: [
-                FilledButton.icon(
-                  onPressed: () => _onDownloadFiles(context, ref),
-                  label: Text('Download ${projects.length} project files'),
-                  icon: Icon(Icons.download),
+                _DownloadButton(
+                  projects: projects,
+                  onDownload: (projects) =>
+                      _downloadProjectsToFile(context, ref),
                 ),
                 Expanded(
                   child: ListView(
@@ -198,5 +198,56 @@ class DownloadProjects extends ConsumerWidget {
               ],
             ),
           );
+  }
+}
+
+class _DownloadButton extends StatefulWidget {
+  final List<ProjectEntity> projects;
+  final Future<void> Function(List<ProjectEntity>) onDownload;
+
+  const _DownloadButton({
+    required this.projects,
+    required this.onDownload,
+  });
+
+  @override
+  State<_DownloadButton> createState() => _DownloadButtonState();
+}
+
+class _DownloadButtonState extends State<_DownloadButton> {
+  bool _isDownloading = false;
+
+  Future<void> _handleDownload() async {
+    if (_isDownloading) return;
+
+    setState(() => _isDownloading = true);
+
+    try {
+      await widget.onDownload(widget.projects);
+    } finally {
+      if (mounted) {
+        setState(() => _isDownloading = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FilledButton.icon(
+      onPressed: _isDownloading ? null : _handleDownload,
+      label: _isDownloading
+          ? const Text('Generating PDFs...')
+          : Text('Download ${widget.projects.length} project files'),
+      icon: _isDownloading
+          ? const SizedBox(
+              width: 16,
+              height: 16,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: Colors.white,
+              ),
+            )
+          : const Icon(Icons.download),
+    );
   }
 }
