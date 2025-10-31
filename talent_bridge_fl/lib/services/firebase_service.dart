@@ -87,6 +87,12 @@ class FirebaseService {
     return UserEntity.fromMap(snap.data()!);
   }
 
+  Future<UserEntity> getUserById(String uid) async {
+    final snap = await _db.collection('users').doc(uid).get();
+    if (!snap.exists) throw Exception('User $uid not found');
+    return UserEntity.fromMap(snap.data()!);
+  }
+
   Future<List<UserEntity>> getAllUsers() async {
     final querySnapshot = await _db.collection('users').get();
 

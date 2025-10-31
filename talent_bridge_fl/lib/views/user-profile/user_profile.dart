@@ -1,143 +1,151 @@
 import 'package:flutter/material.dart';
 import 'package:talent_bridge_fl/components/text_box_widget.dart';
+// ---- BQ helper (nuevo) ----
+import 'package:talent_bridge_fl/analytics/analytics_timer.dart';
 
 class UserProfile extends StatelessWidget {
   const UserProfile({super.key});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: const Color.fromARGB(255, 255, 255, 255), // White background
-      child: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Profile header with image and username
-              Center(
-                child: Column(
-                  children: [
-                    // Profile image
-                    const CircleAvatar(),
-                    const SizedBox(height: 16.0),
-                    // Username
-                    const Text(
-                      'UsuarioXYZ',
-                      style: TextStyle(
-                        fontSize: 18.0,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'OpenSans',
+    return _BQFirstFrameProbe(
+      eventName: 'first_content_profile',
+      baseParams: const {'screen': 'Profile'},
+      // Como esta versión del perfil es estática (sin fetch), marcamos 'unknown'
+      source: 'unknown',
+      child: Container(
+        color: const Color.fromARGB(255, 255, 255, 255), // White background
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Profile header with image and username
+                Center(
+                  child: Column(
+                    children: [
+                      // Profile image
+                      const CircleAvatar(),
+                      const SizedBox(height: 16.0),
+                      // Username
+                      const Text(
+                        'UsuarioXYZ',
+                        style: TextStyle(
+                          fontSize: 18.0,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'OpenSans',
+                        ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 24.0),
-              Center(
-                child: Column(
-                  children: [
-                    _buildContactItem(
-                      'Carrera:',
-                      'Diseño',
-                    ),
-                  ],
+                const SizedBox(height: 24.0),
+                Center(
+                  child: Column(
+                    children: [
+                      _buildContactItem(
+                        'Carrera:',
+                        'Diseño',
+                      ),
+                    ],
+                  ),
                 ),
-              ),
-              const SizedBox(height: 24.0),
+                const SizedBox(height: 24.0),
 
-              // Description section
-              const Text(
-                'Descripción',
-                style: TextStyle(
-                  color: Color(0xFF3E6990),
-                  fontSize: 18.0,
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'OpenSans',
-                  height: 1.5,
+                // Description section
+                const Text(
+                  'Descripción',
+                  style: TextStyle(
+                    color: Color(0xFF3E6990),
+                    fontSize: 18.0,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'OpenSans',
+                    height: 1.5,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8.0),
-              const Text(
-                'Interesado en proyectos no pagos (por experiencia) de diseño gráfico, edición de video y desarrollo web. Busco oportunidades para aprender y crecer en estas áreas.',
-                style: TextStyle(fontSize: 14.0),
-              ),
-              const SizedBox(height: 8.0),
-              const Text(
-                'Experiencia previa:',
-                style: TextStyle(fontSize: 14.0),
-              ),
-              const Padding(
-                padding: EdgeInsets.only(left: 16.0),
-                child: Text(
-                  '• Monitor de investigación de la facultad de Arquitectura y Diseño',
+                const SizedBox(height: 8.0),
+                const Text(
+                  'Interesado en proyectos no pagos (por experiencia) de diseño gráfico, edición de video y desarrollo web. Busco oportunidades para aprender y crecer en estas áreas.',
                   style: TextStyle(fontSize: 14.0),
                 ),
-              ),
-              const SizedBox(height: 8.0),
-
-              // Flags section (skill tags)
-              const Text(
-                'Mis Flags',
-                style: TextStyle(
-                  color: Color(0xFF3E6990),
-                  fontSize: 18.0,
-                  fontWeight: FontWeight.bold,
+                const SizedBox(height: 8.0),
+                const Text(
+                  'Experiencia previa:',
+                  style: TextStyle(fontSize: 14.0),
                 ),
-              ),
-              const SizedBox(height: 12.0),
-              Wrap(
-                spacing: 8.0,
-                runSpacing: 8.0,
-                children: [
-                  TextBoxWidget(text: 'Diseño', onTap: () {}),
-                  TextBoxWidget(text: 'Dibujo', onTap: () {}),
-                  TextBoxWidget(text: 'AutoCad', onTap: () {}),
-                  TextBoxWidget(text: 'Planos', onTap: () {}),
-                  TextBoxWidget(text: 'Cerámica', onTap: () {}),
-                ],
-              ),
-
-              // Contact section
-              const Text(
-                'Contacto',
-                style: TextStyle(
-                  color: Color(0xFF3E6990),
-                  fontSize: 18.0,
-                  fontWeight: FontWeight.bold,
+                const Padding(
+                  padding: EdgeInsets.only(left: 16.0),
+                  child: Text(
+                    '• Monitor de investigación de la facultad de Arquitectura y Diseño',
+                    style: TextStyle(fontSize: 14.0),
+                  ),
                 ),
-              ),
-              const SizedBox(height: 8.0),
-              Center(
-                child: Column(
+                const SizedBox(height: 8.0),
+
+                // Flags section (skill tags)
+                const Text(
+                  'Mis Flags',
+                  style: TextStyle(
+                    color: Color(0xFF3E6990),
+                    fontSize: 18.0,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 12.0),
+                Wrap(
+                  spacing: 8.0,
+                  runSpacing: 8.0,
                   children: [
-                    _buildContactItem(
-                      'Email:',
-                      'usuario123@gmail.com',
-                      isLink: true,
-                      linkColor: Colors.blue,
-                    ),
-                    _buildContactItem(
-                      'LinkedIn:',
-                      'usuario123',
-                      isLink: true,
-                      linkColor: Colors.blue,
-                    ),
-                    _buildContactItem(
-                      'Number:',
-                      '+39 1234 567890',
-                      isLink: true,
-                      linkColor: Colors.blue,
-                    ),
+                    TextBoxWidget(text: 'Diseño', onTap: () {}),
+                    TextBoxWidget(text: 'Dibujo', onTap: () {}),
+                    TextBoxWidget(text: 'AutoCad', onTap: () {}),
+                    TextBoxWidget(text: 'Planos', onTap: () {}),
+                    TextBoxWidget(text: 'Cerámica', onTap: () {}),
                   ],
                 ),
-              ),
-              const SizedBox(height: 24.0),
 
-              // Link sections for CV and Portfolio
+                // Contact section
+                const Text(
+                  'Contacto',
+                  style: TextStyle(
+                    color: Color(0xFF3E6990),
+                    fontSize: 18.0,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8.0),
+                Center(
+                  child: Column(
+                    children: [
+                      _buildContactItem(
+                        'Email:',
+                        'usuario123@gmail.com',
+                        isLink: true,
+                        linkColor: Colors.blue,
+                      ),
+                      _buildContactItem(
+                        'LinkedIn:',
+                        'usuario123',
+                        isLink: true,
+                        linkColor: Colors.blue,
+                      ),
+                      _buildContactItem(
+                        'Number:',
+                        '+39 1234 567890',
+                        isLink: true,
+                        linkColor: Colors.blue,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24.0),
 
-              // Projects section
-            ],
+                // Link sections for CV and Portfolio
+
+                // Projects section
+              ],
+            ),
           ),
         ),
       ),
@@ -189,4 +197,44 @@ class UserProfile extends StatelessWidget {
       ),
     );
   }
+}
+
+/// ---- Mini wrapper stateful SOLO para la BQ ----
+/// Arranca el cronómetro y lo cierra en el primer frame visible.
+/// No toca tu lógica ni tu UI.
+class _BQFirstFrameProbe extends StatefulWidget {
+  const _BQFirstFrameProbe({
+    required this.child,
+    required this.eventName,
+    this.baseParams = const {},
+    this.source = 'unknown',
+  });
+
+  final Widget child;
+  final String eventName;
+  final Map<String, Object?> baseParams;
+  final String source;
+
+  @override
+  State<_BQFirstFrameProbe> createState() => _BQFirstFrameProbeState();
+}
+
+class _BQFirstFrameProbeState extends State<_BQFirstFrameProbe> {
+  late final ScreenTimer _t;
+  bool _sent = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _t = ScreenTimer(widget.eventName, baseParams: widget.baseParams);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_sent) {
+        _sent = true;
+        _t.endOnce(source: widget.source, itemCount: 1);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => widget.child;
 }
