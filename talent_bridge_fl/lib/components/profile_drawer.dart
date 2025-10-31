@@ -5,10 +5,12 @@ class ProfileDrawer extends StatelessWidget {
     super.key,
     required this.onTapCredits,
     required this.onTapLogOut,
+    required this.onTapDownloadProjects,
   });
 
   final void Function() onTapLogOut;
   final void Function() onTapCredits;
+  final void Function() onTapDownloadProjects;
 
   @override
   Widget build(BuildContext context) {
@@ -75,6 +77,21 @@ class ProfileDrawer extends StatelessWidget {
               ),
             ),
             onTap: onTapCredits,
+          ),
+          ListTile(
+            leading: Icon(
+              Icons.download_outlined,
+              size: 26,
+              color: Theme.of(context).colorScheme.onSurface,
+            ),
+            title: Text(
+              'Download Project Files',
+              style: Theme.of(context).textTheme.titleSmall!.copyWith(
+                color: Theme.of(context).colorScheme.onSurface,
+                fontSize: 24,
+              ),
+            ),
+            onTap: onTapDownloadProjects,
           ),
         ],
       ),

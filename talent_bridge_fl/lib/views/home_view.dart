@@ -4,6 +4,7 @@ import 'package:talent_bridge_fl/components/profile_drawer.dart';
 import 'package:talent_bridge_fl/providers/notification_provider.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
 import 'package:talent_bridge_fl/views/credits/credits.dart';
+import 'package:talent_bridge_fl/views/download_projects/download_projects.dart';
 import 'package:talent_bridge_fl/views/leader_feed/leader_feed.dart';
 import 'package:talent_bridge_fl/views/login/login.dart';
 import 'package:talent_bridge_fl/views/main-feed/main_feed.dart';
@@ -132,6 +133,18 @@ class _HomeViewState extends ConsumerState<HomeView> {
           onTapCredits: () {
             Navigator.of(context).push(
               MaterialPageRoute(builder: (ctx) => const Credits()),
+            );
+          },
+          onTapDownloadProjects: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (context) => Scaffold(
+                  appBar: AppBar(
+                    title: Text('Download project data'),
+                  ),
+                  body: DownloadProjects(),
+                ),
+              ),
             );
           },
         ),
