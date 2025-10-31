@@ -53,6 +53,7 @@ import com.example.talent_bridge_kt.ui.theme.AccentYellow
 import com.example.talent_bridge_kt.ui.theme.CreamBackground
 import com.example.talent_bridge_kt.ui.theme.LinkGreen
 import com.example.talent_bridge_kt.ui.theme.TitleGreen
+import com.example.talent_bridge_kt.presentation.ui.components.OfflineConnectionDialog
 import androidx.core.content.FileProvider
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -115,10 +116,20 @@ fun StudentProfileScreen(
         com.example.talent_bridge_kt.core.conectivity.AndroidConnectivityObserver(context)
     }
     var isConnected by remember { mutableStateOf(false) }
+    var showOfflineDialog by remember { mutableStateOf(false) }
     
     LaunchedEffect(Unit) {
         connectivityObserver.isConnected.collect { connected ->
+            val wasConnected = isConnected
             isConnected = connected
+            
+            // Solo mostrar el dialog cuando se pierde la conexión (transición de conectado a desconectado)
+            if (wasConnected && !connected) {
+                showOfflineDialog = true
+            } else if (connected) {
+                showOfflineDialog = false
+            }
+            
             if (connected) {
                 vm.syncNow()
             }
@@ -791,6 +802,13 @@ fun StudentProfileScreen(
         )
     }
 
+    // --------- Dialogo de conexión offline para Student Profile ---------
+    if (showOfflineDialog) {
+        OfflineConnectionDialog(
+            onDismiss = { showOfflineDialog = false }
+        )
+    }
+    
     // --------- Dialogo de proyectos (sin cambios) ---------
     if (showProjectDialog) {
         AlertDialog(
