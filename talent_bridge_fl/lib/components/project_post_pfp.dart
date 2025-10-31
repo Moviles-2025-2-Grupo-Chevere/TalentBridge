@@ -64,7 +64,7 @@ class _ProjectPostPfpState extends State<ProjectPostPfp> {
               url!,
               cacheKey: cacheKey,
             )
-          : AssetImage('assets/images/gumball.jpg') as ImageProvider,
+          : AssetImage('assets/images/pfp.png') as ImageProvider,
     );
   }
 }
