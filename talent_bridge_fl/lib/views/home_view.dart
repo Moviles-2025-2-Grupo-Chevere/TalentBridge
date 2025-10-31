@@ -10,9 +10,8 @@ import 'package:talent_bridge_fl/views/login/login.dart';
 import 'package:talent_bridge_fl/views/main-feed/main_feed.dart';
 import 'package:talent_bridge_fl/views/my-profile/my_profile.dart';
 import 'package:talent_bridge_fl/views/saved-projects/saved_projects.dart';
-// import 'package:talent_bridge_fl/views/project/project_view.dart';
-// import 'package:talent_bridge_fl/views/saved-projects/saved_projects.dart';
 import 'package:talent_bridge_fl/views/search/search.dart';
+import 'package:talent_bridge_fl/analytics/analytics_timer.dart';
 
 const kBg = Color(0xFFFEF7E6);
 
@@ -26,6 +25,25 @@ class HomeView extends ConsumerStatefulWidget {
 class _HomeViewState extends ConsumerState<HomeView> {
   final _fb = FirebaseService();
   int _selectedPageIdx = 0;
+
+  // ---- BQ: time-to-first-content del Home ----
+  late final ScreenTimer _tHome;
+  bool _ttfcSent = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _tHome = ScreenTimer('first_content_home', baseParams: {'screen': 'Home'});
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_ttfcSent) {
+        _ttfcSent = true;
+        _tHome.endOnce(
+          source: 'unknown',
+        ); // Home es UI inmediata del contenedor
+      }
+    });
+  }
 
   void _selectPage(int idx) {
     setState(() {
@@ -57,20 +75,16 @@ class _HomeViewState extends ConsumerState<HomeView> {
       MainViewItem(
         title: 'Home',
         widget: MainFeed(),
-        icon: Icon(Icons.home_outlined),
+        icon: const Icon(Icons.home_outlined),
         label: "Home",
         actions: [
           IconButton(
-            icon: Icon(Icons.bookmark_outline),
+            icon: const Icon(Icons.bookmark_outline),
             onPressed: () {
-              Navigator.of(
-                context,
-              ).push(
+              Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (ctx) => Scaffold(
-                    appBar: AppBar(
-                      title: Text('Saved Projects'),
-                    ),
+                    appBar: AppBar(title: const Text('Saved Projects')),
                     body: SavedProjects(),
                   ),
                 ),
@@ -78,15 +92,13 @@ class _HomeViewState extends ConsumerState<HomeView> {
             },
           ),
           IconButton(
-            icon: Icon(Icons.people_outline),
+            icon: const Icon(Icons.people_outline),
             onPressed: () {
               Navigator.of(context).push(
                 MaterialPageRoute(
                   builder: (ctx) => Scaffold(
                     backgroundColor: kBg,
-                    appBar: AppBar(
-                      title: Text('Featured Students'),
-                    ),
+                    appBar: AppBar(title: const Text('Featured Students')),
                     body: LeaderFeed(),
                   ),
                 ),
@@ -97,30 +109,30 @@ class _HomeViewState extends ConsumerState<HomeView> {
       ),
       MainViewItem(
         title: 'Search',
-        widget: Search(),
-        icon: Icon(Icons.search),
+        widget: const Search(),
+        icon: const Icon(Icons.search),
         label: 'Search',
-        actions: [],
+        actions: const [],
       ),
       MainViewItem(
         title: 'My Profile',
-        widget: MyProfile(),
-        icon: Icon(Icons.person_outline),
+        widget: const MyProfile(),
+        icon: const Icon(Icons.person_outline),
         label: 'Profile',
-        actions: [],
+        actions: const [],
         drawer: ProfileDrawer(
           onTapLogOut: () async {
             await _fb.signOut();
             if (context.mounted) {
               Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (_) => Login()),
+                MaterialPageRoute(builder: (_) => const Login()),
                 (_) => false,
               );
             }
           },
           onTapCredits: () {
             Navigator.of(context).push(
-              MaterialPageRoute(builder: (ctx) => Credits()),
+              MaterialPageRoute(builder: (ctx) => const Credits()),
             );
           },
           onTapDownloadProjects: () {
@@ -138,8 +150,9 @@ class _HomeViewState extends ConsumerState<HomeView> {
         ),
       ),
     ];
+
     final selectedView = mainViews[_selectedPageIdx];
-    Widget activePage = selectedView.widget;
+    final Widget activePage = selectedView.widget;
 
     return Scaffold(
       backgroundColor: kBg,
@@ -152,9 +165,7 @@ class _HomeViewState extends ConsumerState<HomeView> {
               height: 40,
               fit: BoxFit.contain,
             ),
-            const SizedBox(
-              width: 8,
-            ),
+            const SizedBox(width: 8),
             Text(selectedView.title),
           ],
         ),

@@ -87,6 +87,12 @@ class FirebaseService {
     return UserEntity.fromMap(snap.data()!);
   }
 
+  Future<UserEntity> getUserById(String uid) async {
+    final snap = await _db.collection('users').doc(uid).get();
+    if (!snap.exists) throw Exception('User $uid not found');
+    return UserEntity.fromMap(snap.data()!);
+  }
+
   Future<List<UserEntity>> getAllUsers() async {
     final querySnapshot = await _db.collection('users').get();
 
@@ -139,6 +145,34 @@ class FirebaseService {
         {"projectId": projectId, "createdById": createdById},
       ]),
     });
+
+    // Get user major
+    final userEntity = await getCurrentUserEntity(false);
+    final major = userEntity?.major ?? '';
+    debugPrint('User major: $major');
+
+    // Use a composite ID: userId_projectId to prevent duplicates
+    final applicationId = '${userId}_$projectId';
+
+    // Use .set() with merge instead of .add()
+    await _db.collection('projectApplications').doc(applicationId).set({
+      'appliedDate': FieldValue.serverTimestamp(),
+      'project_id': projectId,
+      'user_id': userId,
+      'major': major == '' ? 'Undeclared' : major,
+    }, SetOptions(merge: true)); // merge:true updates if exists, creates if not
+
+    // Log analytics
+    final timestamp = DateTime.now().millisecondsSinceEpoch;
+    await _analytics.logEvent(
+      name: 'application_to_project',
+      parameters: {
+        'timestamp': timestamp,
+        'user_id': userId,
+        'project_id': projectId,
+        'major': major == '' ? 'Undeclared' : major,
+      },
+    );
   }
 
   Future<List<Map<String, String>>> getUsersWhoAppliedToProject({

@@ -73,7 +73,7 @@ class UserEntity {
       linkedin: map['linkedin'] ?? '',
       location: map['location'] ?? '',
       mobileNumber: map['mobileNumber'] ?? '',
-      photoUrl: map['photoUrl'] ?? 'assets/images/gumball.jpg',
+      photoUrl: map['photoUrl'] ?? 'assets/images/pfp.png',
       projects: projects, //CHECK TO MAP
       applications: applications,
       acceptedProjects: List<String>.from(map['acceptedProjects'] ?? []),
@@ -113,7 +113,7 @@ class UserEntity {
       linkedin: (map['linkedin'] ?? '')?.toString(),
       location: (map['location'] ?? '')?.toString(),
       mobileNumber: (map['mobile_number'] ?? '')?.toString(),
-      photoUrl: 'assets/images/gumball.jpg',
+      photoUrl: 'assets/images/pfp.png',
       projects: [],
       applications: [],
       acceptedProjects: [],

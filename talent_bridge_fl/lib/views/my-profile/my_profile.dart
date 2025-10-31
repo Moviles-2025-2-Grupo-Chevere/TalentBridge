@@ -412,9 +412,12 @@ class _MyProfileState extends ConsumerState<MyProfile> {
           image.path,
         );
         try {
+          // TODO mira esto deivid
           final result = await ref
               .read(pfpUploadProvider.notifier)
-              .enqueuePfpUpload(localPicturePath);
+              .enqueuePfpUpload(
+                localPicturePath,
+              ); // <<<<<<<<- TODO mira esto deivid
           if (result == null && mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
