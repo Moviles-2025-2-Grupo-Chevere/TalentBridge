@@ -1,107 +1,49 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:firebase_auth/firebase_auth.dart' as firebase_core;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:talent_bridge_fl/data/user_service.dart';
 import 'package:talent_bridge_fl/domain/project_entity.dart';
-import 'package:talent_bridge_fl/domain/user_entity.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
 
 class ProjectService {
   final _db = FirebaseFirestore.instance;
+  final _st = FirebaseStorage.instance;
   final _analytics = FirebaseAnalytics.instance;
   final _firebaseService = FirebaseService();
 
-  createProject(ProjectEntity project) async {
+  Future<void> createProject(ProjectEntity project, String? imagePath) async {
     final docRef = FirebaseFirestore.instance
         .collection("users")
         .doc(project.createdById);
     await docRef.update({
       'projects': FieldValue.arrayUnion([project.toMap()]),
     });
+    if (imagePath != null) {
+      var ref = _st.ref().child('project_images/${project.id}');
+      try {
+        await ref.putFile(File(imagePath));
+      } on firebase_core.FirebaseException catch (e) {
+        print('Firebase error: ${e.code} - ${e.message}');
+        if (e.code == 'retry-limit-exceeded') {
+          print('No internet connection.');
+        } else {
+          rethrow;
+        }
+      } catch (e) {
+        rethrow;
+      }
+    }
     await _analytics.logEvent(
       name: "create_project",
       parameters: {
         "createdById": project.createdById,
         "title": project.title,
-        "skills": project.skills,
+        "skills": jsonEncode(project.skills),
         "id": project.id ?? "",
       },
     );
-  }
-
-  Future<List<ProjectEntity>> getProjects() async {
-    var assetsimages = 'assets/images';
-    var dummyImgRoute = '$assetsimages/dummy_post_img.jpeg';
-    final userService = UserService();
-    final users = userService.getUsers();
-    //final users = await _firebaseService.getAllUsers();
-    //print('Fetched ${users.length} users from FirebaseService');
-    //talent_bridge_fl/assets/images/dummy_post_img.jpeg
-
-    var projects = [
-      ProjectEntity(
-        id: "1",
-        createdAt: DateTime.now(),
-        createdById: users[0].id,
-        createdBy: users[0],
-        title: 'Looking for designers!',
-        description:
-            'People interested in graphic design. We hope for an availability of 2 weekly hours.',
-        skills: ['Design', 'Drawing', 'UI/UX Design'],
-        imgUrl: dummyImgRoute,
-      ),
-      ProjectEntity(
-        id: "2",
-        createdById: users[0].id,
-        createdAt: DateTime.now().subtract(Duration(days: 1)),
-        createdBy: users[1],
-        title: 'Mobile App Development Team',
-        description:
-            'Seeking Flutter developers for an innovative mobile application. Looking for passionate developers with experience in state management and API integration.',
-        skills: ['Flutter', 'Dart', 'API Integration', 'State Management'],
-      ),
-      ProjectEntity(
-        id: "3",
-        createdById: users[0].id,
-        createdAt: DateTime.now().subtract(Duration(days: 2)),
-        createdBy: users[2],
-        title: 'Web Development for Startup',
-        description:
-            'Building a modern web platform for a tech startup. Need full-stack developers with React and Node.js experience. Remote work available.',
-        skills: ['React', 'Node.js', 'JavaScript', 'MongoDB', 'Remote'],
-      ),
-      ProjectEntity(
-        id: "4",
-        createdById: users[0].id,
-        createdAt: DateTime.now().subtract(Duration(days: 3)),
-        createdBy: users[3],
-        title: 'Data Science Research Project',
-        description:
-            'Looking for data scientists and machine learning engineers for an academic research project on predictive analytics. Great opportunity for students.',
-        skills: ['Python', 'Machine Learning', 'Data Analysis', 'Research'],
-      ),
-      ProjectEntity(
-        id: "5",
-        createdById: users[0].id,
-        createdAt: DateTime.now().subtract(Duration(days: 4)),
-        createdBy: users[4],
-        title: 'Game Development Studio',
-        description:
-            'Indie game studio looking for Unity developers and 3D artists. Working on an exciting adventure game with unique mechanics. Creative freedom guaranteed!',
-        skills: ['Unity', 'C#', '3D Modeling', 'Game Design', 'Creative'],
-      ),
-      ProjectEntity(
-        id: "5",
-        createdById: users[0].id,
-        createdAt: DateTime.now().subtract(Duration(days: 5)),
-        createdBy: users[5],
-        title: 'AI Chatbot Development',
-        description:
-            'Developing an intelligent chatbot for customer service automation. Looking for developers with NLP experience and backend development skills.',
-        skills: ['AI', 'NLP', 'Python', 'Backend', 'Customer Service'],
-      ),
-    ];
-
-    return projects;
   }
 }

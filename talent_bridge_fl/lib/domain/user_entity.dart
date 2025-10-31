@@ -1,22 +1,27 @@
+import 'dart:convert';
+
 import 'package:talent_bridge_fl/domain/project_entity.dart';
 
+enum Source { remote, local }
+
 class UserEntity {
-  final String id;
-  final String displayName;
-  final String email;
-  final String? headline;
-  final bool isPublic;
-  final String? linkedin;
-  final String? location;
-  final String? mobileNumber;
-  final String? photoUrl;
-  final List<ProjectEntity>? projects;
-  final List<String>? applications;
-  final List<String>? acceptedProjects;
-  final List<String>? skillsOrTopics;
-  final String? description;
-  final String? major;
-  final String? lastPortfolioUpdateAt;
+  String id;
+  String displayName;
+  String email;
+  String? headline;
+  bool isPublic;
+  String? linkedin;
+  String? location;
+  String? mobileNumber;
+  String? photoUrl;
+  List<ProjectEntity>? projects;
+  List<Map<String, String>>? applications;
+  List<String>? acceptedProjects;
+  List<String>? skillsOrTopics;
+  String? description;
+  String? major;
+  String? lastPortfolioUpdateAt;
+  Source? source;
 
   UserEntity({
     required this.id,
@@ -35,10 +40,30 @@ class UserEntity {
     this.description,
     this.major,
     this.lastPortfolioUpdateAt,
+    this.source,
   });
 
   factory UserEntity.fromMap(Map<String, dynamic> map) {
     final mapProjects = map['projects'] as List<dynamic>? ?? [];
+    List<Map<String, String>> applications = [];
+    try {
+      for (var element in ((map['applications'] ?? []) as List)) {
+        if (element is Map<String, String>) {
+          applications.add(element);
+        }
+      }
+    } catch (e) {
+      print(e);
+      applications = [];
+    }
+    var projects = List<ProjectEntity>.from(
+      mapProjects.map((i) => ProjectEntity.fromMap(i)),
+    );
+    projects.sort((a, b) {
+      final aDate = a.createdAt ?? DateTime(1970);
+      final bDate = b.createdAt ?? DateTime(1970);
+      return -aDate.compareTo(bDate);
+    });
     return UserEntity(
       id: map['id'] ?? '',
       displayName: map['displayName'] ?? '',
@@ -48,16 +73,114 @@ class UserEntity {
       linkedin: map['linkedin'] ?? '',
       location: map['location'] ?? '',
       mobileNumber: map['mobileNumber'] ?? '',
-      photoUrl: map['photoUrl'] ?? 'assets/images/gumball.jpg',
-      projects: List<ProjectEntity>.from(
-        mapProjects.map((i) => ProjectEntity.fromMap(i)),
-      ), //CHECK TO MAP
-      applications: List<String>.from(map['applications'] ?? []),
+      photoUrl: map['photoUrl'] ?? 'assets/images/pfp.png',
+      projects: projects, //CHECK TO MAP
+      applications: applications,
       acceptedProjects: List<String>.from(map['acceptedProjects'] ?? []),
       skillsOrTopics: List<String>.from(map['skillsOrTopics'] ?? []),
       description: map['description'] ?? '',
       major: map['major'] ?? '',
-      lastPortfolioUpdateAt: map['lastPortfolioUpdateAt'] ?? '',
     );
   }
+
+  Map<String, Object> toLocalMap() {
+    return {
+      'id': id,
+      'display_name': displayName,
+      'email': email,
+      'headline': headline ?? '',
+      'linkedin': linkedin ?? '',
+      'location': location ?? '',
+      'mobile_number': mobileNumber ?? '',
+      'description': description ?? '',
+      'major': major ?? '',
+      'skills': skillsOrTopics != null ? jsonEncode(skillsOrTopics) : '[]',
+    };
+  }
+
+  /// Create a [UserEntity] from a locally-stored map.
+  factory UserEntity.fromLocalMap(Map<String, dynamic> map) {
+    // Parse skills which may be stored as a JSON string or as a List.
+    final dynamic skillsRaw = map['skills'];
+    List<String>? skillsList = List<String>.from(jsonDecode(skillsRaw));
+
+    return UserEntity(
+      id: map['id']?.toString() ?? '',
+      displayName: map['display_name'],
+      email: map['email'] ?? '',
+      headline: (map['headline'] ?? '')?.toString(),
+      isPublic: true,
+      linkedin: (map['linkedin'] ?? '')?.toString(),
+      location: (map['location'] ?? '')?.toString(),
+      mobileNumber: (map['mobile_number'] ?? '')?.toString(),
+      photoUrl: 'assets/images/pfp.png',
+      projects: [],
+      applications: [],
+      acceptedProjects: [],
+      skillsOrTopics: skillsList,
+      description: (map['description'] ?? '')?.toString(),
+      major: (map['major'] ?? '')?.toString(),
+      lastPortfolioUpdateAt: '',
+    );
+  }
+
+  // ...existing code...
+  UserEntity copyWith({
+    String? id,
+    String? displayName,
+    String? email,
+    String? headline,
+    bool? isPublic,
+    String? linkedin,
+    String? location,
+    String? mobileNumber,
+    String? photoUrl,
+    List<ProjectEntity>? projects,
+    List<Map<String, String>>? applications,
+    List<String>? acceptedProjects,
+    List<String>? skillsOrTopics,
+    String? description,
+    String? major,
+    String? lastPortfolioUpdateAt,
+    Source? source,
+  }) {
+    return UserEntity(
+      id: id ?? this.id,
+      displayName: displayName ?? this.displayName,
+      email: email ?? this.email,
+      headline: headline ?? this.headline,
+      isPublic: isPublic ?? this.isPublic,
+      linkedin: linkedin ?? this.linkedin,
+      location: location ?? this.location,
+      mobileNumber: mobileNumber ?? this.mobileNumber,
+      photoUrl: photoUrl ?? this.photoUrl,
+      projects:
+          projects ??
+          (this.projects != null
+              ? List<ProjectEntity>.from(this.projects!)
+              : null),
+      applications:
+          applications ??
+          (this.applications != null
+              ? List<Map<String, String>>.from(this.applications!)
+              : null),
+      acceptedProjects:
+          acceptedProjects ??
+          (this.acceptedProjects != null
+              ? List<String>.from(this.acceptedProjects!)
+              : null),
+      skillsOrTopics:
+          skillsOrTopics ??
+          (this.skillsOrTopics != null
+              ? List<String>.from(this.skillsOrTopics!)
+              : null),
+      description: description ?? this.description,
+      major: major ?? this.major,
+      lastPortfolioUpdateAt:
+          lastPortfolioUpdateAt ?? this.lastPortfolioUpdateAt,
+      source: source ?? this.source,
+    );
+  }
+
+  // ...existing code...
 }

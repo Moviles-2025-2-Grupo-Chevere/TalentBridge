@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:talent_bridge_fl/components/user_list.dart';
 import 'package:talent_bridge_fl/data/user_service.dart';
+import 'package:talent_bridge_fl/domain/user_entity.dart';
 
 class LeaderFeed extends StatelessWidget {
   LeaderFeed({super.key});
@@ -8,7 +9,7 @@ class LeaderFeed extends StatelessWidget {
   final userService = UserService();
   @override
   Widget build(BuildContext context) {
-    var users = userService.getUsers();
+    List<UserEntity> users = [];
     return Column(
       children: [
         Row(

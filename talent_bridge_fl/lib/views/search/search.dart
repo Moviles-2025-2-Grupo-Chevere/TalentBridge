@@ -5,6 +5,9 @@ import 'package:talent_bridge_fl/services/firebase_service.dart';
 import 'package:talent_bridge_fl/cache/profile_cache_helper.dart';
 import 'package:cached_network_image/cached_network_image.dart'; // <-- NUEVO
 
+// ---- BQ timer helper (nuevo) ----
+import 'package:talent_bridge_fl/analytics/analytics_timer.dart';
+
 // ---- Tokens ----
 const kBg = Color(0xFFFEF7E6); // cream
 const kAmber = Color(0xFFFFC107); // amber accents
@@ -22,6 +25,10 @@ class _SearchState extends State<Search> {
   // Search state
   final _queryCtrl = TextEditingController();
   final _firebaseService = FirebaseService(); // uses your facade
+
+  // ---- BQ: medir time-to-first-content de People ----
+  late final ScreenTimer _tPeople;
+  bool _ttfcSent = false; // evita duplicar el evento
 
   // User data
   List<UserEntity> _allUsers = [];
@@ -41,6 +48,12 @@ class _SearchState extends State<Search> {
   @override
   void initState() {
     super.initState();
+    // Inicia cronómetro para People (Search)
+    _tPeople = ScreenTimer(
+      'first_content_people',
+      baseParams: {'screen': 'People'},
+    );
+
     _loadUserData();
     _queryCtrl.addListener(_onQueryChanged);
   }
@@ -93,10 +106,16 @@ class _SearchState extends State<Search> {
     final weights = frequencies.map(
       (s, i) => MapEntry(s, i / (skills.isEmpty ? 1 : skills.length)),
     );
-
     final filteredUsers = _allUsers
         .where((u) => (u.displayName).toLowerCase().contains(q))
         .toList();
+
+    // ---- BQ: primera vez que hay resultados -> dispara evento ----
+    if (!_ttfcSent && filteredUsers.isNotEmpty) {
+      _ttfcSent = true;
+      // Fuente 'cache' porque la lista sale de memoria local (no pegamos a red aquí)
+      _tPeople.endOnce(source: 'cache', itemCount: filteredUsers.length);
+    }
 
     final Map<UserEntity, double> scores = {};
     for (var u in filteredUsers) {

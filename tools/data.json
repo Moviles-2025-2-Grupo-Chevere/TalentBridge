@@ -1,0 +1,22 @@
+[
+  { "label": "JavaScript", "icon": "code" },
+  { "label": "Dart", "icon": "integration_instructions" },
+  { "label": "Flutter", "icon": "flutter_dash" },
+  { "label": "React", "icon": "hub" },
+  { "label": "Node.js", "icon": "terminal" },
+  { "label": "Firebase", "icon": "local_fire_department" },
+  { "label": "SQL", "icon": "table_chart" },
+  { "label": "RESTful APIs", "icon": "link" },
+  { "label": "Git", "icon": "merge_type" },
+  { "label": "Agile Methodologies", "icon": "autorenew" },
+  { "label": "UI/UX Design", "icon": "palette" },
+  { "label": "Test-Driven Development", "icon": "fact_check" },
+  { "label": "Continuous Integration", "icon": "sync" },
+  { "label": "Cloud Computing", "icon": "cloud" },
+  { "label": "Android Development", "icon": "android" },
+  { "label": "iOS Development", "icon": "phone_iphone" },
+  { "label": "Performance Optimization", "icon": "speed" },
+  { "label": "Data Structures & Algorithms", "icon": "schema" },
+  { "label": "Problem Solving", "icon": "psychology" },
+  { "label": "Leadership", "icon": "workspace_premium" }
+]

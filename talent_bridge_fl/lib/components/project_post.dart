@@ -1,51 +1,31 @@
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:talent_bridge_fl/components/project_post_image.dart';
+import 'package:talent_bridge_fl/components/project_post_pfp.dart';
 import 'package:talent_bridge_fl/domain/project_entity.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
 import 'package:talent_bridge_fl/views/user-profile/user_profile.dart';
-import 'package:cached_network_image/cached_network_image.dart'; // <-- NEW
+// <-- NEW
 
 class ProjectPost extends StatelessWidget {
   const ProjectPost({
     super.key,
     required this.project,
     required this.showApplyModal,
+    required this.showSaveModal,
+    required this.showRemoveModal,
   });
 
   final ProjectEntity project;
-  final void Function(String, String) showApplyModal;
-
-  bool _isNetwork(String? path) {
-    if (path == null) return false;
-    final p = path.toLowerCase();
-    return p.startsWith('http://') || p.startsWith('https://');
-  }
-
+  final void Function(String, String, String) showApplyModal;
+  final void Function(ProjectEntity) showSaveModal;
+  final void Function(ProjectEntity) showRemoveModal;
   @override
   Widget build(BuildContext context) {
-    final profilePictureUrl = project.createdBy?.photoUrl;
-    final _firebaseService = FirebaseService();
-
-    // --- Avatar provider: use disk cache if it's a URL; keep asset fallback ---
-    ImageProvider? _avatarProvider() {
-      if (profilePictureUrl == null || profilePictureUrl!.isEmpty) {
-        return const AssetImage('assets/images/gumball.jpg');
-      }
-      if (_isNetwork(profilePictureUrl)) {
-        return CachedNetworkImageProvider(profilePictureUrl!);
-      }
-      return AssetImage(profilePictureUrl!);
-    }
-
-    // --- Project image: use cache for network images; assets otherwise ---
-    Widget? _postImage() {
-      final url = project.imgUrl;
-      if (url == null || url.isEmpty) return null;
-      if (_isNetwork(url)) {
-        return Image(image: CachedNetworkImageProvider(url), fit: BoxFit.cover);
-      }
-      return Image.asset(url);
-    }
+    final firebaseService = FirebaseService();
+    var displayName = (project.createdBy?.displayName ?? '').isNotEmpty
+        ? project.createdBy!.displayName
+        : 'Anon user';
+    var minutesAgo = project.timeAgo;
 
     return Card(
       child: Padding(
@@ -74,10 +54,7 @@ class ProjectPost extends StatelessWidget {
                       );
                     },
                     customBorder: const CircleBorder(),
-                    child: CircleAvatar(
-                      radius: 24,
-                      backgroundImage: _avatarProvider(),
-                    ),
+                    child: ProjectPostPfp(uid: project.createdById),
                   ),
                 ),
                 Expanded(
@@ -89,8 +66,8 @@ class ProjectPost extends StatelessWidget {
                         style: const TextStyle(fontWeight: FontWeight.bold),
                       ),
                       Text(
-                        "${project.createdBy?.displayName ?? 'Project Manager'} · 5m",
-                        style: const TextStyle(fontWeight: FontWeight.w300),
+                        "$displayName · $minutesAgo",
+                        style: TextStyle(fontWeight: FontWeight.w300),
                       ),
                       Text(project.description),
                     ],
@@ -98,11 +75,9 @@ class ProjectPost extends StatelessWidget {
                 ),
               ],
             ),
-
-            // Project image (asset or cached network)
-            if (_postImage() != null) _postImage()!,
-
-            // Skills
+            ProjectPostImage(
+              project: project, //Gets the image by project ID
+            ),
             Wrap(
               spacing: 4,
               children: [
@@ -116,14 +91,27 @@ class ProjectPost extends StatelessWidget {
             Wrap(
               spacing: 4,
               children: [
-                TextButton(onPressed: () {}, child: const Text('Comments')),
-                TextButton(onPressed: () {}, child: const Text('Save')),
+                TextButton(onPressed: () {}, child: Text('Comments')),
+                if (!project.isFavorite)
+                  TextButton(
+                    onPressed: () => showSaveModal(project),
+                    child: Text('Save'),
+                  ),
+                if (project.isFavorite)
+                  TextButton(
+                    onPressed: () => showRemoveModal(project),
+                    child: Text('Remove'),
+                  ),
                 TextButton(
                   onPressed: () {
-                    final currentUserId = _firebaseService.currentUid() ?? "";
-                    showApplyModal(currentUserId, project.id ?? "");
+                    final currentUserId = firebaseService.currentUid() ?? "";
+                    showApplyModal(
+                      currentUserId,
+                      project.createdById,
+                      project.id ?? "",
+                    );
                   },
-                  child: const Text('Apply'),
+                  child: Text('Apply'),
                 ),
               ],
             ),

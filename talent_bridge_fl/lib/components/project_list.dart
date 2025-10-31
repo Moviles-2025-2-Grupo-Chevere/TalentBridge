@@ -1,55 +1,228 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:talent_bridge_fl/components/project_post.dart';
 import 'package:talent_bridge_fl/components/submit_alert_db.dart';
 import 'package:talent_bridge_fl/domain/project_entity.dart';
+import 'package:talent_bridge_fl/providers/upload_queue_apply_project.dart';
+import 'package:talent_bridge_fl/services/db_service.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
 
-class ProjectList extends StatelessWidget {
+class ProjectList extends ConsumerStatefulWidget {
   const ProjectList({super.key, required this.projects});
 
   final List<ProjectEntity> projects;
 
   @override
+  ConsumerState<ProjectList> createState() => _ProjectListState();
+}
+
+class _ProjectListState extends ConsumerState<ProjectList> {
+  final firebaseService = FirebaseService();
+  final dbService = DbService();
+
+  late final List<ProjectEntity> projects;
+
+  Future<void> submitProjectApplication(
+    BuildContext context,
+    String currentUserId,
+    String createdById,
+    String projectId,
+  ) async {
+    try {
+      final result = await ref
+          .read(projectApplyUploadProvider.notifier)
+          .enqueueProjectApplyUpload(
+            currentUserId,
+            projectId,
+            createdById,
+          );
+      // Only show queued message if there's no internet ;)
+      if (!result && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('The application will be sent later, when online'),
+          ),
+        );
+      } else if (result && context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('The application has been submitted successfully'),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint(e.toString());
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error submitting application: $e'),
+          ),
+        );
+      }
+    }
+    if (context.mounted) {
+      Navigator.of(context).pop();
+    }
+  }
+
+  void removeFromList(ProjectEntity p) {
+    setState(() {
+      projects.removeWhere((element) => element.id == p.id);
+    });
+  }
+
+  Future<void> onSaveProject(ProjectEntity project) async {
+    var scaffoldMessenger = ScaffoldMessenger.of(context);
+    try {
+      await dbService.insertSavedProject(project);
+      if (context.mounted) {
+        scaffoldMessenger.clearSnackBars();
+        scaffoldMessenger.showSnackBar(
+          SnackBar(content: Text('Project saved as favorite')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        scaffoldMessenger.clearSnackBars();
+        scaffoldMessenger.showSnackBar(
+          SnackBar(content: Text('Error saving project to favorites')),
+        );
+      }
+    }
+  }
+
+  Future<void> onRemoveProjectFromFavorites(ProjectEntity project) async {
+    var scaffoldMessenger = ScaffoldMessenger.of(context);
+    try {
+      await dbService.removeSavedProject(project.id!);
+      removeFromList(project);
+      if (context.mounted) {
+        scaffoldMessenger.clearSnackBars();
+        scaffoldMessenger.showSnackBar(
+          SnackBar(content: Text('Project removed from favorites')),
+        );
+      }
+    } catch (e) {
+      if (context.mounted) {
+        scaffoldMessenger.clearSnackBars();
+        scaffoldMessenger.showSnackBar(
+          SnackBar(content: Text('Error removing project from favorites')),
+        );
+      }
+    }
+  }
+
+  void showSaveModal(ProjectEntity p) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Save project"),
+        content: Text("Save this project in your favorites?"),
+        actions: [
+          OutlinedButton.icon(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            label: Text("Cancel"),
+            icon: Icon(Icons.cancel),
+          ),
+          FilledButton.icon(
+            onPressed: () {
+              onSaveProject(p);
+              Navigator.of(context).pop();
+            },
+            label: Text("Save"),
+            icon: Icon(Icons.save),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void showRemoveFromFavoritesModal(ProjectEntity p) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text("Remove project"),
+        content: Text("Remove this project from your favorites?"),
+        actions: [
+          OutlinedButton.icon(
+            onPressed: () {
+              Navigator.of(context).pop();
+            },
+            label: Text("Cancel"),
+            icon: Icon(Icons.cancel),
+          ),
+          FilledButton.icon(
+            onPressed: () {
+              onRemoveProjectFromFavorites(p);
+              Navigator.of(context).pop();
+            },
+            label: Text("Remove"),
+            icon: Icon(Icons.remove),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showApplyModal(
+    String currentUserId,
+    String createdById,
+    String projectId,
+  ) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext dialogContext) => SubmitAlertDb(
+        userId: currentUserId,
+        projectId: projectId,
+        onConfirm: () => submitProjectApplication(
+          context,
+          currentUserId,
+          createdById,
+          projectId,
+        ),
+      ),
+    );
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    projects = widget.projects;
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final firebaseService = FirebaseService();
+    ref.listen(
+      projectApplyUploadProvider,
+      (prev, next) {
+        if (prev != null && next == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(content: Text("Application uploaded successfully")),
+          );
+        }
+      },
+    );
+
     return ListView.builder(
       itemCount: projects.length,
       itemBuilder: (ctx, index) => Dismissible(
         key: ValueKey(projects[index]),
-        onDismissed: (direction) {},
+        onDismissed: (direction) {
+          if (direction == DismissDirection.endToStart &&
+              projects[index].isFavorite) {
+            onRemoveProjectFromFavorites(projects[index]);
+          }
+        },
         child: ProjectPost(
           project: projects[index],
-          showApplyModal: (String userId, String projectId) {
-            showDialog(
-              context: context,
-              builder: (BuildContext context) {
-                return SubmitAlertDb(
-                  userId: userId,
-                  projectId: projectId,
-                  onConfirm: () async {
-                    try {
-                      await firebaseService.addProjectToApplications(
-                        userId: userId,
-                        projectId: projectId,
-                      );
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Application submitted successfully!'),
-                        ),
-                      );
-                    } catch (e) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Error submitting application: $e'),
-                        ),
-                      );
-                    }
-                    Navigator.of(context).pop(); // Close the dialog
-                  },
-                );
-              },
-            );
-          },
+          showRemoveModal: showRemoveFromFavoritesModal,
+          showSaveModal: showSaveModal,
+          showApplyModal: _showApplyModal,
         ),
       ),
     );
