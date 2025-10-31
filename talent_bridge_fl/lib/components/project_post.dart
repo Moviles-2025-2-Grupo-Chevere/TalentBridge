@@ -72,7 +72,7 @@ class ProjectPost extends StatelessWidget {
               ],
             ),
             ProjectPostImage(
-              project: project,
+              project: project, //Gets the image by project ID
             ),
             Wrap(
               spacing: 4,

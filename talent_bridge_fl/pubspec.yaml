@@ -52,6 +52,8 @@ dependencies:
   cached_network_image: ^3.4.1
   flutter_cache_manager: ^3.4.1
   shared_preferences: ^2.5.3
+  hive_flutter: ^1.1.0
+  flutter_launcher_icons: ^0.14.4
 
 dev_dependencies:
   flutter_test:
@@ -103,3 +105,9 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+flutter_launcher_icons:
+  android: true
+  #ios: true
+  image_path: "assets/images/talent_bridge_logo.png"
+  #min_sdk_android: 21 # android min sdk min:16, default 21
