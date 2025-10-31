@@ -6,6 +6,8 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -23,31 +25,36 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.runtime.*
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.AsyncImage
 import com.example.talent_bridge_kt.R
 import com.example.talent_bridge_kt.presentation.ui.viewmodel.ProjectsViewModel
 import com.example.talent_bridge_kt.ui.theme.AccentYellow
 import com.example.talent_bridge_kt.ui.theme.CreamBackground
 import com.example.talent_bridge_kt.ui.theme.TitleGreen
-import androidx.lifecycle.viewmodel.compose.viewModel
 import java.util.concurrent.TimeUnit
-import androidx.compose.foundation.lazy.items
 import android.app.Application
-import androidx.compose.ui.platform.LocalContext
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
-import coil.compose.AsyncImage
 
 private fun projectsVmFactory(app: Application) =
     object : ViewModelProvider.Factory {
@@ -56,6 +63,7 @@ private fun projectsVmFactory(app: Application) =
             return com.example.talent_bridge_kt.presentation.ui.viewmodel.ProjectsViewModel(app) as T
         }
     }
+
 @Composable
 fun StudentFeedScreen(
     onBack: () -> Unit = {},
@@ -81,8 +89,20 @@ fun StudentFeedScreen(
     val savedList by vm.savedProjects.collectAsState()
     val savedIds = remember(savedList) { savedList.map { it.id }.toSet() }
 
-
     var showSubmitted by remember { mutableStateOf(false) }
+    var showAlreadyApplied by remember { mutableStateOf(false) }
+    var applyError by remember { mutableStateOf<String?>(null) }
+
+    val appEvent by vm.applicationEvent.collectAsState()
+    var showInfo by remember { mutableStateOf(false) }
+    var infoMessage by remember { mutableStateOf("") }
+
+    LaunchedEffect(appEvent) {
+        appEvent?.let {
+            infoMessage = it
+            showInfo = true
+        }
+    }
 
     Surface(color = Color.White, modifier = Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
@@ -94,7 +114,10 @@ fun StudentFeedScreen(
                 onDrawer = onOpenDrawer
             )
 
+            val listState = rememberLazyListState()
+
             LazyColumn(
+                state = listState,
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxWidth(),
@@ -114,7 +137,6 @@ fun StudentFeedScreen(
                     )
                 }
 
-                // Estado: Loading
                 if (loading) {
                     item {
                         Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
@@ -123,14 +145,14 @@ fun StudentFeedScreen(
                     }
                 }
 
-                // Estado: Error
-                if (error != null) {
+                if (error != null || applyError != null) {
+                    val err = error ?: applyError
                     item {
                         Column(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Text("Failed to load: $error", color = Color.Red)
+                            Text("Failed: $err", color = Color.Red)
                             Spacer(Modifier.height(8.dp))
                             OutlinedButton(onClick = { vm.refresh() }) {
                                 Text("Retry")
@@ -139,10 +161,10 @@ fun StudentFeedScreen(
                     }
                 }
 
-                // Estado: Lista OK
                 if (!loading && error == null) {
                     items(projects, key = { it.id }) { p ->
                         val isSaved = savedIds.contains(p.id)
+                        val isApplied = vm.appliedProjectIds.collectAsState().value.contains(p.id)
 
                         ProjectCardSimple(
                             time = p.createdAt?.let { prettySince(it.toDate().time) } ?: "—",
@@ -152,8 +174,17 @@ fun StudentFeedScreen(
                             tags = p.skills,
                             imageUrl = p.imgUrl,
                             saved = isSaved,
+                            applied = isApplied,
                             onSaveClick = { vm.toggleFavorite(p) },
-                            onApplyClick = { showSubmitted = true },
+                            onApplyClick = {
+                                vm.toggleApplication(
+                                    p,
+                                    onApplied = { showSubmitted = true; applyError = null },
+                                    onUnapplied = { /* optional feedback */ },
+                                    onError = { msg -> applyError = msg },
+                                    onQueuedOffline = { applyError = null }
+                                )
+                            },
                             onSomeOneElseProfile = onSomeOneElseProfile
                         )
                     }
@@ -188,11 +219,18 @@ fun StudentFeedScreen(
             onKeepExploring = { showSubmitted = false }
         )
     }
+
+    if (showAlreadyApplied) {
+        AlreadyAppliedDialog(onOk = { showAlreadyApplied = false })
+    }
+
+    if (showInfo) {
+        InfoDialog(message = infoMessage, onOk = { showInfo = false; infoMessage = "" })
+    }
 }
 
 /* ============================ Helpers ============================ */
 
-// Muestra "5m", "2h", "3d" desde el millis indicado
 private fun prettySince(thenMs: Long): String {
     val diff = System.currentTimeMillis() - thenMs
     val min = TimeUnit.MILLISECONDS.toMinutes(diff)
@@ -206,11 +244,44 @@ private fun prettySince(thenMs: Long): String {
     }
 }
 
-/* ============================ (tus componentes existentes) ============================ */
-/* ProjectCardSimple, ApplicationSubmittedDialog, TopBarCustom, BottomBarCustom
-   — déjalos como los tienes. No necesitan cambios para pintar datos del repo. */
-
 /* ============================ COMPONENTES ============================ */
+
+@Composable
+private fun AlreadyAppliedDialog(onOk: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.55f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier
+                .widthIn(min = 240.dp, max = 320.dp)
+                .shadow(8.dp, RoundedCornerShape(16.dp))
+                .background(Color(0xFF0F6A7A), RoundedCornerShape(16.dp))
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                "Ya aplicaste a este proyecto",
+                color = Color.White,
+                fontSize = 18.sp,
+                lineHeight = 22.sp,
+                textAlign = TextAlign.Center,
+                fontWeight = FontWeight.SemiBold
+            )
+            Spacer(Modifier.height(12.dp))
+            Button(
+                onClick = onOk,
+                shape = RoundedCornerShape(24.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.White,
+                    contentColor = Color(0xFF0F6A7A)
+                )
+            ) { Text("Entendido", fontSize = 12.sp) }
+        }
+    }
+}
 
 @Composable
 private fun ProjectCardSimple(
@@ -221,10 +292,10 @@ private fun ProjectCardSimple(
     tags: List<String>,
     imageUrl: String?,
     saved: Boolean,
+    applied: Boolean,
     onSaveClick: () -> Unit,
     onApplyClick: () -> Unit,
     onSomeOneElseProfile: () -> Unit
-
 ) {
     Column(
         modifier = Modifier
@@ -234,12 +305,11 @@ private fun ProjectCardSimple(
             .border(1.dp, Color(0xFFEDEDED), RoundedCornerShape(8.dp))
             .padding(12.dp)
     ) {
-        // mini-header
         Row(verticalAlignment = Alignment.CenterVertically) {
             Image(
                 painter = painterResource(id = R.drawable.iniciativa),
                 contentDescription = "iniciativa",
-                modifier = Modifier.size(28.dp) .clickable { onSomeOneElseProfile() },
+                modifier = Modifier.size(28.dp).clickable { onSomeOneElseProfile() },
                 contentScale = ContentScale.Crop
             )
             Spacer(Modifier.width(8.dp))
@@ -265,12 +335,10 @@ private fun ProjectCardSimple(
             )
         }
 
-        // Chips
         Spacer(Modifier.height(8.dp))
-
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally) // centra las chips y mantiene espacio
+            horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
         ) {
             tags.forEach { tag ->
                 Box(
@@ -283,15 +351,12 @@ private fun ProjectCardSimple(
             }
         }
 
-
-        // Acciones
         Spacer(Modifier.height(10.dp))
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // ---- SAVE / SAVED ----
             OutlinedButton(
                 onClick = onSaveClick,
                 shape = RoundedCornerShape(20.dp),
@@ -301,9 +366,8 @@ private fun ProjectCardSimple(
                 )
             ) { Text(if (saved) "Saved" else "Save", fontSize = 12.sp) }
 
-
             OutlinedButton(
-                onClick = { /* guardar */ },
+                onClick = { /* comments */ },
                 shape = RoundedCornerShape(20.dp),
                 colors = ButtonDefaults.outlinedButtonColors(
                     containerColor = Color.White,
@@ -315,30 +379,25 @@ private fun ProjectCardSimple(
                 onClick = onApplyClick,
                 shape = RoundedCornerShape(20.dp),
                 colors = ButtonDefaults.outlinedButtonColors(
-                    containerColor = Color.White,
+                    containerColor = if (applied) TitleGreen.copy(alpha = 0.08f) else Color.White,
                     contentColor = TitleGreen
                 )
-            ) { Text("Apply", fontSize = 12.sp) }
-
+            ) { Text(if (applied) "Applied" else "Apply", fontSize = 12.sp) }
         }
     }
 }
-
-/* ------------------------- Pop-up/Diálogo ------------------------- */
 
 @Composable
 private fun ApplicationSubmittedDialog(
     onMyApplications: () -> Unit,
     onKeepExploring: () -> Unit
 ) {
-    // Scrim oscuro
     Box(
         modifier = Modifier
             .fillMaxSize()
             .background(Color.Black.copy(alpha = 0.55f)),
         contentAlignment = Alignment.Center
     ) {
-        // Tarjeta centrada
         Column(
             modifier = Modifier
                 .widthIn(min = 240.dp, max = 320.dp)
@@ -387,7 +446,42 @@ private fun ApplicationSubmittedDialog(
     }
 }
 
-/* -------------------------- Top / Bottom bars -------------------------- */
+@Composable
+private fun InfoDialog(message: String, onOk: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color.Black.copy(alpha = 0.55f)),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(
+            modifier = Modifier
+                .widthIn(min = 240.dp, max = 320.dp)
+                .shadow(8.dp, RoundedCornerShape(16.dp))
+                .background(Color(0xFF0F6A7A), RoundedCornerShape(16.dp))
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                message,
+                color = Color.White,
+                fontSize = 16.sp,
+                lineHeight = 20.sp,
+                textAlign = TextAlign.Center,
+                fontWeight = FontWeight.Medium
+            )
+            Spacer(Modifier.height(12.dp))
+            Button(
+                onClick = onOk,
+                shape = RoundedCornerShape(24.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.White,
+                    contentColor = Color(0xFF0F6A7A)
+                )
+            ) { Text("OK", fontSize = 12.sp) }
+        }
+    }
+}
 
 @Composable
 private fun TopBarCustom(
@@ -417,7 +511,6 @@ private fun TopBarCustom(
                 contentScale = ContentScale.Fit
             )
         }
-
 
         Row(
             modifier = Modifier

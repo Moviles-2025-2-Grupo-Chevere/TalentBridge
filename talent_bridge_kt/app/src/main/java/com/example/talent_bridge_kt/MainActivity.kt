@@ -53,11 +53,8 @@ import com.example.talent_bridge_kt.presentation.ui.components.HomeWithDrawer
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.currentBackStackEntryAsState
-import androidx.navigation.compose.dialog
 import com.example.talent_bridge_kt.data.AnalyticsManager
 import com.example.talent_bridge_kt.data.repository.ProfileRepository
-import com.example.talent_bridge_kt.presentation.ui.screens.CreateProjectPopUp
-import kotlin.system.measureTimeMillis
 
 
 
@@ -109,7 +106,7 @@ class MainActivity : ComponentActivity() {
                     } else {
                         snack.currentSnackbarData?.dismiss()
                         showNoNetDialog = false
-                        projectsVm.syncPendingProjects()
+                        // Removed syncPendingProjects() as offline queue is not active
                     }
                 }
 
@@ -166,32 +163,12 @@ class MainActivity : ComponentActivity() {
                                 InitiativeProfileSceen(
                                     onBack = { navController.popBackStack() },
                                     onOpenDrawer = { openDrawer() },
-                                    onAddProject = { navController.navigate("createProject") }
+                                    onAddProject = { /* disabled for now */ }
                                 )
                             }
                         }
 
-                        dialog("createProject") {
-                            CreateProjectPopUp(
-                                onDismiss = { navController.popBackStack() },
-                                { draft ->
-                                    // 2) aquí usamos el VM que obtuvimos arriba
-                                    projectsVm.createProject(
-                                        title = draft.title,
-                                        description = draft.description,
-                                        skills = draft.skills,
-                                        imageUri = draft.imageUri
-                                    ) { ok, err ->
-                                        if (ok) {
-                                            println("✅ Proyecto creado con éxito")
-                                            navController.popBackStack()
-                                        } else {
-                                            println("❌ Error creando proyecto: ${err?.message}")
-                                        }
-                                    }
-                                }
-                            )
-                        }
+                        // Removed dialog("createProject") as createProject API was removed
 
                         composable(Routes.LeaderFeed) {
                             HomeWithDrawer(navController = navController) { openDrawer ->
@@ -241,7 +218,7 @@ class MainActivity : ComponentActivity() {
                                 StudentProfileScreen(
                                     onBack = { navController.popBackStack() },
                                     onOpenDrawer = { openDrawer() },
-                                    onAddProject = { navController.navigate("createProject") }
+                                    onAddProject = { /* disabled for now */ }
                                 )
                             }
                         }
