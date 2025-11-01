@@ -14,7 +14,8 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.lifecycle.viewmodel.viewModelFactory
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import com.example.talent_bridge_kt.core.conectivity.AndroidConnectivityObserver
 
 import com.example.talent_bridge_kt.core.navegation.Routes
@@ -46,13 +47,20 @@ import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarDuration
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.viewmodel.initializer
 import com.example.talent_bridge_kt.presentation.ui.components.HomeWithDrawer
 import androidx.compose.runtime.*
 import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.dialog
 import com.example.talent_bridge_kt.data.AnalyticsManager
 import com.example.talent_bridge_kt.data.repository.ProfileRepository
+import com.example.talent_bridge_kt.presentation.ui.screens.CreateProjectPopUp
+import com.google.firebase.auth.FirebaseAuth
+import com.example.talent_bridge_kt.ConnectivityViewModel
+import com.example.talent_bridge_kt.ConnectivityViewModelFactory
+import kotlin.system.measureTimeMillis
+import androidx.room.Room
+import com.example.talent_bridge_kt.data.local.AppDatabase
 
 
 
@@ -62,15 +70,7 @@ import com.example.talent_bridge_kt.data.repository.ProfileRepository
 class MainActivity : ComponentActivity() {
 
     private val viewmodel by viewModels<ConnectivityViewModel> {
-        viewModelFactory {
-            initializer {
-                ConnectivityViewModel(
-                    connectivityObserver = AndroidConnectivityObserver(
-                        context = applicationContext
-                    )
-                )
-            }
-        }
+        ConnectivityViewModelFactory(applicationContext)
     }
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -85,10 +85,11 @@ class MainActivity : ComponentActivity() {
                 val context = LocalContext.current
                 val projectsVm: com.example.talent_bridge_kt.presentation.ui.viewmodel.ProjectsViewModel =
                     androidx.lifecycle.viewmodel.compose.viewModel(
-                        factory = viewModelFactory {
-                            initializer {
+                        factory = object : ViewModelProvider.Factory {
+                            @Suppress("UNCHECKED_CAST")
+                            override fun <T : ViewModel> create(modelClass: Class<T>): T {
                                 val app = context.applicationContext as android.app.Application
-                                com.example.talent_bridge_kt.presentation.ui.viewmodel.ProjectsViewModel(app)
+                                return com.example.talent_bridge_kt.presentation.ui.viewmodel.ProjectsViewModel(app) as T
                             }
                         }
                     )
@@ -104,7 +105,8 @@ class MainActivity : ComponentActivity() {
                     } else {
                         snack.currentSnackbarData?.dismiss()
                         showNoNetDialog = false
-                        // Removed syncPendingProjects() as offline queue is not active
+                        // El ProjectsViewModel ya sincroniza automáticamente las aplicaciones pendientes
+                        // cuando detecta que se reconectó a internet (en su init)
                     }
                 }
 
@@ -144,12 +146,16 @@ class MainActivity : ComponentActivity() {
                     snackbarHost = { SnackbarHost(snack) }
                 ) { inner ->
 
-                    val projectsVm: com.example.talent_bridge_kt.presentation.ui.viewmodel.ProjectsViewModel =
-                        androidx.lifecycle.viewmodel.compose.viewModel()
+                    val firebaseUser = FirebaseAuth.getInstance().currentUser
+                    val startDest = if (firebaseUser != null) {
+                        Routes.StudentFeed
+                    } else {
+                        Routes.Login
+                    }
 
                     NavHost(
                         navController = navController,
-                        startDestination = Routes.Login,
+                        startDestination = startDest,
                         modifier = Modifier.padding(inner)
                     ) {
                         composable(Routes.Login) {
@@ -169,12 +175,32 @@ class MainActivity : ComponentActivity() {
                                 InitiativeProfileSceen(
                                     onBack = { navController.popBackStack() },
                                     onOpenDrawer = { openDrawer() },
-                                    onAddProject = { /* disabled for now */ }
+                                    onAddProject = { navController.navigate("createProject") }
                                 )
                             }
                         }
 
-                        // Removed dialog("createProject") as createProject API was removed
+                        dialog("createProject") {
+                            CreateProjectPopUp(
+                                onDismiss = { navController.popBackStack() },
+                                { draft ->
+                                    // 2) aquí usamos el VM que obtuvimos arriba
+                                    projectsVm.createProject(
+                                        title = draft.title,
+                                        description = draft.description,
+                                        skills = draft.skills,
+                                        imageUri = draft.imageUri
+                                    ) { ok, err ->
+                                        if (ok) {
+                                            println(" Proyecto creado con éxito")
+                                            navController.popBackStack()
+                                        } else {
+                                            println(" Error creando proyecto: ${err?.message}")
+                                        }
+                                    }
+                                }
+                            )
+                        }
 
                         composable(Routes.LeaderFeed) {
                             HomeWithDrawer(navController = navController) { openDrawer ->
@@ -193,16 +219,35 @@ class MainActivity : ComponentActivity() {
                             HomeWithDrawer(navController = navController) { openDrawer ->
                                 SavedProjectsScreen(
                                     onBack = { navController.popBackStack() },
-                                    onOpenDrawer = { openDrawer() }
+                                    onOpenDrawer = { openDrawer() },
+                                    onHome = { navController.navigate(Routes.StudentFeed) },
+                                    onSearch = { navController.navigate(Routes.Search) },
+                                    onExploreStudents = { navController.navigate(Routes.LeaderFeed) },
+                                    onFav = { navController.navigate(Routes.SavedProjects) }
                                 )
                             }
                         }
 
                         composable(Routes.Search) {
+                            val context = LocalContext.current
+                            
+                            // Crear instancia de la base de datos y obtener el DAO
+                            val db = remember {
+                                Room.databaseBuilder(
+                                    context.applicationContext,
+                                    AppDatabase::class.java,
+                                    "projects_db"
+                                )
+                                    .fallbackToDestructiveMigration()
+                                    .build()
+                            }
+                            val feedStudentDao = remember { db.feedStudentDao() }
 
                             val repo = FirestoreSearchRepository(FirebaseFirestore.getInstance())
-                            val vm: SearchViewModel = viewModel(
-                                factory = SearchViewModelFactory(repo)
+                            val connectivityVm = viewmodel
+
+                            val vm: SearchViewModel = androidx.lifecycle.viewmodel.compose.viewModel(
+                                factory = SearchViewModelFactory(repo, connectivityVm, feedStudentDao)
                             )
                             SearchScreen(
                                 vm = vm,
@@ -210,11 +255,10 @@ class MainActivity : ComponentActivity() {
                                 onSearch = { navController.navigate(Routes.Search) },
                                 onProfile = { navController.navigate(Routes.StudentProfile) },
                                 onHome = { navController.navigate(Routes.StudentFeed) },
+                                onFav = { navController.navigate(Routes.SavedProjects) },
                                 onStudentClick = { uid ->
                                     navController.navigate(Routes.someoneElse(uid))
                                 }
-
-
                             )
                         }
 
@@ -224,7 +268,11 @@ class MainActivity : ComponentActivity() {
                                 StudentProfileScreen(
                                     onBack = { navController.popBackStack() },
                                     onOpenDrawer = { openDrawer() },
-                                    onAddProject = { /* disabled for now */ }
+                                    onAddProject = { navController.navigate("createProject") },
+                                    onHome = { navController.navigate(Routes.StudentFeed) },
+                                    onSearch = { navController.navigate(Routes.Search) },
+                                    onExploreStudents = { navController.navigate(Routes.LeaderFeed) },
+                                    onFav = { navController.navigate(Routes.SavedProjects) }
                                 )
                             }
                         }
@@ -249,7 +297,7 @@ class MainActivity : ComponentActivity() {
                             HomeWithDrawer(navController = navController) { openDrawer ->
                                 StudentFeedScreen(
                                     onBack = { navController.popBackStack() },
-                                    onSomeOneElseProfile = { navController.navigate(Routes.SomeOneElseProfile) },
+                                    onSomeOneElseProfile = { uid -> navController.navigate(Routes.someoneElse(uid)) },
                                     onExploreStudents = { navController.navigate(Routes.LeaderFeed) },
                                     onSearch = { navController.navigate(Routes.Search) },
                                     onProfile = { navController.navigate(Routes.StudentProfile) },

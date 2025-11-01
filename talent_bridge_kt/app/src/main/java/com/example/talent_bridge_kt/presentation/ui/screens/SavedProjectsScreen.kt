@@ -12,6 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
@@ -67,6 +68,7 @@ fun SavedProjectsScreen(
     // bottom bar
     onHome: () -> Unit = {},
     onSearch: () -> Unit = {},
+    onExploreStudents: () -> Unit = {},
     onFav: () -> Unit = {},
 ) {
     // Obtener VM con Application (igual que en tu feed)
@@ -171,14 +173,18 @@ fun SavedProjectsScreen(
             BottomBarCustom(
                 onHome = onHome,
                 onSearch = onSearch,
-                onMenu = onOpenMenu,
+                onMenu = onExploreStudents,
                 onFav = onFav
             )
         }
     }
 
     if (showInfo) {
-        InfoDialog(message = infoMessage, onOk = { showInfo = false; infoMessage = "" })
+        InfoDialog(message = infoMessage, onOk = { 
+            showInfo = false
+            infoMessage = ""
+            vm.clearApplicationEvent() // Limpiar el evento para que no se vuelva a mostrar
+        })
     }
 }
 
@@ -386,7 +392,7 @@ private fun BottomBarCustom(
         ) {
             IconButton(onClick = onHome)  { Icon(Icons.Filled.Home,  contentDescription = "Home",  tint = TitleGreen) }
             IconButton(onClick = onSearch){ Icon(Icons.Filled.Search,contentDescription = "Search",tint = TitleGreen) }
-            IconButton(onClick = onMenu)  { Icon(Icons.Filled.Menu,  contentDescription = "Menu",  tint = TitleGreen) }
+            IconButton(onClick = onMenu)  { Icon(Icons.Filled.Group,  contentDescription = "Explore Students",  tint = TitleGreen) }
             IconButton(onClick = onFav)   { Icon(Icons.Filled.FavoriteBorder, contentDescription = "Fav", tint = TitleGreen) }
         }
     }

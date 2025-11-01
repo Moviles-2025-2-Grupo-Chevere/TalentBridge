@@ -78,7 +78,12 @@ fun StudentProfileScreen(
     onAddPortfolio: () -> Unit = {},
     onAddProject: () -> Unit = {},
     onBack: () -> Unit = {},
-    onOpenDrawer: () -> Unit = {}
+    onOpenDrawer: () -> Unit = {},
+    // bottom bar navigation
+    onHome: () -> Unit = {},
+    onSearch: () -> Unit = {},
+    onExploreStudents: () -> Unit = {},
+    onFav: () -> Unit = {}
 ) {
     // --------- estado de edición y campos básicos ---------
     var email by remember { mutableStateOf("") }
@@ -789,7 +794,10 @@ fun StudentProfileScreen(
             }
 
             BottomBarCustom(
-                onHome = { }, onSearch = { }, onMenu = { }, onFav = { }
+                onHome = onHome,
+                onSearch = onSearch,
+                onMenu = onExploreStudents,
+                onFav = onFav
             )
         }
     }
@@ -1230,7 +1238,7 @@ private fun BottomBarCustom(onHome: () -> Unit, onSearch: () -> Unit, onMenu: ()
         ) {
             IconButton(onClick = onHome)  { Icon(Icons.Filled.Home,  contentDescription = "Home",  tint = TitleGreen) }
             IconButton(onClick = onSearch){ Icon(Icons.Filled.Search,contentDescription = "Search",tint = TitleGreen) }
-            IconButton(onClick = onMenu)  { Icon(Icons.Filled.Menu,  contentDescription = "Menu",  tint = TitleGreen) }
+            IconButton(onClick = onMenu)  { Icon(Icons.Filled.Group,  contentDescription = "Explore Students",  tint = TitleGreen) }
             IconButton(onClick = onFav)   { Icon(Icons.Filled.FavoriteBorder, contentDescription = "Fav", tint = TitleGreen) }
         }
     }

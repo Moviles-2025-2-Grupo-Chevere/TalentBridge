@@ -6,5 +6,6 @@ data class StudentListItem(
     val avatarUrl: String?,
     val headline: String?,
     val bio: String?,
-    val skillsOrTopics: List<String>
+    val skillsOrTopics: List<String>,
+    val email: String?
 )

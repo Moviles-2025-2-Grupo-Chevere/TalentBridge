@@ -17,7 +17,10 @@ class StudentsViewModel(
     private val repo: UsersFeedRepository = UsersFeedRepository(
         app,
         connectivityObserver = AndroidConnectivityObserver(app)
-    )
+    ),
+    private var lastLoadWasOffline: Boolean = false,
+    private var lastLoadTimestamp: Long = 0L
+
 ) : AndroidViewModel(app) {
 
     val students: MutableStateFlow<List<StudentListItem>> = MutableStateFlow(emptyList())
@@ -34,10 +37,14 @@ class StudentsViewModel(
                 .collectLatest { connected ->
                     val wasOffline = isOffline.value
                     isOffline.value = !connected
-                    if (connected && !loading.value) {
-                        refresh()
-                    } else if (!connected && !wasOffline) {
-                        loadCachedOnly()
+                    if (connected) {
+                        if (lastLoadWasOffline && !loading.value) {
+                            refresh()
+                        }
+                    } else {
+                        if (!wasOffline) {
+                            loadCachedOnly()
+                        }
                     }
                 }
         }
@@ -59,10 +66,16 @@ class StudentsViewModel(
             onSuccess = { all ->
                 students.value = all
                 isOffline.value = false
+
+                lastLoadWasOffline = false
+                lastLoadTimestamp = System.currentTimeMillis()
             },
             onFailure = { e ->
                 error.value = e.message ?: "Error loading students"
                 isOffline.value = true
+
+                lastLoadWasOffline = true
+                lastLoadTimestamp = System.currentTimeMillis()
             }
         )
         loading.value = false
@@ -73,6 +86,9 @@ class StudentsViewModel(
             val cached = repo.getStudents().first()
             students.value = cached
             error.value = null
+
+            lastLoadWasOffline = true
+            lastLoadTimestamp = System.currentTimeMillis()
         } catch (e: Exception) {
             error.value = "No cached students available"
         }

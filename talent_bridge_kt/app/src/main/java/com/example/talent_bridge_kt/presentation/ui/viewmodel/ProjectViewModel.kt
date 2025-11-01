@@ -15,6 +15,11 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.firestore.ktx.firestore
+import android.net.Uri
+import com.example.talent_bridge_kt.data.firebase.FirebaseProfileRepository
+import com.example.talent_bridge_kt.data.firebase.FirebaseStorageRepository
+import com.example.talent_bridge_kt.domain.repository.ProfileRepository
+import java.util.UUID
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -29,7 +34,9 @@ class ProjectsViewModel(
         connectivityObserver = AndroidConnectivityObserver(app)
     ),
     private val localRepo: ProjectRepository = ProjectRepository(app),
-    private val applicationsLocal: ApplicationsLocalRepository = ApplicationsLocalRepository(app)
+    private val applicationsLocal: ApplicationsLocalRepository = ApplicationsLocalRepository(app),
+    private val storageRepo: FirebaseStorageRepository = FirebaseStorageRepository(),
+    private val profileRepo: ProfileRepository = FirebaseProfileRepository()
 ) : AndroidViewModel(app) {
 
     private val userId: String = FirebaseAuth.getInstance().currentUser?.uid ?: "guest"
@@ -41,6 +48,9 @@ class ProjectsViewModel(
 
     val applicationEvent = MutableStateFlow<String?>(null)
     val appliedProjectIds = MutableStateFlow<Set<String>>(emptySet())
+    
+    // Flag para evitar múltiples refresh() concurrentes
+    private var isRefreshing = false
 
     private val usersCol = Firebase.firestore.collection("users")
 
@@ -165,20 +175,28 @@ class ProjectsViewModel(
     }
 
     fun refresh() = viewModelScope.launch {
+        // Evitar múltiples refresh concurrentes
+        if (isRefreshing) return@launch
+        isRefreshing = true
+        
         loading.value = true
         error.value = null
-        val result = feedRepo.refreshProjects()
-        result.fold(
-            onSuccess = { freshProjects ->
-                projects.value = freshProjects
-                isOffline.value = false
-            },
-            onFailure = { exception ->
-                error.value = exception.message ?: "Error loading projects"
-                isOffline.value = true
-            }
-        )
-        loading.value = false
+        try {
+            val result = feedRepo.refreshProjects()
+            result.fold(
+                onSuccess = { freshProjects ->
+                    projects.value = freshProjects
+                    isOffline.value = false
+                },
+                onFailure = { exception ->
+                    error.value = exception.message ?: "Error loading projects"
+                    isOffline.value = true
+                }
+            )
+        } finally {
+            loading.value = false
+            isRefreshing = false
+        }
     }
 
     private fun syncPendingApplications() = viewModelScope.launch {
@@ -198,7 +216,6 @@ class ProjectsViewModel(
                     userRef.update("applications", FieldValue.arrayUnion(application)).await()
                     applicationsLocal.remove(item.id)
                     appliedProjectIds.value = appliedProjectIds.value + item.projectId
-                    applicationEvent.value = "Ya se envió la aplicación al proyecto \"${item.projectTitle}\" debido a que ya se conectó a internet"
                     
                     // Trackear en Firebase Analytics (aplicación sincronizada offline)
                     trackApplicationAnalytics(uid, item.projectId, item.projectTitle)
@@ -208,6 +225,11 @@ class ProjectsViewModel(
                 } catch (_: Exception) {
                     // Dejar en cola para próximo intento
                 }
+            }
+            
+            // Mostrar UN solo mensaje después de sincronizar todas las aplicaciones
+            if (list.isNotEmpty() && applicationsLocal.list().isEmpty()) {
+                applicationEvent.value = "Se sincronizaron todas las aplicaciones a proyectos pendientes"
             }
         } catch (_: Exception) { }
     }
@@ -352,6 +374,78 @@ class ProjectsViewModel(
             // Error al obtener datos del usuario o enviar analytics, no es crítico
             android.util.Log.e("ProjectViewModel", "Error in trackApplicationAnalytics", e)
             e.printStackTrace()
+        }
+    }
+
+    fun clearApplicationEvent() {
+        applicationEvent.value = null
+    }
+
+    fun createProject(
+        title: String,
+        description: String,
+        skills: List<String>,
+        imageUri: String?,
+        callback: (Boolean, Exception?) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                val uid = FirebaseAuth.getInstance().currentUser?.uid
+                    ?: throw IllegalStateException("Debes iniciar sesión para crear un proyecto")
+
+                // 1. Subir imagen si existe
+                var imageUrl: String? = null
+                if (!imageUri.isNullOrBlank()) {
+                    try {
+                        val uri = Uri.parse(imageUri)
+                        val projectId = UUID.randomUUID().toString()
+                        imageUrl = storageRepo.uploadProjectImage(projectId, uri)
+                    } catch (e: Exception) {
+                        callback(false, Exception("Error al subir la imagen: ${e.message}", e))
+                        return@launch
+                    }
+                }
+
+                // 2. Obtener perfil actual
+                val profileResult = profileRepo.getProfile()
+                val currentProfile = when (profileResult) {
+                    is com.example.talent_bridge_kt.domain.util.Resource.Success -> profileResult.data
+                    is com.example.talent_bridge_kt.domain.util.Resource.Error -> {
+                        callback(false, Exception("Error al obtener perfil: ${profileResult.message}"))
+                        return@launch
+                    }
+                }
+
+                // 3. Crear nuevo proyecto
+                val projectId = UUID.randomUUID().toString()
+                val newProject = Project(
+                    id = projectId,
+                    title = title,
+                    subtitle = null,
+                    description = description,
+                    skills = skills,
+                    imgUrl = imageUrl,
+                    createdAt = com.google.firebase.Timestamp.now(),
+                    createdById = uid
+                )
+
+                // 4. Actualizar perfil con el nuevo proyecto
+                val updatedProfile = currentProfile.copy(
+                    projects = currentProfile.projects + newProject
+                )
+
+                val updateResult = profileRepo.updateProfile(updatedProfile)
+                when (updateResult) {
+                    is com.example.talent_bridge_kt.domain.util.Resource.Success -> {
+                        callback(true, null)
+                    }
+                    is com.example.talent_bridge_kt.domain.util.Resource.Error -> {
+                        callback(false, Exception("Error al actualizar perfil: ${updateResult.message}"))
+                    }
+                }
+            } catch (e: Exception) {
+                callback(false, e)
+            }
         }
     }
 }
