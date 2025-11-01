@@ -16,6 +16,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -45,6 +46,7 @@ fun InitiativeProfileSceen(
     onAddOferta: () -> Unit = {},
     onAddProject: () -> Unit = {},
     onBack: () -> Unit = {},
+    onOpenDrawer: () -> Unit = {}
 ) {
 
     var email by remember { mutableStateOf("omargalvez@gmail.com") }
@@ -59,7 +61,8 @@ fun InitiativeProfileSceen(
             TopBarCustom(
                 height = 64.dp,
                 onBack = onBack,
-                onMenu = {  }
+                onMenu = {  },
+                onDrawer= onOpenDrawer
             )
 
             Box(modifier = Modifier.weight(1f)) {
@@ -162,9 +165,9 @@ fun InitiativeProfileSceen(
                             horizontalArrangement = Arrangement.spacedBy(16.dp)
                         ) {
                             AddBox(
-                                title = "Add Offer",
+                                title = "Add Project",
                                 modifier = Modifier.weight(1f),
-                                onClick = onAddOferta
+                                onClick = onAddProject
                             )
                         }
                     }
@@ -194,7 +197,8 @@ fun InitiativeProfileSceen(
 private fun TopBarCustom(
     height: Dp,
     onBack: () -> Unit,
-    onMenu: () -> Unit
+    onMenu: () -> Unit,
+    onDrawer: () -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -233,6 +237,11 @@ private fun TopBarCustom(
             IconButton(onClick = onMenu) {
                 Icon(Icons.Filled.Menu, contentDescription = "Menu", tint = TitleGreen)
             }
+            Spacer(Modifier.width(4.dp))
+            IconButton(onClick = onDrawer) {
+                Icon(Icons.Filled.MoreVert, contentDescription = "Open drawer", tint = TitleGreen)
+            }
+
         }
     }
 }

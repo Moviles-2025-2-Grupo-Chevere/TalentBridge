@@ -30,6 +30,7 @@ import com.example.talent_bridge_kt.presentation.ui.screens.SomeElseProfileScree
 import com.example.talent_bridge_kt.presentation.ui.screens.CreditsScreen
 import com.example.talent_bridge_kt.presentation.ui.screens.NavegationScreen
 import com.example.talent_bridge_kt.presentation.ui.screens.InitiativeDetailScreen
+import com.example.talent_bridge_kt.presentation.ui.components.OfflineConnectionDialog
 import com.example.talent_bridge_kt.ui.theme.Talent_bridge_ktTheme
 
 
@@ -43,12 +44,19 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarDuration
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.TextButton
-import androidx.compose.material3.Text
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.lifecycle.viewmodel.initializer
+import com.example.talent_bridge_kt.presentation.ui.components.HomeWithDrawer
+import androidx.compose.runtime.*
+import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.compose.currentBackStackEntryAsState
+import com.example.talent_bridge_kt.data.AnalyticsManager
+import com.example.talent_bridge_kt.data.repository.ProfileRepository
+
+
+
+
 
 
 class MainActivity : ComponentActivity() {
@@ -74,6 +82,17 @@ class MainActivity : ComponentActivity() {
                 val snack = remember { SnackbarHostState() }
                 var showNoNetDialog by remember { mutableStateOf(false) }
 
+                val context = LocalContext.current
+                val projectsVm: com.example.talent_bridge_kt.presentation.ui.viewmodel.ProjectsViewModel =
+                    androidx.lifecycle.viewmodel.compose.viewModel(
+                        factory = viewModelFactory {
+                            initializer {
+                                val app = context.applicationContext as android.app.Application
+                                com.example.talent_bridge_kt.presentation.ui.viewmodel.ProjectsViewModel(app)
+                            }
+                        }
+                    )
+
                 LaunchedEffect(isConnected) {
                     if (!isConnected) {
                         showNoNetDialog = true
@@ -85,13 +104,49 @@ class MainActivity : ComponentActivity() {
                     } else {
                         snack.currentSnackbarData?.dismiss()
                         showNoNetDialog = false
+                        // Removed syncPendingProjects() as offline queue is not active
                     }
                 }
 
                 val navController = rememberNavController()
+
+                var currentRoute by remember { mutableStateOf<String?>(null) }
+                var screenStartMs by remember { mutableStateOf(0L) }
+
+                val backStackEntry by navController.currentBackStackEntryAsState()
+
+                LaunchedEffect(backStackEntry) {
+                    val newRoute = backStackEntry?.destination?.route ?: return@LaunchedEffect
+                    val now = System.currentTimeMillis()
+
+                    currentRoute?.let { prev ->
+                        val duration = now - screenStartMs
+                        if (duration > 0) {
+                            AnalyticsManager.logScreenDuration(prev, duration)
+                        }
+                    }
+
+                    currentRoute = newRoute
+                    screenStartMs = now
+
+                    AnalyticsManager.logScreenView(newRoute)
+                }
+
+                // Show offline connection dialog when connection is lost
+                // But NOT when in StudentProfile screen (it has its own custom dialog)
+                if (showNoNetDialog && currentRoute != Routes.StudentProfile) {
+                    OfflineConnectionDialog(
+                        onDismiss = { showNoNetDialog = false }
+                    )
+                }
+
                 Scaffold(Modifier.fillMaxSize(),
                     snackbarHost = { SnackbarHost(snack) }
                 ) { inner ->
+
+                    val projectsVm: com.example.talent_bridge_kt.presentation.ui.viewmodel.ProjectsViewModel =
+                        androidx.lifecycle.viewmodel.compose.viewModel()
+
                     NavHost(
                         navController = navController,
                         startDestination = Routes.Login,
@@ -100,7 +155,7 @@ class MainActivity : ComponentActivity() {
                         composable(Routes.Login) {
                             LoginScreen(
                                 onCreateAccount = { navController.navigate(Routes.CreateAccount) },
-                                onStudentFeed = { navController.navigate(Routes.Navegation) }
+                                onStudentFeed = { navController.navigate(Routes.StudentFeed) },
                             )
                         }
                         composable(Routes.CreateAccount) {
@@ -108,57 +163,82 @@ class MainActivity : ComponentActivity() {
                                 onBack = { navController.popBackStack() },
                             )
                         }
-                        composable(Routes.Navegation) {
-                            NavegationScreen(
-                                onBack = { navController.popBackStack() },
-                                onInitiativeProfile = { navController.navigate(Routes.InitiativeProfile) },
-                                onLeaderFeed = { navController.navigate(Routes.LeaderFeed) },
-                                onSavedProjects = { navController.navigate(Routes.SavedProjects) },
-                                onSearch = { navController.navigate(Routes.Search) },
-                                onStudentProfile = { navController.navigate(Routes.StudentProfile) },
-                                onSomeoneElseProfile = { navController.navigate(Routes.SomeOneElseProfile) },
-                                onCredits = { navController.navigate(Routes.Credits) },
-                                onStudentFeed = { navController.navigate(Routes.StudentFeed) },
-                                onInitiativeDetail = { navController.navigate(Routes.InitiativeDetail) }
-                            )
-                        }
+
                         composable(Routes.InitiativeProfile) {
-                            InitiativeProfileSceen(
-                                onBack = { navController.popBackStack() }
-                            )
+                            HomeWithDrawer(navController = navController) { openDrawer ->
+                                InitiativeProfileSceen(
+                                    onBack = { navController.popBackStack() },
+                                    onOpenDrawer = { openDrawer() },
+                                    onAddProject = { /* disabled for now */ }
+                                )
+                            }
                         }
+
+                        // Removed dialog("createProject") as createProject API was removed
+
                         composable(Routes.LeaderFeed) {
-                            LeaderFeedScreen(
-                                onBack = { navController.popBackStack() }
-                            )
+                            HomeWithDrawer(navController = navController) { openDrawer ->
+                                LeaderFeedScreen(
+                                    onBack = { navController.popBackStack() },
+                                    onOpenDrawer = { openDrawer() },
+                                    onStudentClick = { uid ->
+                                        navController.navigate(Routes.someoneElse(uid))
+                                    },
+                                    onInitiativeProfile = {navController.navigate(Routes.InitiativeProfile)}
+
+                                )
+                            }
                         }
                         composable(Routes.SavedProjects) {
-                            SavedProjectsScreen(
-                                onBack = { navController.popBackStack() }
-                            )
+                            HomeWithDrawer(navController = navController) { openDrawer ->
+                                SavedProjectsScreen(
+                                    onBack = { navController.popBackStack() },
+                                    onOpenDrawer = { openDrawer() }
+                                )
+                            }
                         }
 
-
                         composable(Routes.Search) {
+
                             val repo = FirestoreSearchRepository(FirebaseFirestore.getInstance())
                             val vm: SearchViewModel = viewModel(
                                 factory = SearchViewModelFactory(repo)
                             )
                             SearchScreen(
                                 vm = vm,
-                                onBack = { navController.popBackStack() }
+                                onBack = { navController.popBackStack() },
+                                onSearch = { navController.navigate(Routes.Search) },
+                                onProfile = { navController.navigate(Routes.StudentProfile) },
+                                onHome = { navController.navigate(Routes.StudentFeed) },
+                                onStudentClick = { uid ->
+                                    navController.navigate(Routes.someoneElse(uid))
+                                }
+
+
                             )
                         }
 
+
                         composable(Routes.StudentProfile) {
-                            StudentProfileScreen(
-                                onBack = { navController.popBackStack() }
-                            )
+                            HomeWithDrawer(navController = navController) { openDrawer ->
+                                StudentProfileScreen(
+                                    onBack = { navController.popBackStack() },
+                                    onOpenDrawer = { openDrawer() },
+                                    onAddProject = { /* disabled for now */ }
+                                )
+                            }
                         }
-                        composable(Routes.SomeOneElseProfile) {
-                            SomeElseProfileScreen(
-                                onBack = { navController.popBackStack() }
-                            )
+                        composable(Routes.SomeOneElseProfile) { backStack ->
+                            val uid = backStack.arguments?.getString("uid") ?: return@composable
+                            HomeWithDrawer(navController = navController) { openDrawer ->
+                                val repo = remember { ProfileRepository(FirebaseFirestore.getInstance()) }
+                                SomeElseProfileScreen(
+                                    uid = uid,
+                                    repo = repo,
+                                    onBack = { navController.popBackStack() },
+                                    onOpenDrawer = { openDrawer() }
+                                )
+                            }
                         }
                         composable(Routes.Credits) {
                             CreditsScreen(
@@ -166,30 +246,43 @@ class MainActivity : ComponentActivity() {
                             )
                         }
                         composable(Routes.StudentFeed) {
-                            StudentFeedScreen(
-                                onBack = { navController.popBackStack() }
-                            )
-                        }
-                        composable(Routes.InitiativeDetail) {
-                            InitiativeDetailScreen(
-                                onBack = { navController.popBackStack() }
-                            )
-                        }
+                            HomeWithDrawer(navController = navController) { openDrawer ->
+                                StudentFeedScreen(
+                                    onBack = { navController.popBackStack() },
+                                    onSomeOneElseProfile = { navController.navigate(Routes.SomeOneElseProfile) },
+                                    onExploreStudents = { navController.navigate(Routes.LeaderFeed) },
+                                    onSearch = { navController.navigate(Routes.Search) },
+                                    onProfile = { navController.navigate(Routes.StudentProfile) },
 
-                    }
-                }
-                if (showNoNetDialog) {
-                    AlertDialog(
-                        onDismissRequest = { showNoNetDialog = false }, // permite cerrarlo
-                        title = { Text("Sin conexión a Internet") },
-                        text = { Text("No estás conectado a internet") },
-                        confirmButton = {
-                            TextButton(onClick = { showNoNetDialog = false }) {
-                                Text("Entendido")
+                                    onOpenDrawer = { openDrawer() },
+                                    onFav = {  navController.navigate(Routes.SavedProjects) }
+                                )
                             }
                         }
-                    )
+                        composable(Routes.InitiativeDetail) {
+                            HomeWithDrawer(navController = navController) { openDrawer ->
+                                InitiativeDetailScreen(
+                                    onBack = { navController.popBackStack() },
+                                    onOpenDrawer = { openDrawer() }
+                                )
+                            }
+                        }
+                    }
                 }
+                
+                DisposableEffect(Unit) {
+                    onDispose {
+                        val now = System.currentTimeMillis()
+                        currentRoute?.let { route ->
+                            val duration = now - screenStartMs
+                            if (duration > 0) {
+                                AnalyticsManager.logScreenDuration(route, duration)
+                            }
+                        }
+                    }
+                }
+
+
             }
         }
     }

@@ -15,6 +15,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Menu
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -23,6 +24,9 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -34,11 +38,25 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import coil.compose.AsyncImage
 import com.example.talent_bridge_kt.R
+import com.example.talent_bridge_kt.domain.model.StudentListItem
 import com.example.talent_bridge_kt.ui.theme.AccentYellow
 import com.example.talent_bridge_kt.ui.theme.CreamBackground
 import com.example.talent_bridge_kt.ui.theme.LinkGreen
 import com.example.talent_bridge_kt.ui.theme.TitleGreen
+import kotlinx.coroutines.sync.Mutex
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.foundation.lazy.items
+import androidx.compose.material.icons.filled.Person
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.collectAsState
+import androidx.lifecycle.viewmodel.compose.viewModel
+import android.app.Application
+import androidx.compose.ui.platform.LocalContext
+import com.example.talent_bridge_kt.presentation.ui.viewmodel.StudentsViewModel
 
 /* ======================= Pantalla ======================= */
 
@@ -46,15 +64,28 @@ import com.example.talent_bridge_kt.ui.theme.TitleGreen
 fun LeaderFeedScreen(
     onBack: () -> Unit = {},
     onOpenMenu: () -> Unit = {},
+    onOpenDrawer: () -> Unit = {},
     // bottom bar
     onHome: () -> Unit = {},
     onSearch: () -> Unit = {},
     onFav: () -> Unit = {},
+    onInitiativeProfile: () -> Unit = {},
+    onStudentClick: (uid: String) -> Unit = {}
 ) {
+
+    val context = LocalContext.current
+    val vm: StudentsViewModel = viewModel(
+        factory = studentsVmFactory(context.applicationContext as Application)
+    )
+
+    val students by vm.students.collectAsState()
+    val loading by vm.loading.collectAsState()
+    val error by vm.error.collectAsState()
+
     Surface(color = Color.White, modifier = Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
 
-            TopBarCustom(height = 100.dp, onBack = onBack, onMenu = onOpenMenu)
+            TopBarCustom(height = 100.dp, onBack = onBack, onMenu = onOpenMenu, onDrawer = onOpenDrawer)
 
             LazyColumn(
                 modifier = Modifier
@@ -63,68 +94,21 @@ fun LeaderFeedScreen(
                 contentPadding = PaddingValues(horizontal = 16.dp, vertical = 12.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                item {
-                    Text(
-                        text = "Explore Students",
-                        color = AccentYellow,
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(bottom = 4.dp)
-                            .wrapContentWidth(Alignment.CenterHorizontally)
-
-                    )
+                if (loading) {
+                    item { Text("Loading…", color = Color.Gray) }
+                }
+                if (error != null) {
+                    item { Text(error ?: "", color = Color.Red) }
                 }
 
-
-                item {
-                    StudentCardSimple(
-                        avatarRes = R.drawable.leader, // usa tu recurso
-                        name = "Daniel Triviño",
-                        career = "Estudiante de Ing. Sistemas y Comp.",
-                        interest = "Interesado en proyectos con paga",
-                        experienceTitle = "Experiencia previa:",
-                        experienceBullets = listOf("Multiservi"),
-                        tags = listOf("Angular", "Diseño", "Python")
-                    )
-                }
-                item {
-                    StudentCardSimple(
-                        avatarRes = R.drawable.iniciativa,
-                        name = "María Paula Murillo",
-                        career = "Diseño Industrial",
-                        interest = "Interesado en conseguir experiencia",
-                        experienceTitle = "Experiencia previa:",
-                        experienceBullets = listOf("Monitoria de investigación en IAU"),
-                        tags = listOf("Diseño", "Dibujo", "Foto", "CAD", "Pintura")
-                    )
-                }
-                item {
-                    StudentCardSimple(
-                        avatarRes = R.drawable.leader,
-                        name = "Juan Diego Lozano",
-                        career = "Ingeniería Industrial",
-                        interest = "Interesado en proyectos pagos",
-                        experienceTitle = "Experiencia previa:",
-                        experienceBullets = emptyList(),
-                        tags = listOf("Excel", "Fintech", "Word")
-                    )
-                }
-                item {
-                    StudentCardSimple(
-                        avatarRes = R.drawable.logo,
-                        name = "Ingeniería de Sistemas y Computación",
-                        career = "",
-                        interest = "Interesados en proyectos pagos",
-                        experienceTitle = "",
-                        experienceBullets = listOf("Esperamos una disponibilidad de 2 horas semanales."),
-                        tags = listOf("Diseño", "Dibujo", "2 Horas")
+                items(students, key = { it.uid }) { s ->
+                    StudentCard(
+                        item = s,
+                        onClick = { onStudentClick(s.uid) }
                     )
                 }
 
                 item { Spacer(Modifier.height(8.dp)) }
-
 
                 item {
                     Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
@@ -141,7 +125,7 @@ fun LeaderFeedScreen(
             BottomBarCustom(
                 onHome = onHome,
                 onSearch = onSearch,
-                onMenu = onOpenMenu,
+                onInitiativeProfile = onInitiativeProfile,
                 onFav = onFav
             )
         }
@@ -151,15 +135,15 @@ fun LeaderFeedScreen(
 /* =================== Componentes de UI =================== */
 
 @Composable
-private fun StudentCardSimple(
-    avatarRes: Int,
-    name: String,
-    career: String,
-    interest: String,
-    experienceTitle: String,
-    experienceBullets: List<String>,
-    tags: List<String>,
+private fun StudentCard(
+    item: StudentListItem,
+    onClick: () -> Unit
 ) {
+    val name = item.displayName.ifBlank { "Student" }
+    val career = item.headline.orEmpty()                    // puede venir vacío
+    val interest = item.bio?.ifBlank { "Interested in projects" } ?: "Interested in projects"
+    val tags = if (item.skillsOrTopics.isEmpty()) emptyList() else item.skillsOrTopics.take(5)
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -167,17 +151,19 @@ private fun StudentCardSimple(
             .background(Color.White, RoundedCornerShape(8.dp))
             .border(1.dp, Color(0xFFEDEDED), RoundedCornerShape(8.dp))
             .padding(12.dp)
+            .clickable { onClick() }
     ) {
         // Header con avatar + nombre
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Image(
-                painter = painterResource(id = avatarRes),
+            AsyncImage(
+                model = item.avatarUrl ?: R.drawable.student1,
                 contentDescription = name,
                 modifier = Modifier
                     .size(42.dp)
                     .clip(CircleShape),
                 contentScale = ContentScale.Crop
             )
+
             Spacer(Modifier.width(8.dp))
             Column {
                 Text(name, color = TitleGreen, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
@@ -190,22 +176,11 @@ private fun StudentCardSimple(
         Spacer(Modifier.height(6.dp))
         Text(interest, color = Color.DarkGray, fontSize = 12.sp)
 
-        if (experienceTitle.isNotBlank()) {
-            Spacer(Modifier.height(6.dp))
-            Text(experienceTitle, color = TitleGreen, fontSize = 12.sp)
-        }
-        experienceBullets.forEach {
-            Row(verticalAlignment = Alignment.Top) {
-                Text("•", color = Color.DarkGray, fontSize = 12.sp, modifier = Modifier.padding(end = 4.dp))
-                Text(it, color = Color.DarkGray, fontSize = 12.sp)
-            }
-        }
 
-        // Chips
         if (tags.isNotEmpty()) {
             Spacer(Modifier.height(8.dp))
             Row(
-                modifier = Modifier.fillMaxWidth(), // que ocupe todo el ancho
+                modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp, Alignment.CenterHorizontally)
             ) {
                 tags.forEach { tag ->
@@ -229,7 +204,7 @@ private fun StudentCardSimple(
             verticalAlignment = Alignment.CenterVertically
         ) {
             OutlinedButton(
-                onClick = { /* comentarios */ },
+                onClick = onClick,
                 shape = RoundedCornerShape(20.dp),
                 colors = ButtonDefaults.outlinedButtonColors(
                     containerColor = Color.White,
@@ -266,7 +241,8 @@ private fun StudentCardSimple(
 private fun TopBarCustom(
     height: Dp,
     onBack: () -> Unit,
-    onMenu: () -> Unit
+    onMenu: () -> Unit,
+    onDrawer: () -> Unit
 ) {
     Box(
         modifier = Modifier
@@ -304,6 +280,11 @@ private fun TopBarCustom(
             IconButton(onClick = onMenu) {
                 Icon(Icons.Filled.Menu, contentDescription = "Menu", tint = TitleGreen)
             }
+            Spacer(Modifier.width(4.dp))
+            IconButton(onClick = onDrawer) {
+                Icon(Icons.Filled.MoreVert, contentDescription = "Open drawer", tint = TitleGreen)
+            }
+            Spacer(Modifier.width(4.dp))
         }
     }
 }
@@ -312,7 +293,7 @@ private fun TopBarCustom(
 private fun BottomBarCustom(
     onHome: () -> Unit,
     onSearch: () -> Unit,
-    onMenu: () -> Unit,
+    onInitiativeProfile: () -> Unit,
     onFav: () -> Unit
 ) {
     Box(
@@ -330,7 +311,7 @@ private fun BottomBarCustom(
         ) {
             IconButton(onClick = onHome)  { Icon(Icons.Filled.Home,  contentDescription = "Home",  tint = TitleGreen) }
             IconButton(onClick = onSearch){ Icon(Icons.Filled.Search,contentDescription = "Search",tint = TitleGreen) }
-            IconButton(onClick = onMenu)  { Icon(Icons.Filled.Menu,  contentDescription = "Menu",  tint = TitleGreen) }
+            IconButton(onClick = onInitiativeProfile)  { Icon(Icons.Filled.Person,  contentDescription = "Profile",  tint = TitleGreen) }
             IconButton(onClick = onFav)   { Icon(Icons.Filled.FavoriteBorder, contentDescription = "Fav", tint = TitleGreen) }
         }
     }
