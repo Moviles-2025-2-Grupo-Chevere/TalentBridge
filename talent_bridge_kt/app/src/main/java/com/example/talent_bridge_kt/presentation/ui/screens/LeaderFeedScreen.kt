@@ -58,6 +58,7 @@ import android.app.Application
 import androidx.compose.ui.platform.LocalContext
 import com.example.talent_bridge_kt.data.AnalyticsManager
 import com.example.talent_bridge_kt.presentation.ui.viewmodel.StudentsViewModel
+import com.google.firebase.auth.FirebaseAuth
 
 /* ======================= Pantalla ======================= */
 
@@ -82,6 +83,10 @@ fun LeaderFeedScreen(
     val students by vm.students.collectAsState()
     val loading by vm.loading.collectAsState()
     val error by vm.error.collectAsState()
+    val user = FirebaseAuth.getInstance().currentUser
+    val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
+
+
 
     Surface(color = Color.White, modifier = Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
@@ -141,9 +146,13 @@ private fun StudentCard(
     onClick: () -> Unit
 ) {
     val name = item.displayName.ifBlank { "Student" }
-    val career = item.headline.orEmpty()                    // puede venir vacío
+    val career = item.headline.orEmpty()
     val interest = item.bio?.ifBlank { "Interested in projects" } ?: "Interested in projects"
     val tags = if (item.skillsOrTopics.isEmpty()) emptyList() else item.skillsOrTopics.take(5)
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val contactRepo = remember {
+        com.example.talent_bridge_kt.data.contacts.ContactRequestRepository()
+    }
 
     Column(
         modifier = Modifier
@@ -231,7 +240,33 @@ private fun StudentCard(
             ) { Text("Save", fontSize = 12.sp) }
 
             OutlinedButton(
-                onClick = { /* contactar */ },
+                onClick = {
+                    val auth = FirebaseAuth.getInstance()
+                    val currentUser = auth.currentUser
+
+                    val fromUid = currentUser?.uid ?: "unknown"
+                    val fromName = currentUser?.displayName ?: "Anonymous"
+                    val fromEmail = currentUser?.email ?: "No email"
+
+                    val toUid = item.uid
+                    val toName = item.displayName
+                    val toEmail = item.email
+
+                    contactRepo.sendContactRequest(
+                        fromUid = fromUid,
+                        toUid = toUid,
+                        fromName = fromName,
+                        toName = toName,
+                        fromEmail = fromEmail,
+                        toEmail = toEmail
+                    ) { success, error ->
+                        android.widget.Toast.makeText(
+                            context,
+                            if (success) "Contact request sent" else "Error: $error",
+                            android.widget.Toast.LENGTH_SHORT
+                        ).show()
+                    }
+                          },
                 shape = RoundedCornerShape(20.dp),
                 colors = ButtonDefaults.outlinedButtonColors(
                     containerColor = Color.White,

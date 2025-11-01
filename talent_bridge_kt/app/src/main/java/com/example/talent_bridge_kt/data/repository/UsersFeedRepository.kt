@@ -59,7 +59,8 @@ class UsersFeedRepository(
                         avatarUrl = avatar,
                         headline = headline,
                         bio = bio,
-                        skillsOrTopics = skills
+                        skillsOrTopics = skills,
+                        email = ""
                     )
                 }
 
@@ -100,6 +101,7 @@ class UsersFeedRepository(
         avatarUrl = avatarUrl,
         headline = headline,
         bio = bio,
-        skillsOrTopics = if (skillsCsv.isBlank()) emptyList() else skillsCsv.split(",").map { it.trim() }
+        skillsOrTopics = if (skillsCsv.isBlank()) emptyList() else skillsCsv.split(",").map { it.trim() },
+        email= ""
     )
 }
