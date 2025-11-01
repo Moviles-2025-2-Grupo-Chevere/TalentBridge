@@ -22,4 +22,20 @@ object AnalyticsManager {
         }
         Firebase.analytics.logEvent("screen_duration", params)
     }
+
+    fun logStudentProfileClick(
+        studentId: String,
+        studentName: String?,
+        hasAvatar: Boolean,
+        sourceScreen: String
+    ) {
+        val params = Bundle().apply {
+            putString("student_id", studentId)
+            putString("student_name", studentName ?: "Unknown")
+            putString("source_screen", sourceScreen)
+            putBoolean("has_avatar", hasAvatar)
+        }
+        Firebase.analytics.logEvent("student_profile_clicked", params)
+    }
+
 }
