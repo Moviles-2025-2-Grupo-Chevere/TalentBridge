@@ -219,7 +219,11 @@ class MainActivity : ComponentActivity() {
                             HomeWithDrawer(navController = navController) { openDrawer ->
                                 SavedProjectsScreen(
                                     onBack = { navController.popBackStack() },
-                                    onOpenDrawer = { openDrawer() }
+                                    onOpenDrawer = { openDrawer() },
+                                    onHome = { navController.navigate(Routes.StudentFeed) },
+                                    onSearch = { navController.navigate(Routes.Search) },
+                                    onExploreStudents = { navController.navigate(Routes.LeaderFeed) },
+                                    onFav = { navController.navigate(Routes.SavedProjects) }
                                 )
                             }
                         }
@@ -251,11 +255,10 @@ class MainActivity : ComponentActivity() {
                                 onSearch = { navController.navigate(Routes.Search) },
                                 onProfile = { navController.navigate(Routes.StudentProfile) },
                                 onHome = { navController.navigate(Routes.StudentFeed) },
+                                onFav = { navController.navigate(Routes.SavedProjects) },
                                 onStudentClick = { uid ->
                                     navController.navigate(Routes.someoneElse(uid))
                                 }
-
-
                             )
                         }
 
@@ -265,7 +268,11 @@ class MainActivity : ComponentActivity() {
                                 StudentProfileScreen(
                                     onBack = { navController.popBackStack() },
                                     onOpenDrawer = { openDrawer() },
-                                    onAddProject = { navController.navigate("createProject") }
+                                    onAddProject = { navController.navigate("createProject") },
+                                    onHome = { navController.navigate(Routes.StudentFeed) },
+                                    onSearch = { navController.navigate(Routes.Search) },
+                                    onExploreStudents = { navController.navigate(Routes.LeaderFeed) },
+                                    onFav = { navController.navigate(Routes.SavedProjects) }
                                 )
                             }
                         }

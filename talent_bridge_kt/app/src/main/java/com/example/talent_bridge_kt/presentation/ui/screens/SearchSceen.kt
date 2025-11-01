@@ -84,16 +84,12 @@ fun SearchScreen(
     }
     
     Surface(color = CreamBackground, modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(horizontal = 16.dp, vertical = 8.dp)
-        ) {
-
+        Column(Modifier.fillMaxSize()) {
+            // Header fijo
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 4.dp, bottom = 8.dp) ,
+                    .padding(16.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Image(
@@ -111,112 +107,124 @@ fun SearchScreen(
                 }
             }
 
-            Spacer(Modifier.height(8.dp))
-
-            Text(
-                text = "Search",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Medium,
-                color = AccentYellow,
-                modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
-            )
-
-
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                modifier = Modifier.fillMaxWidth()
+            // Contenido desplazable
+            LazyColumn(
+                modifier = Modifier.weight(1f),
+                contentPadding = PaddingValues(horizontal = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                OutlinedTextField(
-                    value = query,
-                    onValueChange = {
-                        query = it
-                        vm.onSkillsInput(it)
-                    },
-                    shape = RoundedCornerShape(50),
-                    singleLine = true,
-                    placeholder = { Text("Buscar por nombre o habilidades (separadas por coma)…") },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(52.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White,
-                        focusedBorderColor = AccentYellow,
-                        unfocusedBorderColor = AccentYellow,
-                        cursorColor = AccentYellow
+                item {
+                    Text(
+                        text = "Search",
+                        fontSize = 18.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = AccentYellow,
+                        modifier = Modifier.padding(bottom = 4.dp)
                     )
-                )
-                Spacer(Modifier.width(8.dp))
-                IconButton(onClick = { }) {
-                    FilterIcon(size = 28.dp, color = Color.Gray)
                 }
-            }
 
-            Spacer(Modifier.height(12.dp))
-
-
-            Row(
-                modifier = Modifier.align(Alignment.CenterHorizontally),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Button(
-                    onClick = { vm.search("any") },
-                    shape = RoundedCornerShape(50),
-                    colors = ButtonDefaults.buttonColors(containerColor = AccentYellow),
-                    modifier = Modifier.height(46.dp).width(140.dp),
-                    elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
-                ) { Text("Apply", color = Color.White, fontSize = 16.sp) }
-
-                Spacer(Modifier.width(8.dp))
-
-
-                OutlinedButton(
-                    onClick = { vm.loadAll() },
-                    shape = RoundedCornerShape(50),
-                    modifier = Modifier.height(46.dp).width(120.dp)
-                ) { Text("View All") }
-
-
-            }
-
-            if (state.isLoading) {
-                Spacer(Modifier.height(12.dp))
-                LinearProgressIndicator(Modifier.fillMaxWidth())
-            }
-            
-
-            if (state.termProgress.isNotEmpty()) {
-                Spacer(Modifier.height(8.dp))
-                Column(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    state.termProgress.forEach { progress ->
-                        TermProgressRow(progress = progress)
+                item {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        OutlinedTextField(
+                            value = query,
+                            onValueChange = {
+                                query = it
+                                vm.onSkillsInput(it)
+                            },
+                            shape = RoundedCornerShape(50),
+                            singleLine = true,
+                            placeholder = { Text("Buscar por nombre o habilidades (separadas por coma)…") },
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(52.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedContainerColor = Color.White,
+                                unfocusedContainerColor = Color.White,
+                                focusedBorderColor = AccentYellow,
+                                unfocusedBorderColor = AccentYellow,
+                                cursorColor = AccentYellow
+                            )
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        IconButton(onClick = { }) {
+                            FilterIcon(size = 28.dp, color = Color.Gray)
+                        }
                     }
                 }
-            }
-            
-            state.error?.let {
-                Spacer(Modifier.height(8.dp))
-                Text("Error: $it", color = MaterialTheme.colorScheme.error)
-            }
 
-            Spacer(Modifier.height(16.dp))
+                item {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.Center
+                    ) {
+                        Button(
+                            onClick = { vm.search("any") },
+                            shape = RoundedCornerShape(50),
+                            colors = ButtonDefaults.buttonColors(containerColor = AccentYellow),
+                            modifier = Modifier.height(46.dp).width(140.dp),
+                            elevation = ButtonDefaults.buttonElevation(defaultElevation = 6.dp)
+                        ) { Text("Apply", color = Color.White, fontSize = 16.sp) }
 
-            if (state.results.isNotEmpty()) {
-                Text(
-                    "Results",
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Medium,
-                    color = AccentYellow,
-                    modifier = Modifier.padding(bottom = 12.dp)
-                )
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    items(state.results) { user -> ResultUserRow(u = user, onClick = { onStudentClick(user.id)}) }
+                        Spacer(Modifier.width(8.dp))
+
+                        OutlinedButton(
+                            onClick = { vm.loadAll() },
+                            shape = RoundedCornerShape(50),
+                            modifier = Modifier.height(46.dp).width(120.dp)
+                        ) { Text("View All") }
+                    }
                 }
+
+                if (state.isLoading) {
+                    item {
+                        Spacer(Modifier.height(12.dp))
+                        LinearProgressIndicator(Modifier.fillMaxWidth())
+                    }
+                }
+
+                if (state.termProgress.isNotEmpty()) {
+                    item {
+                        Spacer(Modifier.height(8.dp))
+                        Column(
+                            modifier = Modifier.fillMaxWidth(),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            state.termProgress.forEach { progress ->
+                                TermProgressRow(progress = progress)
+                            }
+                        }
+                    }
+                }
+
+                state.error?.let { error ->
+                    item {
+                        Spacer(Modifier.height(8.dp))
+                        Text("Error: $error", color = MaterialTheme.colorScheme.error)
+                    }
+                }
+
+                if (state.results.isNotEmpty()) {
+                    item {
+                        Text(
+                            "Results",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = AccentYellow,
+                            modifier = Modifier.padding(top = 8.dp, bottom = 4.dp)
+                        )
+                    }
+                    items(state.results, key = { it.id }) { user ->
+                        ResultUserRow(u = user, onClick = { onStudentClick(user.id) })
+                    }
+                }
+
+                item { Spacer(Modifier.height(8.dp)) }
             }
-            Spacer(Modifier.height(150.dp))
+
+            // Bottom bar fijo
             BottomBarCustom(
                 onHome = onHome,
                 onSearch = onSearch,

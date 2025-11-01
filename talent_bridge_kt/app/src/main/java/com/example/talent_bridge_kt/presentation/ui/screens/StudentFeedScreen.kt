@@ -13,6 +13,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Menu
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Person
@@ -225,7 +226,11 @@ fun StudentFeedScreen(
     }
 
     if (showInfo) {
-        InfoDialog(message = infoMessage, onOk = { showInfo = false; infoMessage = "" })
+        InfoDialog(message = infoMessage, onOk = { 
+            showInfo = false
+            infoMessage = ""
+            vm.clearApplicationEvent() // Limpiar el evento para que no se vuelva a mostrar
+        })
     }
 }
 
@@ -523,7 +528,7 @@ private fun TopBarCustom(
             }
             Spacer(Modifier.width(4.dp))
             IconButton(onClick = onMenu) {
-                Icon(Icons.Filled.Menu, contentDescription = "Menu", tint = TitleGreen)
+                Icon(Icons.Filled.Group, contentDescription = "Explore Students", tint = TitleGreen)
             }
             Spacer(Modifier.width(4.dp))
             IconButton(onClick = onDrawer) {

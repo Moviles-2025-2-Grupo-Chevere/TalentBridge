@@ -205,7 +205,6 @@ class ProjectsViewModel(
                     userRef.update("applications", FieldValue.arrayUnion(application)).await()
                     applicationsLocal.remove(item.id)
                     appliedProjectIds.value = appliedProjectIds.value + item.projectId
-                    applicationEvent.value = "Ya se envió la aplicación al proyecto \"${item.projectTitle}\" debido a que ya se conectó a internet"
                     
                     // Trackear en Firebase Analytics (aplicación sincronizada offline)
                     trackApplicationAnalytics(uid, item.projectId, item.projectTitle)
@@ -215,6 +214,11 @@ class ProjectsViewModel(
                 } catch (_: Exception) {
                     // Dejar en cola para próximo intento
                 }
+            }
+            
+            // Mostrar UN solo mensaje después de sincronizar todas las aplicaciones
+            if (list.isNotEmpty() && applicationsLocal.list().isEmpty()) {
+                applicationEvent.value = "Se sincronizaron todas las aplicaciones a proyectos pendientes"
             }
         } catch (_: Exception) { }
     }
@@ -360,6 +364,10 @@ class ProjectsViewModel(
             android.util.Log.e("ProjectViewModel", "Error in trackApplicationAnalytics", e)
             e.printStackTrace()
         }
+    }
+
+    fun clearApplicationEvent() {
+        applicationEvent.value = null
     }
 
     fun createProject(
