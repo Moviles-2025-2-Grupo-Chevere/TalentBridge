@@ -56,6 +56,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.lifecycle.viewmodel.compose.viewModel
 import android.app.Application
 import androidx.compose.ui.platform.LocalContext
+import com.example.talent_bridge_kt.data.AnalyticsManager
 import com.example.talent_bridge_kt.presentation.ui.viewmodel.StudentsViewModel
 
 /* ======================= Pantalla ======================= */
@@ -151,7 +152,15 @@ private fun StudentCard(
             .background(Color.White, RoundedCornerShape(8.dp))
             .border(1.dp, Color(0xFFEDEDED), RoundedCornerShape(8.dp))
             .padding(12.dp)
-            .clickable { onClick() }
+            .clickable {
+                AnalyticsManager.logStudentProfileClick(
+                    studentId = item.uid,
+                    studentName = item.displayName,
+                    hasAvatar = !item.avatarUrl.isNullOrBlank(),
+                    sourceScreen = "LeaderFeed"
+                )
+                onClick()
+            }
     ) {
         // Header con avatar + nombre
         Row(verticalAlignment = Alignment.CenterVertically) {

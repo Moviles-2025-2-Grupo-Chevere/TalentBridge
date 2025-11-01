@@ -38,6 +38,7 @@ import com.example.talent_bridge_kt.ui.theme.TitleGreen
 import com.example.talent_bridge_kt.presentation.ui.components.OfflineConnectionDialog
 import com.example.talent_bridge_kt.core.conectivity.AndroidConnectivityObserver
 import androidx.compose.ui.platform.LocalContext
+import com.example.talent_bridge_kt.data.AnalyticsManager
 
 
 @Composable
@@ -233,7 +234,15 @@ private fun ResultUserRow(u: User, onClick: () -> Unit) {
     Row(
         Modifier
             .fillMaxWidth()
-            .clickable { onClick() },
+            .clickable {
+            AnalyticsManager.logStudentProfileClick(
+                studentId = u.id,
+                studentName = u.displayName,
+                hasAvatar = !u.photoUrl.isNullOrBlank(),
+                sourceScreen = "Search"
+            )
+            onClick()
+        },
         verticalAlignment = Alignment.CenterVertically
     ) {
         AsyncImage(
