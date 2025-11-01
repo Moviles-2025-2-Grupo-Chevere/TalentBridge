@@ -35,7 +35,7 @@ class FirebaseUsersRepository(
                     val headline = d.getString("headline")
                     val bio = d.getString("bio")
                     val skills = (d.get("skillsOrTopics") as? List<*>)?.map { it.toString() } ?: emptyList()
-                    StudentListItem(uid, name, avatar, headline, bio, skills).also {
+                    StudentListItem(uid, name, avatar, headline, bio, skills, email = "").also {
                         // guardo mínimo nombre+foto en RAM
                         ProfileMemoryCache.put("uid:$uid", ProfileSummary(name, avatar))
                     }
@@ -53,5 +53,6 @@ private fun ProfileSummary.toStudentListItem(uid: String) =
         avatarUrl = this.avatarUrl,
         headline = null,
         bio = null,
-        skillsOrTopics = emptyList()
+        skillsOrTopics = emptyList(),
+        email = ""
     )
