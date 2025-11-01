@@ -15,6 +15,11 @@ import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.ktx.Firebase
 import com.google.firebase.firestore.ktx.firestore
+import android.net.Uri
+import com.example.talent_bridge_kt.data.firebase.FirebaseProfileRepository
+import com.example.talent_bridge_kt.data.firebase.FirebaseStorageRepository
+import com.example.talent_bridge_kt.domain.repository.ProfileRepository
+import java.util.UUID
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.collectLatest
@@ -29,7 +34,9 @@ class ProjectsViewModel(
         connectivityObserver = AndroidConnectivityObserver(app)
     ),
     private val localRepo: ProjectRepository = ProjectRepository(app),
-    private val applicationsLocal: ApplicationsLocalRepository = ApplicationsLocalRepository(app)
+    private val applicationsLocal: ApplicationsLocalRepository = ApplicationsLocalRepository(app),
+    private val storageRepo: FirebaseStorageRepository = FirebaseStorageRepository(),
+    private val profileRepo: ProfileRepository = FirebaseProfileRepository()
 ) : AndroidViewModel(app) {
 
     private val userId: String = FirebaseAuth.getInstance().currentUser?.uid ?: "guest"
@@ -352,6 +359,74 @@ class ProjectsViewModel(
             // Error al obtener datos del usuario o enviar analytics, no es crítico
             android.util.Log.e("ProjectViewModel", "Error in trackApplicationAnalytics", e)
             e.printStackTrace()
+        }
+    }
+
+    fun createProject(
+        title: String,
+        description: String,
+        skills: List<String>,
+        imageUri: String?,
+        callback: (Boolean, Exception?) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                val uid = FirebaseAuth.getInstance().currentUser?.uid
+                    ?: throw IllegalStateException("Debes iniciar sesión para crear un proyecto")
+
+                // 1. Subir imagen si existe
+                var imageUrl: String? = null
+                if (!imageUri.isNullOrBlank()) {
+                    try {
+                        val uri = Uri.parse(imageUri)
+                        val projectId = UUID.randomUUID().toString()
+                        imageUrl = storageRepo.uploadProjectImage(projectId, uri)
+                    } catch (e: Exception) {
+                        callback(false, Exception("Error al subir la imagen: ${e.message}", e))
+                        return@launch
+                    }
+                }
+
+                // 2. Obtener perfil actual
+                val profileResult = profileRepo.getProfile()
+                val currentProfile = when (profileResult) {
+                    is com.example.talent_bridge_kt.domain.util.Resource.Success -> profileResult.data
+                    is com.example.talent_bridge_kt.domain.util.Resource.Error -> {
+                        callback(false, Exception("Error al obtener perfil: ${profileResult.message}"))
+                        return@launch
+                    }
+                }
+
+                // 3. Crear nuevo proyecto
+                val projectId = UUID.randomUUID().toString()
+                val newProject = Project(
+                    id = projectId,
+                    title = title,
+                    subtitle = null,
+                    description = description,
+                    skills = skills,
+                    imgUrl = imageUrl,
+                    createdAt = com.google.firebase.Timestamp.now(),
+                    createdById = uid
+                )
+
+                // 4. Actualizar perfil con el nuevo proyecto
+                val updatedProfile = currentProfile.copy(
+                    projects = currentProfile.projects + newProject
+                )
+
+                val updateResult = profileRepo.updateProfile(updatedProfile)
+                when (updateResult) {
+                    is com.example.talent_bridge_kt.domain.util.Resource.Success -> {
+                        callback(true, null)
+                    }
+                    is com.example.talent_bridge_kt.domain.util.Resource.Error -> {
+                        callback(false, Exception("Error al actualizar perfil: ${updateResult.message}"))
+                    }
+                }
+            } catch (e: Exception) {
+                callback(false, e)
+            }
         }
     }
 }

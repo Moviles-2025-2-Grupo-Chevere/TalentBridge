@@ -24,4 +24,7 @@ interface FeedStudentDao {
 
     @Query("SELECT COUNT(*) FROM feed_students_cache")
     suspend fun count(): Int
+
+    @Query("SELECT * FROM feed_students_cache ORDER BY cachedAt DESC")
+    suspend fun getAllCachedStudents(): List<FeedStudentEntity>
 }
