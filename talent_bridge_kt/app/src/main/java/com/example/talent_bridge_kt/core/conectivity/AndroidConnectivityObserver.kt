@@ -33,6 +33,12 @@ class AndroidConnectivityObserver(
                 close(e)
                 return@callbackFlow
             }
+            
+            // Emitir el estado actual de conectividad inmediatamente
+            val network = connectivityManager.activeNetwork
+            val capabilities = network?.let { connectivityManager.getNetworkCapabilities(it) }
+            val isCurrentlyConnected = capabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED) ?: false
+            trySend(isCurrentlyConnected)
 
             awaitClose { connectivityManager.unregisterNetworkCallback(callback) }
         }

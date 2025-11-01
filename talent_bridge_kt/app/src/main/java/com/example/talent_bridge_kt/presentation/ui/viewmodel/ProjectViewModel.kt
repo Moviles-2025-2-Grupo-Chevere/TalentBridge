@@ -48,6 +48,9 @@ class ProjectsViewModel(
 
     val applicationEvent = MutableStateFlow<String?>(null)
     val appliedProjectIds = MutableStateFlow<Set<String>>(emptySet())
+    
+    // Flag para evitar múltiples refresh() concurrentes
+    private var isRefreshing = false
 
     private val usersCol = Firebase.firestore.collection("users")
 
@@ -172,20 +175,28 @@ class ProjectsViewModel(
     }
 
     fun refresh() = viewModelScope.launch {
+        // Evitar múltiples refresh concurrentes
+        if (isRefreshing) return@launch
+        isRefreshing = true
+        
         loading.value = true
         error.value = null
-        val result = feedRepo.refreshProjects()
-        result.fold(
-            onSuccess = { freshProjects ->
-                projects.value = freshProjects
-                isOffline.value = false
-            },
-            onFailure = { exception ->
-                error.value = exception.message ?: "Error loading projects"
-                isOffline.value = true
-            }
-        )
-        loading.value = false
+        try {
+            val result = feedRepo.refreshProjects()
+            result.fold(
+                onSuccess = { freshProjects ->
+                    projects.value = freshProjects
+                    isOffline.value = false
+                },
+                onFailure = { exception ->
+                    error.value = exception.message ?: "Error loading projects"
+                    isOffline.value = true
+                }
+            )
+        } finally {
+            loading.value = false
+            isRefreshing = false
+        }
     }
 
     private fun syncPendingApplications() = viewModelScope.launch {
