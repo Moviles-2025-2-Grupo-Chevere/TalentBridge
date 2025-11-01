@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:archive/archive_io.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -130,28 +131,28 @@ class DownloadProjects extends ConsumerWidget {
       // Generate and zip in isolate
       final zipBytes = await compute(_generateAndZipProjects, projects);
 
-      // Get Downloads directory for Android
-      var directory = Directory('/storage/emulated/0/Download');
-      if (!await directory.exists()) {
-        directory = (await getExternalStorageDirectory())!;
-      }
-
       // Create timestamped filename
       final timestamp = DateTime.now()
           .toIso8601String()
           .split('.')[0]
           .replaceAll(':', '-')
           .replaceAll('T', '_');
-      final file = File('${directory.path}/projects-$timestamp.zip');
 
-      // Save the ZIP file
-      await file.writeAsBytes(zipBytes);
+      final result = await FilePicker.platform.saveFile(
+        dialogTitle: 'Save project files',
+        fileName: 'projects-$timestamp',
+        type: FileType.custom,
+        allowedExtensions: ['zip'],
+        bytes: zipBytes,
+      );
+
+      if (result == null) return;
 
       // Show success message
       if (context.mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${projects.length} projects saved to ${file.path}'),
+            content: Text('${projects.length} projects saved to $result'),
             duration: const Duration(seconds: 3),
           ),
         );
