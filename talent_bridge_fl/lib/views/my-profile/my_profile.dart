@@ -1,6 +1,4 @@
 import 'dart:io';
-import 'dart:typed_data';
-
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_core;
 import 'package:flutter/material.dart';
@@ -570,28 +568,53 @@ class _MyProfileState extends ConsumerState<MyProfile> {
                             // Profile image
                             Stack(
                               children: [
-                                if (pfpProvider != null)
-                                  ClipOval(
-                                    child: Material(
-                                      color: Colors
-                                          .transparent, // to show image background
-                                      child: Ink.image(
-                                        image: pfpProvider!,
-                                        fit: BoxFit.cover,
-                                        width: 120,
-                                        height: 120,
-                                        child: InkWell(
-                                          onTap: _showTakePhotoDialog,
-                                          splashColor: Colors.blue.withValues(
-                                            alpha: 0.3,
+                                pfpProvider != null
+                                    ? ClipOval(
+                                        child: Material(
+                                          color: Colors
+                                              .transparent, // to show image background
+                                          child: Ink.image(
+                                            image: pfpProvider!,
+                                            fit: BoxFit.cover,
+                                            width: 120,
+                                            height: 120,
+                                            child: InkWell(
+                                              onTap: _showTakePhotoDialog,
+                                              splashColor: Colors.blue
+                                                  .withValues(
+                                                    alpha: 0.3,
+                                                  ),
+                                              borderRadius:
+                                                  BorderRadius.circular(
+                                                    60,
+                                                  ),
+                                            ),
                                           ),
-                                          borderRadius: BorderRadius.circular(
-                                            60,
+                                        ),
+                                      )
+                                    : ClipOval(
+                                        child: Material(
+                                          color: Color.fromARGB(
+                                            255,
+                                            203,
+                                            249,
+                                            243,
+                                          ), // cream yellow
+                                          child: InkWell(
+                                            onTap: _showTakePhotoDialog,
+                                            splashColor: Colors.blue.withValues(
+                                              alpha: 0.3,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              60,
+                                            ),
+                                            child: Container(
+                                              width: 120,
+                                              height: 120,
+                                            ),
                                           ),
                                         ),
                                       ),
-                                    ),
-                                  ),
                                 if (pendingUpload)
                                   Positioned(
                                     bottom: 0,
