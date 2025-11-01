@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:firebase_auth/firebase_auth.dart'; // para mapear errores conocidos
-import 'package:talent_bridge_fl/views/login/login.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
 
 // ---------- COLOR & SHAPE TOKENS ----------
@@ -166,6 +165,7 @@ class _SignupState extends State<Signup> {
       );
 
       if (!mounted) return;
+      Navigator.of(context).pop();
 
       m.showSnackBar(const SnackBar(content: Text('Account created!')));
       // Si prefieres volver al Login automáticamente, descomenta:
@@ -190,7 +190,9 @@ class _SignupState extends State<Signup> {
     ).textTheme.bodyMedium?.copyWith(color: kAmber);
 
     return Scaffold(
-      appBar: AppBar(backgroundColor: kBg,),
+      appBar: AppBar(
+        backgroundColor: kBg,
+      ),
       backgroundColor: kBg,
       body: SafeArea(
         child: Center(
@@ -234,6 +236,30 @@ class _SignupState extends State<Signup> {
                     ),
 
                     const SizedBox(height: 16),
+                    // ----- EMAIL -----
+                    Text('Email', style: labelStyle),
+                    const SizedBox(height: 6),
+                    _shadowWrap(
+                      TextFormField(
+                        controller: _emailCtrl,
+                        textInputAction: TextInputAction.done,
+                        keyboardType: TextInputType.emailAddress,
+                        autofillHints: const [AutofillHints.email],
+                        inputFormatters: [
+                          LengthLimitingTextInputFormatter(
+                            kMaxGmailLocal + kGmailSuffixLen,
+                          ),
+                          FilteringTextInputFormatter.deny(RegExp(r'\s')),
+                        ],
+                        decoration: _pillInput(icon: Icons.email_outlined),
+                        validator: _gmailOnly,
+                        onChanged: (_) => _revalidate(),
+                        onEditingComplete: _revalidate,
+                        onFieldSubmitted: (_) => _submit(),
+                      ),
+                    ),
+
+                    const SizedBox(height: 26),
 
                     // ----- PASSWORD -----
                     Text('Password', style: labelStyle),
@@ -268,31 +294,6 @@ class _SignupState extends State<Signup> {
                     ),
 
                     const SizedBox(height: 16),
-
-                    // ----- EMAIL -----
-                    Text('Email', style: labelStyle),
-                    const SizedBox(height: 6),
-                    _shadowWrap(
-                      TextFormField(
-                        controller: _emailCtrl,
-                        textInputAction: TextInputAction.done,
-                        keyboardType: TextInputType.emailAddress,
-                        autofillHints: const [AutofillHints.email],
-                        inputFormatters: [
-                          LengthLimitingTextInputFormatter(
-                            kMaxGmailLocal + kGmailSuffixLen,
-                          ),
-                          FilteringTextInputFormatter.deny(RegExp(r'\s')),
-                        ],
-                        decoration: _pillInput(icon: Icons.email_outlined),
-                        validator: _gmailOnly,
-                        onChanged: (_) => _revalidate(),
-                        onEditingComplete: _revalidate,
-                        onFieldSubmitted: (_) => _submit(),
-                      ),
-                    ),
-
-                    const SizedBox(height: 26),
 
                     // ----- CTA "Next" -----
                     ValueListenableBuilder<bool>(

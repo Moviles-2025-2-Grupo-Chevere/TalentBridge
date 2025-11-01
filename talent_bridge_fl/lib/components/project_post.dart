@@ -1,20 +1,32 @@
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:talent_bridge_fl/components/project_post_image.dart';
+import 'package:talent_bridge_fl/components/project_post_pfp.dart';
 import 'package:talent_bridge_fl/domain/project_entity.dart';
+import 'package:talent_bridge_fl/services/firebase_service.dart';
 import 'package:talent_bridge_fl/views/user-profile/user_profile.dart';
 
 class ProjectPost extends StatelessWidget {
-  const ProjectPost({
+  ProjectPost({
     super.key,
     required this.project,
     required this.showApplyModal,
+    required this.showSaveModal,
+    required this.showRemoveModal,
   });
 
   final ProjectEntity project;
-  final void Function() showApplyModal;
-
+  final void Function(String, String, String) showApplyModal;
+  final void Function(ProjectEntity) showSaveModal;
+  final void Function(ProjectEntity) showRemoveModal;
   @override
   Widget build(BuildContext context) {
-    var profilePictureUrl = project.createdBy.profilePictureUrl;
+    final firebaseService = FirebaseService();
+    var displayName = (project.createdBy?.displayName ?? '').isNotEmpty
+        ? project.createdBy!.displayName
+        : 'Anon user';
+    var minutesAgo = project.timeAgo;
+
     return Card(
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
@@ -38,12 +50,7 @@ class ProjectPost extends StatelessWidget {
                       );
                     },
                     customBorder: const CircleBorder(),
-                    child: CircleAvatar(
-                      radius: 24,
-                      backgroundImage: profilePictureUrl != null
-                          ? AssetImage(profilePictureUrl)
-                          : null,
-                    ),
+                    child: ProjectPostPfp(uid: project.createdById),
                   ),
                 ),
                 Expanded(
@@ -55,7 +62,7 @@ class ProjectPost extends StatelessWidget {
                         style: TextStyle(fontWeight: FontWeight.bold),
                       ),
                       Text(
-                        "${project.createdBy.name} · 5m",
+                        "$displayName · $minutesAgo",
                         style: TextStyle(fontWeight: FontWeight.w300),
                       ),
                       Text(project.description),
@@ -64,7 +71,9 @@ class ProjectPost extends StatelessWidget {
                 ),
               ],
             ),
-            if (project.imgUrl != null) Image.asset(project.imgUrl!),
+            ProjectPostImage(
+              project: project, //Gets the image by project ID
+            ),
             Wrap(
               spacing: 4,
               children: [
@@ -76,9 +85,28 @@ class ProjectPost extends StatelessWidget {
             Wrap(
               spacing: 4,
               children: [
-                TextButton(onPressed: () {}, child: Text('Comentarios')),
-                TextButton(onPressed: () {}, child: Text('Guardar')),
-                TextButton(onPressed: showApplyModal, child: Text('Aplicar')),
+                TextButton(onPressed: () {}, child: Text('Comments')),
+                if (!project.isFavorite)
+                  TextButton(
+                    onPressed: () => showSaveModal(project),
+                    child: Text('Save'),
+                  ),
+                if (project.isFavorite)
+                  TextButton(
+                    onPressed: () => showRemoveModal(project),
+                    child: Text('Remove'),
+                  ),
+                TextButton(
+                  onPressed: () {
+                    final currentUserId = firebaseService.currentUid() ?? "";
+                    showApplyModal(
+                      currentUserId,
+                      project.createdById,
+                      project.id ?? "",
+                    );
+                  },
+                  child: Text('Apply'),
+                ),
               ],
             ),
           ],
