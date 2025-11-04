@@ -6,6 +6,7 @@ import 'package:talent_bridge_fl/domain/skill_entity.dart';
 import 'package:talent_bridge_fl/domain/update_user_dto.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
 import 'package:talent_bridge_fl/services/skills_service.dart';
+import 'package:talent_bridge_fl/views/edit_profile/major_image.dart';
 import 'package:talent_bridge_fl/views/select_skills/select_skills.dart';
 
 const darkBlue = Color(0xFF3E6990);
@@ -265,7 +266,16 @@ class _EditProfileState extends State<EditProfile> {
               .map(
                 (e) => DropdownMenuItem(
                   value: e.name,
-                  child: Text(e.name),
+                  child: Row(
+                    children: [
+                      if (e.icon != null)
+                        MajorImage(
+                          icon: e.icon!,
+                        ),
+                      SizedBox(width: 8),
+                      Text(e.name),
+                    ],
+                  ),
                 ),
               )
               .toList();
