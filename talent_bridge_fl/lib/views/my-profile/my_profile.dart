@@ -336,8 +336,11 @@ class _MyProfileState extends ConsumerState<MyProfile> {
           ),
           actions: [
             TextButton(
-              onPressed: () => Navigator.of(context).pop(),
-              child: const Text('Close'),
+              onPressed: () {
+                Navigator.of(context).pop();
+                //New function for downloading all CVs using a zip file with Isolate
+              },
+              child: const Text('Download All'),
             ),
             TextButton(
               onPressed: () {
@@ -345,6 +348,10 @@ class _MyProfileState extends ConsumerState<MyProfile> {
                 _pickAndUploadCVs();
               },
               child: const Text('Upload More'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Close'),
             ),
           ],
         ),
