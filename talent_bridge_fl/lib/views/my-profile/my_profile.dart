@@ -21,6 +21,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:talent_bridge_fl/views/edit_profile/edit_profile.dart';
 import 'package:talent_bridge_fl/views/my-profile/contact_item.dart';
 import 'package:talent_bridge_fl/views/my-profile/project_summary.dart';
+import 'package:talent_bridge_fl/views/my-profile/download_cvs.dart';
 
 const darkBlue = Color(0xFF3E6990);
 
@@ -338,7 +339,7 @@ class _MyProfileState extends ConsumerState<MyProfile> {
             TextButton(
               onPressed: () {
                 Navigator.of(context).pop();
-                //New function for downloading all CVs using a zip file with Isolate
+                DownloadCVs.downloadAllCVs(context, cvUrls);
               },
               child: const Text('Download All'),
             ),
