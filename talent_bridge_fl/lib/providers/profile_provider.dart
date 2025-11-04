@@ -42,12 +42,20 @@ class ProfileNotifier extends Notifier<UserEntity?> {
     );
 
     _authSuscription = _auth.authStateChanges().listen(
-      (event) {
+      (event) async {
         print("Change in auth data, refreshing profile data");
         if (event == null) {
           state = null;
         } else {
-          _updateLocalWithOnline();
+          await _updateSuscription?.cancel();
+          await _updateLocalWithOnline();
+          print("re-setting update listener");
+          _updateSuscription = _fb.getCurrentUserSnapshot()?.listen(
+            (event) {
+              print("Change in data, refreshing profile data");
+              _updateLocalWithOnline();
+            },
+          );
         }
       },
     );
@@ -58,7 +66,7 @@ class ProfileNotifier extends Notifier<UserEntity?> {
     return state;
   }
 
-  _updateLocalWithOnline() async {
+  Future _updateLocalWithOnline() async {
     final remoteValue = await _fb
         .getCurrentUserEntity(true)
         .catchError((e) => null);

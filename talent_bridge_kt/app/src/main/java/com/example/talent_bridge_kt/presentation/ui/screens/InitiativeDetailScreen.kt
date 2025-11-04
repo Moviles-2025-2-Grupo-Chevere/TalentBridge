@@ -31,6 +31,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.layout.FlowRow
+import androidx.compose.material.icons.filled.MoreVert
 import com.example.talent_bridge_kt.R
 
 // Si no tienes estos colores en tu tema, reemplaza por Color(...) directamente.
@@ -49,12 +50,13 @@ fun InitiativeDetailScreen(
     onHome: () -> Unit = {},
     onSearch: () -> Unit = {},
     onFav: () -> Unit = {},
+    onOpenDrawer:() -> Unit = {}
 ) {
     Surface(color = Color.White, modifier = Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
 
             // Top bar local a este archivo
-            TopBarLocal(height = 56.dp, onBack = onBack, onMenu = onOpenMenu)
+            TopBarLocal(height = 56.dp, onBack = onBack, onMenu = onOpenMenu, onDrawer = onOpenDrawer)
 
             LazyColumn(
                 modifier = Modifier
@@ -182,7 +184,9 @@ fun InitiativeDetailScreen(
 private fun TopBarLocal(
     height: Dp,
     onBack: () -> Unit,
-    onMenu: () -> Unit
+    onMenu: () -> Unit,
+    onDrawer: () -> Unit
+
 ) {
     Box(
         modifier = Modifier
@@ -220,6 +224,11 @@ private fun TopBarLocal(
             IconButton(onClick = onMenu) {
                 Icon(Icons.Filled.Menu, contentDescription = "Menu", tint = TitleGreen)
             }
+            Spacer(Modifier.width(4.dp))
+            IconButton(onClick = onDrawer) {
+                Icon(Icons.Filled.MoreVert, contentDescription = "Open drawer", tint = TitleGreen)
+            }
+            Spacer(Modifier.width(4.dp))
         }
     }
 }
