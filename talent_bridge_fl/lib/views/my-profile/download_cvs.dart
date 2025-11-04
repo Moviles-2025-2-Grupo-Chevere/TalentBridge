@@ -227,7 +227,7 @@ class DownloadCVs {
       // Show success message using the stored reference
       scaffoldMessenger.showSnackBar(
         SnackBar(
-          content: Text('${cvUrls.length} CVs saved to $result'),
+          content: Text('${cvUrls.length} CVs saved'),
           backgroundColor: Colors.green,
           duration: const Duration(seconds: 3),
         ),
