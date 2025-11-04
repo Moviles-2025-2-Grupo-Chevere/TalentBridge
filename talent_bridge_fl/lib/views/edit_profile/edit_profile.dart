@@ -254,25 +254,40 @@ class _EditProfileState extends State<EditProfile> {
       validator: validateDescription,
       onSaved: (newValue) => description = newValue ?? '',
     );
-    var majorField = DropdownButtonFormField(
-      value: user.major,
-      items: [
-        DropdownMenuItem(
-          value: '',
-          child: Text('None'),
-        ),
-        ...MajorService.getMajors().map(
-          (e) => DropdownMenuItem(
-            value: e,
-            child: Text(e),
+    var majorField = FutureBuilder(
+      future: MajorService.getMajors(),
+      builder: (context, snap) {
+        List<DropdownMenuItem<String>> majorWidgets = [];
+        Set<String> names = {};
+        if (snap.hasData) {
+          var majorData = snap.data!;
+          majorWidgets = majorData
+              .map(
+                (e) => DropdownMenuItem(
+                  value: e.name,
+                  child: Text(e.name),
+                ),
+              )
+              .toList();
+          names.addAll(majorData.map((e) => e.name));
+        }
+        var userMajor = names.contains(user.major) ? user.major : null;
+        return DropdownButtonFormField(
+          value: userMajor,
+          items: [
+            DropdownMenuItem(
+              value: '',
+              child: Text('None'),
+            ),
+            ...majorWidgets,
+          ],
+          onChanged: (value) {},
+          onSaved: (newValue) => major = newValue ?? '',
+          decoration: const InputDecoration(
+            label: Text('Major'),
           ),
-        ),
-      ],
-      onChanged: (value) {},
-      onSaved: (newValue) => major = newValue ?? '',
-      decoration: const InputDecoration(
-        label: Text('Major'),
-      ),
+        );
+      },
     );
     return SizedBox(
       height: double.infinity,
