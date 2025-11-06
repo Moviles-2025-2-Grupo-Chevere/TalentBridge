@@ -71,6 +71,16 @@ class FirebaseService {
     return _db.collection('users').doc(uid).snapshots();
   }
 
+  Stream<UserEntity> userStreamById(String uid) {
+    return _db.collection('users').doc(uid).snapshots().map((snap) {
+      final data = snap.data() ?? <String, dynamic>{};
+      return UserEntity.fromMap({
+        ...data,
+        'id': snap.id,
+      });
+    });
+  }
+
   Future<UserEntity?> getCurrentUserEntity(bool? useOnline) async {
     final uid = currentUid();
     if (uid == null) return null;
