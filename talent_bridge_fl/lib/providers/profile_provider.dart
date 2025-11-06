@@ -85,3 +85,9 @@ final remoteProfileProvider = StreamProvider.autoDispose(
     return _fb.getCurrentUserSnapshot()!;
   },
 );
+
+// para abrir desde feed/search)
+final userProfileStreamProvider = StreamProvider.family
+    .autoDispose<UserEntity, String>((ref, userId) {
+      return _fb.userStreamById(userId);
+    });

@@ -40,15 +40,18 @@ class ProjectPost extends StatelessWidget {
                   child: InkWell(
                     splashColor: Colors.white,
                     onTap: () {
-                      Navigator.of(
-                        context,
-                      ).push(
+                      final uid = project.createdById;
+                      debugPrint(
+                        '[FEED] tap avatar -> open UserProfile(userId=$uid)',
+                      );
+                      if (uid.isEmpty) return;
+                      Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (ctx) =>
-                              Scaffold(appBar: AppBar(), body: UserProfile()),
+                          builder: (_) => UserProfile(userId: uid),
                         ),
                       );
                     },
+
                     customBorder: const CircleBorder(),
                     child: ProjectPostPfp(uid: project.createdById),
                   ),
