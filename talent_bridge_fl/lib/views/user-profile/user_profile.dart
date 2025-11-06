@@ -1,8 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:talent_bridge_fl/components/text_box_widget.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:cached_network_image/cached_network_image.dart';
+
 import 'package:talent_bridge_fl/providers/profile_provider.dart';
 import 'package:talent_bridge_fl/domain/user_entity.dart';
+import 'package:talent_bridge_fl/components/text_box_widget.dart';
+import 'package:talent_bridge_fl/services/firebase_service.dart';
 import 'package:talent_bridge_fl/analytics/analytics_timer.dart';
 
 class UserProfile extends ConsumerWidget {
@@ -11,6 +15,7 @@ class UserProfile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Si nos pasan userId => perfil de otro usuario; si no, el propio
     final asyncUser = userId != null
         ? ref.watch(userProfileStreamProvider(userId!))
         : ref.watch(remoteProfileProvider).whenData((doc) {
@@ -26,207 +31,310 @@ class UserProfile extends ConsumerWidget {
         appBar: AppBar(),
         body: Center(child: Text('Error: $e')),
       ),
-      data: (user) {
-        final displayName = user.displayName.isNotEmpty
-            ? user.displayName
-            : 'Usuario';
-        final headline = (user.headline ?? '').isNotEmpty
-            ? user.headline!
-            : '-';
-        final carrera = (user.major ?? '').isNotEmpty ? user.major! : '-';
-        final email = user.email.isNotEmpty ? user.email : '-';
-        final linkedin = (user.linkedin ?? '').isNotEmpty
-            ? user.linkedin!
-            : '-';
-        final number = (user.mobileNumber ?? '').isNotEmpty
-            ? user.mobileNumber!
-            : '-';
-        final desc = (user.description ?? '').isNotEmpty
-            ? user.description!
-            : '-';
-        final photoUrl = (user.photoUrl ?? '').isNotEmpty
-            ? user.photoUrl!
-            : null;
-        final skills = user.skillsOrTopics ?? const <String>[];
-
-        return _BQFirstFrameProbe(
-          eventName: 'first_content_profile',
-          baseParams: const {'screen': 'Profile'},
-          source: userId != null ? 'user_by_id' : 'current_user',
-          child: Container(
-            color: const Color.fromARGB(255, 255, 255, 255),
+      data: (user) => _BQFirstFrameProbe(
+        eventName: 'first_content_profile',
+        baseParams: const {'screen': 'Profile'},
+        source: userId != null ? 'user_by_id' : 'current_user',
+        child: Scaffold(
+          appBar: AppBar(title: const Text('Perfil')),
+          body: Container(
+            color: Colors.white,
             child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20.0),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Header
-                    const SizedBox(height: 16),
-                    Center(
-                      child: Column(
-                        children: [
-                          CircleAvatar(
-                            radius: 40,
-                            backgroundColor: const Color(0xFFEFEFEF),
-                            backgroundImage: photoUrl != null
-                                ? NetworkImage(photoUrl)
-                                : const AssetImage('assets/images/pfp.png')
-                                      as ImageProvider,
-                          ),
-                          const SizedBox(height: 16.0),
-                          Text(
-                            displayName,
-                            style: const TextStyle(
-                              fontSize: 18.0,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: 'OpenSans',
-                            ),
-                          ),
-                          if (headline != '-')
-                            Padding(
-                              padding: const EdgeInsets.only(top: 4.0),
-                              child: Text(
-                                headline,
-                                style: const TextStyle(fontSize: 14.0),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24.0),
-
-                    Center(child: _buildContactItem('Carrera:', carrera)),
-                    const SizedBox(height: 24.0),
-
-                    // Descripción
-                    const Text(
-                      'Descripción',
-                      style: TextStyle(
-                        color: Color(0xFF3E6990),
-                        fontSize: 18.0,
-                        fontWeight: FontWeight.bold,
-                        fontFamily: 'OpenSans',
-                        height: 1.5,
-                      ),
-                    ),
-                    const SizedBox(height: 8.0),
-                    Text(desc, style: const TextStyle(fontSize: 14.0)),
-                    const SizedBox(height: 8.0),
-
-                    // Flags
-                    const Text(
-                      'Mis Flags',
-                      style: TextStyle(
-                        color: Color(0xFF3E6990),
-                        fontSize: 18.0,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 12.0),
-                    Wrap(
-                      spacing: 8.0,
-                      runSpacing: 8.0,
-                      children: skills.isEmpty
-                          ? [const Text('—')]
-                          : skills
-                                .map(
-                                  (s) => TextBoxWidget(text: s, onTap: () {}),
-                                )
-                                .toList(),
-                    ),
-
-                    // Contacto
-                    const SizedBox(height: 16.0),
-                    const Text(
-                      'Contacto',
-                      style: TextStyle(
-                        color: Color(0xFF3E6990),
-                        fontSize: 18.0,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    const SizedBox(height: 8.0),
-                    Center(
-                      child: Column(
-                        children: [
-                          _buildContactItem('Email:', email, isLink: false),
-                          _buildContactItem(
-                            'LinkedIn:',
-                            linkedin,
-                            isLink: true,
-                            linkColor: Colors.blue,
-                          ),
-                          _buildContactItem(
-                            'Number:',
-                            number,
-                            isLink: true,
-                            linkColor: Colors.blue,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 24.0),
-                  ],
-                ),
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: _ProfileBody(user: user),
             ),
           ),
-        );
-      },
-    );
-  }
-
-  // Helper method to create contact information items
-  Widget _buildContactItem(
-    String label,
-    String value, {
-    bool isLink = false,
-    Color? linkColor,
-  }) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0),
-      child: Center(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              label,
-              style: const TextStyle(
-                color: Colors.green,
-                fontSize: 14.0,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 4.0),
-            isLink
-                ? InkWell(
-                    onTap: () {
-                      // Handle link tap
-                    },
-                    child: Text(
-                      value,
-                      style: TextStyle(
-                        color: linkColor ?? Colors.blue,
-                        decoration: TextDecoration.underline,
-                        fontSize: 14.0,
-                      ),
-                    ),
-                  )
-                : Text(
-                    value,
-                    style: const TextStyle(fontSize: 14.0),
-                  ),
-          ],
         ),
       ),
     );
   }
 }
 
+class _ProfileBody extends StatelessWidget {
+  const _ProfileBody({required this.user});
+  final UserEntity user;
+
+  @override
+  Widget build(BuildContext context) {
+    final displayName = user.displayName.isNotEmpty
+        ? user.displayName
+        : 'Usuario';
+    final headline = (user.headline ?? '').trim();
+    final carrera = (user.major ?? '').trim();
+    final email = user.email.trim();
+    final linkedin = (user.linkedin ?? '').trim();
+    final number = (user.mobileNumber ?? '').trim();
+    final desc = (user.description ?? '').trim();
+
+    // Ojo: si viene photoUrl en el doc y es http, lo usamos primero
+    final photoUrl = (user.photoUrl ?? '').trim().isEmpty
+        ? null
+        : user.photoUrl;
+
+    final skills = user.skillsOrTopics ?? const <String>[];
+    final projects = user.projects ?? const [];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // ===== Header =====
+        Center(
+          child: Column(
+            children: [
+              _ProfileAvatar(
+                uid: user.id ?? '', // asegúrate que UserEntity expone id
+                photoUrl: photoUrl, // preferir http directo si existe
+              ),
+              const SizedBox(height: 12),
+              Text(
+                displayName,
+                style: const TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'OpenSans',
+                ),
+                textAlign: TextAlign.center,
+              ),
+              if (headline.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4.0),
+                  child: Text(
+                    headline,
+                    style: const TextStyle(fontSize: 14),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 20),
+
+        // ===== Carrera =====
+        if (carrera.isNotEmpty) ...[
+          const _SectionTitle('Carrera'),
+          _TagPill(carrera),
+          const SizedBox(height: 20),
+        ],
+
+        // ===== Descripción =====
+        const _SectionTitle('Descripción'),
+        Text(
+          desc.isNotEmpty ? desc : '—',
+          style: const TextStyle(fontSize: 14, height: 1.4),
+        ),
+        const SizedBox(height: 20),
+
+        // ===== Skills / Flags =====
+        const _SectionTitle('Mis Flags'),
+        const SizedBox(height: 8),
+        skills.isEmpty
+            ? const Text('—', style: TextStyle(fontSize: 14))
+            : Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: skills
+                    .map((s) => TextBoxWidget(text: s, onTap: () {}))
+                    .toList(),
+              ),
+        const SizedBox(height: 20),
+
+        // ===== Contacto =====
+        const _SectionTitle('Contacto'),
+        const SizedBox(height: 8),
+        _ContactItem(
+          label: 'Email',
+          value: email.isNotEmpty ? email : '—',
+          onTap: email.isNotEmpty
+              ? () => _launchUri(Uri(scheme: 'mailto', path: email))
+              : null,
+        ),
+        _ContactItem(
+          label: 'LinkedIn',
+          value: linkedin.isNotEmpty ? linkedin : '—',
+          onTap: linkedin.isNotEmpty
+              ? () {
+                  final uri = linkedin.startsWith('http')
+                      ? Uri.parse(linkedin)
+                      : Uri.parse('https://www.linkedin.com/in/$linkedin');
+                  _launchUri(uri);
+                }
+              : null,
+        ),
+        _ContactItem(
+          label: 'Número',
+          value: number.isNotEmpty ? number : '—',
+          onTap: number.isNotEmpty
+              ? () => _launchUri(Uri(scheme: 'tel', path: number))
+              : null,
+        ),
+        const SizedBox(height: 24),
+
+        // ===== Proyectos del usuario =====
+        const _SectionTitle('Proyectos'),
+        const SizedBox(height: 8),
+        if (projects.isEmpty)
+          const Text('Este usuario aún no tiene proyectos publicados.')
+        else
+          Column(
+            children: projects.map((p) {
+              final created = p.createdAt;
+              final subtitle = created != null ? 'Creado: $created' : null;
+              return Card(
+                margin: const EdgeInsets.symmetric(vertical: 6),
+                child: ListTile(
+                  title: Text(
+                    p.title,
+                    style: const TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: subtitle != null ? Text(subtitle) : null,
+                  dense: true,
+                ),
+              );
+            }).toList(),
+          ),
+
+        const SizedBox(height: 40),
+      ],
+    );
+  }
+}
+
+/// Avatar con 3 niveles de fallback: photoUrl http → Storage/profile_pictures/<uid> → asset
+class _ProfileAvatar extends StatelessWidget {
+  const _ProfileAvatar({
+    super.key,
+    required this.uid,
+    required this.photoUrl,
+  });
+
+  final String uid;
+  final String? photoUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    // 1) Si viene un http directo desde Firestore, úsalo (con cache)
+    if (photoUrl != null && photoUrl!.startsWith('http')) {
+      return _circle(CachedNetworkImageProvider(photoUrl!));
+    }
+
+    // 2) Si no hay url en el doc, intenta Firebase Storage por uid
+    return FutureBuilder<String?>(
+      future: FirebaseService().getPfpUrlByUid(uid),
+      builder: (context, snap) {
+        if (snap.connectionState == ConnectionState.waiting) {
+          return const CircleAvatar(
+            radius: 48,
+            backgroundColor: Color(0xFFEFEFEF),
+          );
+        }
+        if (snap.hasData && snap.data != null) {
+          return _circle(CachedNetworkImageProvider(snap.data!));
+        }
+        // 3) Fallback a asset local
+        return const CircleAvatar(
+          radius: 48,
+          backgroundImage: AssetImage('assets/images/pfp.png'),
+          backgroundColor: Color(0xFFEFEFEF),
+        );
+      },
+    );
+  }
+
+  Widget _circle(ImageProvider provider) => CircleAvatar(
+    radius: 48,
+    backgroundImage: provider,
+    backgroundColor: const Color(0xFFEFEFEF),
+  );
+}
+
+class _SectionTitle extends StatelessWidget {
+  const _SectionTitle(this.text);
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: const TextStyle(
+        color: Color(0xFF3E6990),
+        fontSize: 18,
+        fontWeight: FontWeight.bold,
+        fontFamily: 'OpenSans',
+        height: 1.5,
+      ),
+    );
+  }
+}
+
+class _ContactItem extends StatelessWidget {
+  const _ContactItem({
+    required this.label,
+    required this.value,
+    this.onTap,
+  });
+
+  final String label;
+  final String value;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final clickable = onTap != null && value != '—';
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          SizedBox(
+            width: 86,
+            child: Text(
+              '$label:',
+              style: const TextStyle(
+                color: Colors.green,
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+          Expanded(
+            child: clickable
+                ? InkWell(
+                    onTap: onTap,
+                    child: Text(
+                      value,
+                      style: const TextStyle(
+                        decoration: TextDecoration.underline,
+                        color: Colors.blue,
+                        fontSize: 14,
+                      ),
+                    ),
+                  )
+                : Text(value, style: const TextStyle(fontSize: 14)),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TagPill extends StatelessWidget {
+  const _TagPill(this.text);
+  final String text;
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        border: Border.all(color: const Color(0xFF3E6990)),
+        borderRadius: BorderRadius.circular(999),
+      ),
+      child: Text(text, style: const TextStyle(fontSize: 12)),
+    );
+  }
+}
+
 /// ---- Mini wrapper stateful SOLO para la BQ ----
-/// Arranca el cronómetro y lo cierra en el primer frame visible.
-/// No toca tu lógica ni tu UI.
 class _BQFirstFrameProbe extends StatefulWidget {
   const _BQFirstFrameProbe({
     required this.child,
@@ -262,4 +370,10 @@ class _BQFirstFrameProbeState extends State<_BQFirstFrameProbe> {
 
   @override
   Widget build(BuildContext context) => widget.child;
+}
+
+Future<void> _launchUri(Uri uri) async {
+  if (await canLaunchUrl(uri)) {
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
+  }
 }

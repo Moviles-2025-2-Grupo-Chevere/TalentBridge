@@ -516,6 +516,17 @@ class FirebaseService {
     }
   }
 
+  Future<String?> getPfpUrlByUid(String uid) async {
+    try {
+      final ref = _storage.ref().child('profile_pictures/$uid');
+      return await ref.getDownloadURL();
+    } on FirebaseException catch (e) {
+      if (e.code == 'object-not-found') return null;
+      if (e.code == 'unauthorized') return null;
+      rethrow;
+    }
+  }
+
   Future<void> updateUserProfile(UpdateUserDto data) async {
     final uid = currentUid();
     if (uid == null) throw Exception("Uid not set");
