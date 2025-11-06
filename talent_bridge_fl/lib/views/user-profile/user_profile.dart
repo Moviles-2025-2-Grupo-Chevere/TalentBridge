@@ -1,154 +1,179 @@
 import 'package:flutter/material.dart';
 import 'package:talent_bridge_fl/components/text_box_widget.dart';
-// ---- BQ helper (nuevo) ----
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:talent_bridge_fl/providers/profile_provider.dart';
+import 'package:talent_bridge_fl/domain/user_entity.dart';
 import 'package:talent_bridge_fl/analytics/analytics_timer.dart';
 
-class UserProfile extends StatelessWidget {
-  const UserProfile({super.key});
+class UserProfile extends ConsumerWidget {
+  const UserProfile({super.key, this.userId});
+  final String? userId;
 
   @override
-  Widget build(BuildContext context) {
-    return _BQFirstFrameProbe(
-      eventName: 'first_content_profile',
-      baseParams: const {'screen': 'Profile'},
-      // Como esta versión del perfil es estática (sin fetch), marcamos 'unknown'
-      source: 'unknown',
-      child: Container(
-        color: const Color.fromARGB(255, 255, 255, 255), // White background
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Profile header with image and username
-                Center(
-                  child: Column(
-                    children: [
-                      // Profile image
-                      const CircleAvatar(),
-                      const SizedBox(height: 16.0),
-                      // Username
-                      const Text(
-                        'UsuarioXYZ',
-                        style: TextStyle(
-                          fontSize: 18.0,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'OpenSans',
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24.0),
-                Center(
-                  child: Column(
-                    children: [
-                      _buildContactItem(
-                        'Carrera:',
-                        'Diseño',
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24.0),
+  Widget build(BuildContext context, WidgetRef ref) {
+    final asyncUser = userId != null
+        ? ref.watch(userProfileStreamProvider(userId!))
+        : ref.watch(remoteProfileProvider).whenData((doc) {
+            final map = doc.data() ?? <String, dynamic>{};
+            return UserEntity.fromMap({...map, 'id': doc.id});
+          });
 
-                // Description section
-                const Text(
-                  'Descripción',
-                  style: TextStyle(
-                    color: Color(0xFF3E6990),
-                    fontSize: 18.0,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'OpenSans',
-                    height: 1.5,
-                  ),
-                ),
-                const SizedBox(height: 8.0),
-                const Text(
-                  'Interesado en proyectos no pagos (por experiencia) de diseño gráfico, edición de video y desarrollo web. Busco oportunidades para aprender y crecer en estas áreas.',
-                  style: TextStyle(fontSize: 14.0),
-                ),
-                const SizedBox(height: 8.0),
-                const Text(
-                  'Experiencia previa:',
-                  style: TextStyle(fontSize: 14.0),
-                ),
-                const Padding(
-                  padding: EdgeInsets.only(left: 16.0),
-                  child: Text(
-                    '• Monitor de investigación de la facultad de Arquitectura y Diseño',
-                    style: TextStyle(fontSize: 14.0),
-                  ),
-                ),
-                const SizedBox(height: 8.0),
+    return asyncUser.when(
+      loading: () => const Scaffold(
+        body: Center(child: CircularProgressIndicator()),
+      ),
+      error: (e, _) => Scaffold(
+        appBar: AppBar(),
+        body: Center(child: Text('Error: $e')),
+      ),
+      data: (user) {
+        final displayName = user.displayName.isNotEmpty
+            ? user.displayName
+            : 'Usuario';
+        final headline = (user.headline ?? '').isNotEmpty
+            ? user.headline!
+            : '-';
+        final carrera = (user.major ?? '').isNotEmpty ? user.major! : '-';
+        final email = user.email.isNotEmpty ? user.email : '-';
+        final linkedin = (user.linkedin ?? '').isNotEmpty
+            ? user.linkedin!
+            : '-';
+        final number = (user.mobileNumber ?? '').isNotEmpty
+            ? user.mobileNumber!
+            : '-';
+        final desc = (user.description ?? '').isNotEmpty
+            ? user.description!
+            : '-';
+        final photoUrl = (user.photoUrl ?? '').isNotEmpty
+            ? user.photoUrl!
+            : null;
+        final skills = user.skillsOrTopics ?? const <String>[];
 
-                // Flags section (skill tags)
-                const Text(
-                  'Mis Flags',
-                  style: TextStyle(
-                    color: Color(0xFF3E6990),
-                    fontSize: 18.0,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 12.0),
-                Wrap(
-                  spacing: 8.0,
-                  runSpacing: 8.0,
+        return _BQFirstFrameProbe(
+          eventName: 'first_content_profile',
+          baseParams: const {'screen': 'Profile'},
+          source: userId != null ? 'user_by_id' : 'current_user',
+          child: Container(
+            color: const Color.fromARGB(255, 255, 255, 255),
+            child: SingleChildScrollView(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    TextBoxWidget(text: 'Diseño', onTap: () {}),
-                    TextBoxWidget(text: 'Dibujo', onTap: () {}),
-                    TextBoxWidget(text: 'AutoCad', onTap: () {}),
-                    TextBoxWidget(text: 'Planos', onTap: () {}),
-                    TextBoxWidget(text: 'Cerámica', onTap: () {}),
+                    // Header
+                    const SizedBox(height: 16),
+                    Center(
+                      child: Column(
+                        children: [
+                          CircleAvatar(
+                            radius: 40,
+                            backgroundColor: const Color(0xFFEFEFEF),
+                            backgroundImage: photoUrl != null
+                                ? NetworkImage(photoUrl)
+                                : const AssetImage('assets/images/pfp.png')
+                                      as ImageProvider,
+                          ),
+                          const SizedBox(height: 16.0),
+                          Text(
+                            displayName,
+                            style: const TextStyle(
+                              fontSize: 18.0,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'OpenSans',
+                            ),
+                          ),
+                          if (headline != '-')
+                            Padding(
+                              padding: const EdgeInsets.only(top: 4.0),
+                              child: Text(
+                                headline,
+                                style: const TextStyle(fontSize: 14.0),
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24.0),
+
+                    Center(child: _buildContactItem('Carrera:', carrera)),
+                    const SizedBox(height: 24.0),
+
+                    // Descripción
+                    const Text(
+                      'Descripción',
+                      style: TextStyle(
+                        color: Color(0xFF3E6990),
+                        fontSize: 18.0,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'OpenSans',
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 8.0),
+                    Text(desc, style: const TextStyle(fontSize: 14.0)),
+                    const SizedBox(height: 8.0),
+
+                    // Flags
+                    const Text(
+                      'Mis Flags',
+                      style: TextStyle(
+                        color: Color(0xFF3E6990),
+                        fontSize: 18.0,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12.0),
+                    Wrap(
+                      spacing: 8.0,
+                      runSpacing: 8.0,
+                      children: skills.isEmpty
+                          ? [const Text('—')]
+                          : skills
+                                .map(
+                                  (s) => TextBoxWidget(text: s, onTap: () {}),
+                                )
+                                .toList(),
+                    ),
+
+                    // Contacto
+                    const SizedBox(height: 16.0),
+                    const Text(
+                      'Contacto',
+                      style: TextStyle(
+                        color: Color(0xFF3E6990),
+                        fontSize: 18.0,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8.0),
+                    Center(
+                      child: Column(
+                        children: [
+                          _buildContactItem('Email:', email, isLink: false),
+                          _buildContactItem(
+                            'LinkedIn:',
+                            linkedin,
+                            isLink: true,
+                            linkColor: Colors.blue,
+                          ),
+                          _buildContactItem(
+                            'Number:',
+                            number,
+                            isLink: true,
+                            linkColor: Colors.blue,
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24.0),
                   ],
                 ),
-
-                // Contact section
-                const Text(
-                  'Contacto',
-                  style: TextStyle(
-                    color: Color(0xFF3E6990),
-                    fontSize: 18.0,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8.0),
-                Center(
-                  child: Column(
-                    children: [
-                      _buildContactItem(
-                        'Email:',
-                        'usuario123@gmail.com',
-                        isLink: true,
-                        linkColor: Colors.blue,
-                      ),
-                      _buildContactItem(
-                        'LinkedIn:',
-                        'usuario123',
-                        isLink: true,
-                        linkColor: Colors.blue,
-                      ),
-                      _buildContactItem(
-                        'Number:',
-                        '+39 1234 567890',
-                        isLink: true,
-                        linkColor: Colors.blue,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24.0),
-
-                // Link sections for CV and Portfolio
-
-                // Projects section
-              ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 
