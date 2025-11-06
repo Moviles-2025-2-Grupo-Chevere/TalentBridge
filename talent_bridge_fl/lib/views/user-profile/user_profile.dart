@@ -36,7 +36,7 @@ class UserProfile extends ConsumerWidget {
         baseParams: const {'screen': 'Profile'},
         source: userId != null ? 'user_by_id' : 'current_user',
         child: Scaffold(
-          appBar: AppBar(title: const Text('Perfil')),
+          appBar: AppBar(title: const Text('Profile')),
           body: Container(
             color: Colors.white,
             child: SingleChildScrollView(
@@ -56,9 +56,7 @@ class _ProfileBody extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final displayName = user.displayName.isNotEmpty
-        ? user.displayName
-        : 'Usuario';
+    final displayName = user.displayName.isNotEmpty ? user.displayName : 'User';
     final headline = (user.headline ?? '').trim();
     final carrera = (user.major ?? '').trim();
     final email = user.email.trim();
@@ -112,13 +110,13 @@ class _ProfileBody extends StatelessWidget {
 
         // ===== Carrera =====
         if (carrera.isNotEmpty) ...[
-          const _SectionTitle('Carrera'),
+          const _SectionTitle('Major'),
           _TagPill(carrera),
           const SizedBox(height: 20),
         ],
 
         // ===== Descripción =====
-        const _SectionTitle('Descripción'),
+        const _SectionTitle('Description'),
         Text(
           desc.isNotEmpty ? desc : '—',
           style: const TextStyle(fontSize: 14, height: 1.4),
@@ -126,7 +124,7 @@ class _ProfileBody extends StatelessWidget {
         const SizedBox(height: 20),
 
         // ===== Skills / Flags =====
-        const _SectionTitle('Mis Flags'),
+        const _SectionTitle('My Flags'),
         const SizedBox(height: 8),
         skills.isEmpty
             ? const Text('—', style: TextStyle(fontSize: 14))
@@ -140,7 +138,7 @@ class _ProfileBody extends StatelessWidget {
         const SizedBox(height: 20),
 
         // ===== Contacto =====
-        const _SectionTitle('Contacto'),
+        const _SectionTitle('Contact'),
         const SizedBox(height: 8),
         _ContactItem(
           label: 'Email',
@@ -162,7 +160,7 @@ class _ProfileBody extends StatelessWidget {
               : null,
         ),
         _ContactItem(
-          label: 'Número',
+          label: 'Number',
           value: number.isNotEmpty ? number : '—',
           onTap: number.isNotEmpty
               ? () => _launchUri(Uri(scheme: 'tel', path: number))
@@ -171,15 +169,15 @@ class _ProfileBody extends StatelessWidget {
         const SizedBox(height: 24),
 
         // ===== Proyectos del usuario =====
-        const _SectionTitle('Proyectos'),
+        const _SectionTitle('Projects'),
         const SizedBox(height: 8),
         if (projects.isEmpty)
-          const Text('Este usuario aún no tiene proyectos publicados.')
+          const Text('This user doesnt´n have published projects')
         else
           Column(
             children: projects.map((p) {
               final created = p.createdAt;
-              final subtitle = created != null ? 'Creado: $created' : null;
+              final subtitle = created != null ? 'Created: $created' : null;
               return Card(
                 margin: const EdgeInsets.symmetric(vertical: 6),
                 child: ListTile(
