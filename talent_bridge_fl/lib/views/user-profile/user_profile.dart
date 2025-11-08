@@ -1,23 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-
 import 'package:talent_bridge_fl/providers/profile_provider.dart';
 import 'package:talent_bridge_fl/domain/user_entity.dart';
 import 'package:talent_bridge_fl/components/text_box_widget.dart';
-import 'package:talent_bridge_fl/services/firebase_service.dart';
 import 'package:talent_bridge_fl/analytics/analytics_timer.dart';
 
-/// ----- Brand palette -----
-class TBColors {
-  static const cream = Color(0xFFFFF7E6); // background
-  static const ink = Color(0xFF222222); // main text
-  static const mute = Color(0xFF6B7280); // secondary text
-  static const gold = Color(0xFFFFC300); // section titles
-  static const blue = Color(0xFF3E6990); // accents/borders
-  static const link = Color(0xFF0A66C2); // link color
-}
+// >>> NUEVO: avatar cacheado
+import 'package:talent_bridge_fl/components/user_pfp_cached.dart';
 
 class UserProfile extends ConsumerWidget {
   const UserProfile({super.key, this.userId});
@@ -37,10 +27,7 @@ class UserProfile extends ConsumerWidget {
         body: Center(child: CircularProgressIndicator()),
       ),
       error: (e, _) => Scaffold(
-        appBar: AppBar(
-          backgroundColor: TBColors.cream,
-          foregroundColor: TBColors.ink,
-        ),
+        appBar: AppBar(),
         body: Center(child: Text('Error: $e')),
       ),
       data: (user) => _BQFirstFrameProbe(
@@ -48,14 +35,9 @@ class UserProfile extends ConsumerWidget {
         baseParams: const {'screen': 'Profile'},
         source: userId != null ? 'user_by_id' : 'current_user',
         child: Scaffold(
-          appBar: AppBar(
-            title: const Text('Profile'),
-            backgroundColor: TBColors.cream,
-            foregroundColor: TBColors.ink,
-            elevation: 0,
-          ),
+          appBar: AppBar(title: const Text('Profile')),
           body: Container(
-            color: TBColors.cream,
+            color: Colors.white,
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: _ProfileBody(user: user),
@@ -80,11 +62,6 @@ class _ProfileBody extends StatelessWidget {
     final linkedin = (user.linkedin ?? '').trim();
     final number = (user.mobileNumber ?? '').trim();
     final desc = (user.description ?? '').trim();
-
-    final photoUrl = (user.photoUrl ?? '').trim().isEmpty
-        ? null
-        : user.photoUrl;
-
     final skills = user.skillsOrTopics ?? const <String>[];
     final projects = user.projects ?? const [];
 
@@ -95,10 +72,8 @@ class _ProfileBody extends StatelessWidget {
         Center(
           child: Column(
             children: [
-              _ProfileAvatar(
-                uid: user.id ?? '',
-                photoUrl: photoUrl,
-              ),
+              // >>> Aquí usamos el avatar cacheado con cacheKey = uid
+              UserPfpCached(uid: user.id ?? '', radius: 48),
               const SizedBox(height: 12),
               Text(
                 displayName,
@@ -106,7 +81,6 @@ class _ProfileBody extends StatelessWidget {
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                   fontFamily: 'OpenSans',
-                  color: TBColors.ink,
                 ),
                 textAlign: TextAlign.center,
               ),
@@ -114,7 +88,7 @@ class _ProfileBody extends StatelessWidget {
               if (headline.isNotEmpty)
                 Text(
                   headline,
-                  style: const TextStyle(fontSize: 14, color: TBColors.mute),
+                  style: const TextStyle(fontSize: 14),
                   textAlign: TextAlign.center,
                 ),
             ],
@@ -123,22 +97,18 @@ class _ProfileBody extends StatelessWidget {
 
         const SizedBox(height: 20),
 
-        // ===== Major =====
+        // ===== Carrera =====
         if (carrera.isNotEmpty) ...[
           const _SectionTitle('Major'),
           _TagPill(carrera),
           const SizedBox(height: 20),
         ],
 
-        // ===== Description =====
+        // ===== Descripción =====
         const _SectionTitle('Description'),
         Text(
           desc.isNotEmpty ? desc : '—',
-          style: const TextStyle(
-            fontSize: 14,
-            height: 1.4,
-            color: TBColors.ink,
-          ),
+          style: const TextStyle(fontSize: 14, height: 1.4),
         ),
         const SizedBox(height: 20),
 
@@ -146,10 +116,7 @@ class _ProfileBody extends StatelessWidget {
         const _SectionTitle('My Flags'),
         const SizedBox(height: 8),
         skills.isEmpty
-            ? const Text(
-                '—',
-                style: TextStyle(fontSize: 14, color: TBColors.ink),
-              )
+            ? const Text('—', style: TextStyle(fontSize: 14))
             : Wrap(
                 spacing: 8,
                 runSpacing: 8,
@@ -159,7 +126,7 @@ class _ProfileBody extends StatelessWidget {
               ),
         const SizedBox(height: 20),
 
-        // ===== Contact =====
+        // ===== Contacto =====
         const _SectionTitle('Contact'),
         const SizedBox(height: 8),
         _ContactItem(
@@ -190,14 +157,11 @@ class _ProfileBody extends StatelessWidget {
         ),
         const SizedBox(height: 24),
 
-        // ===== Projects =====
+        // ===== Proyectos =====
         const _SectionTitle('Projects'),
         const SizedBox(height: 8),
         if (projects.isEmpty)
-          const Text(
-            'This user doesn\'t have published projects',
-            style: TextStyle(color: TBColors.mute),
-          )
+          const Text("This user doesn't have published projects")
         else
           Column(
             children: projects.map((p) {
@@ -208,17 +172,9 @@ class _ProfileBody extends StatelessWidget {
                 child: ListTile(
                   title: Text(
                     p.title,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      color: TBColors.ink,
-                    ),
+                    style: const TextStyle(fontWeight: FontWeight.w600),
                   ),
-                  subtitle: subtitle != null
-                      ? Text(
-                          subtitle,
-                          style: const TextStyle(color: TBColors.mute),
-                        )
-                      : null,
+                  subtitle: subtitle != null ? Text(subtitle) : null,
                   dense: true,
                 ),
               );
@@ -231,59 +187,6 @@ class _ProfileBody extends StatelessWidget {
   }
 }
 
-/// Avatar with 3-level fallback: http photoUrl → Storage/profile_pictures/<uid> → asset
-class _ProfileAvatar extends StatelessWidget {
-  const _ProfileAvatar({
-    super.key,
-    required this.uid,
-    required this.photoUrl,
-  });
-
-  final String uid;
-  final String? photoUrl;
-
-  @override
-  Widget build(BuildContext context) {
-    if (photoUrl != null && photoUrl!.startsWith('http')) {
-      return _circle(CachedNetworkImageProvider(photoUrl!));
-    }
-
-    return FutureBuilder<String?>(
-      future: FirebaseService().getPfpUrlByUid(uid),
-      builder: (context, snap) {
-        if (snap.connectionState == ConnectionState.waiting) {
-          return const CircleAvatar(
-            radius: 48,
-            backgroundColor: TBColors.cream,
-          );
-        }
-        if (snap.hasData && snap.data != null) {
-          return _circle(CachedNetworkImageProvider(snap.data!));
-        }
-        return const CircleAvatar(
-          radius: 48,
-          backgroundImage: AssetImage('assets/images/pfp.png'),
-          backgroundColor: TBColors.cream,
-        );
-      },
-    );
-  }
-
-  Widget _circle(ImageProvider provider) => const CircleAvatar(
-    radius: 48,
-    backgroundColor: TBColors.cream,
-    foregroundImage: null, // keep backgroundImage for compatibility
-  ).copyWith(backgroundImage: provider);
-}
-
-extension on CircleAvatar {
-  CircleAvatar copyWith({ImageProvider? backgroundImage}) => CircleAvatar(
-    radius: radius,
-    backgroundColor: backgroundColor,
-    backgroundImage: backgroundImage ?? this.backgroundImage,
-  );
-}
-
 class _SectionTitle extends StatelessWidget {
   const _SectionTitle(this.text);
   final String text;
@@ -293,7 +196,7 @@ class _SectionTitle extends StatelessWidget {
     return Text(
       text,
       style: const TextStyle(
-        color: TBColors.gold,
+        color: Color(0xFF3E6990),
         fontSize: 18,
         fontWeight: FontWeight.bold,
         fontFamily: 'OpenSans',
@@ -326,7 +229,7 @@ class _ContactItem extends StatelessWidget {
             child: Text(
               '$label:',
               style: const TextStyle(
-                color: TBColors.gold,
+                color: Colors.green,
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
@@ -341,15 +244,12 @@ class _ContactItem extends StatelessWidget {
                       value,
                       style: const TextStyle(
                         decoration: TextDecoration.underline,
-                        color: TBColors.link,
+                        color: Colors.blue,
                         fontSize: 14,
                       ),
                     ),
                   )
-                : Text(
-                    value,
-                    style: const TextStyle(fontSize: 14, color: TBColors.ink),
-                  ),
+                : Text(value, style: const TextStyle(fontSize: 14)),
           ),
         ],
       ),
@@ -360,23 +260,21 @@ class _ContactItem extends StatelessWidget {
 class _TagPill extends StatelessWidget {
   const _TagPill(this.text);
   final String text;
+
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        border: Border.all(color: TBColors.blue),
+        border: Border.all(color: const Color(0xFF3E6990)),
         borderRadius: BorderRadius.circular(999),
       ),
-      child: Text(
-        text,
-        style: const TextStyle(fontSize: 12, color: TBColors.ink),
-      ),
+      child: Text(text, style: const TextStyle(fontSize: 12)),
     );
   }
 }
 
-/// ---- Mini wrapper stateful ONLY for analytics timing ----
+/// ---- Mini wrapper stateful SOLO para la BQ ----
 class _BQFirstFrameProbe extends StatefulWidget {
   const _BQFirstFrameProbe({
     required this.child,
