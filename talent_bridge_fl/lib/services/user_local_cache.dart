@@ -14,12 +14,8 @@ class UserLocalCache {
   /// Construye la clave interna a partir del uid
   static String _keyForUid(String uid) => '$_prefix$uid';
 
-  /// Guarda un usuario en cache local.
-  ///
-  /// Se guarda como JSON (String) en SharedPreferences con clave = 'user_cache_<uid>'.
   static Future<void> saveUser(UserEntity user) async {
     if (user.id == null || user.id!.isEmpty) {
-      // Si por alguna razón no hay id, no guardamos nada
       print('UserLocalCache: user.id vacío, no se guarda en cache.');
       return;
     }
@@ -27,25 +23,28 @@ class UserLocalCache {
     final prefs = await SharedPreferences.getInstance();
     final key = _keyForUid(user.id!);
 
-    // Mapa "ligero" para guardar en cache.
-    // Usamos los campos que ya vimos que existen en UserEntity / Firestore.
-    final Map<String, dynamic> map = {
-      'id': user.id,
-      'displayName': user.displayName,
-      'email': user.email,
-      'headline': user.headline,
-      'major': user.major,
-      'linkedin': user.linkedin,
-      'mobileNumber': user.mobileNumber,
-      'description': user.description,
-      'skillsOrTopics': user.skillsOrTopics,
-      'projects': user.projects?.map((p) => p.toMap()).toList(),
-      // Puedes agregar más campos si los necesitas luego.
-    };
+    try {
+      // 👇 Mapa "seguro": SOLO tipos simples (String, List<String>, etc.)
+      final Map<String, dynamic> map = {
+        'id': user.id,
+        'displayName': user.displayName,
+        'email': user.email,
+        'headline': user.headline,
+        'major': user.major,
+        'linkedin': user.linkedin,
+        'mobileNumber': user.mobileNumber,
+        'description': user.description,
+        'skillsOrTopics': user.skillsOrTopics,
+        // OJO: NO guardamos projects ni nada con Timestamp aquí
+      };
 
-    final jsonStr = jsonEncode(map);
-    await prefs.setString(key, jsonStr);
-    print('UserLocalCache: guardado en cache local uid=${user.id}');
+      final jsonStr = jsonEncode(map);
+      await prefs.setString(key, jsonStr);
+
+      print('UserLocalCache: guardado en cache local uid=${user.id}');
+    } catch (e) {
+      print('UserLocalCache: error serializando user ${user.id}: $e');
+    }
   }
 
   /// Lee un usuario del cache local por uid.

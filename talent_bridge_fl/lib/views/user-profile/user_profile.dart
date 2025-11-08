@@ -7,6 +7,7 @@ import 'package:talent_bridge_fl/components/text_box_widget.dart';
 import 'package:talent_bridge_fl/analytics/analytics_timer.dart';
 import 'dart:ui';
 import 'package:talent_bridge_fl/components/user_pfp_cached.dart';
+import 'package:talent_bridge_fl/services/user_local_cache.dart';
 
 // ===== Brand palette =====
 const kPrimaryBlue = Color(0xFF1F5AA6); // títulos/labels/links
@@ -35,27 +36,33 @@ class UserProfile extends ConsumerWidget {
         appBar: AppBar(),
         body: Center(child: Text('Error: $e')),
       ),
-      data: (user) => _BQFirstFrameProbe(
-        eventName: 'first_content_profile',
-        baseParams: const {'screen': 'Profile'},
-        source: userId != null ? 'user_by_id' : 'current_user',
-        child: Scaffold(
-          appBar: AppBar(
-            title: const Text('Profile'),
-            backgroundColor: kPrimaryBlue,
-            foregroundColor: Colors.white,
-            elevation: 0,
-          ),
+      data: (user) {
+        UserLocalCache.saveUser(user);
 
-          body: Container(
-            color: Colors.white,
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              child: _ProfileBody(user: user),
+        return _BQFirstFrameProbe(
+          eventName: 'first_content_profile',
+          baseParams: const {'screen': 'Profile'},
+          source: userId != null ? 'user_by_id' : 'current_user',
+          child: Scaffold(
+            appBar: AppBar(
+              title: const Text('Profile'),
+              backgroundColor: kPrimaryBlue,
+              foregroundColor: Colors.white,
+              elevation: 0,
+            ),
+            body: Container(
+              color: Colors.white,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 16,
+                ),
+                child: _ProfileBody(user: user),
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 }
