@@ -4,7 +4,8 @@ import 'package:talent_bridge_fl/domain/user_entity.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
 import 'package:talent_bridge_fl/components/user_pfp_cached.dart';
 import 'package:talent_bridge_fl/views//user-profile/user_profile.dart';
-
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:talent_bridge_fl/components/project_post_pfp.dart';
 import 'package:talent_bridge_fl/analytics/analytics_timer.dart';
 
 // ---- Tokens ----
@@ -212,9 +213,8 @@ class _SearchState extends State<Search> {
                         title: user.displayName,
                         score: _userScores[user],
                         // 👇 Avatar real cacheado
-                        leading: UserPfpCached(
+                        leading: ProjectPostPfp(
                           uid: user.id,
-                          radius: 18, // un pelín más grande si quieres
                         ),
                         // 👇 Navegación real al perfil del usuario
                         onTap: () {
