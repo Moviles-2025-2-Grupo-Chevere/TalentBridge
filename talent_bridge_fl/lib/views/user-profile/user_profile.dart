@@ -1,13 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:cached_network_image/cached_network_image.dart';
-
 import 'package:talent_bridge_fl/providers/profile_provider.dart';
 import 'package:talent_bridge_fl/domain/user_entity.dart';
 import 'package:talent_bridge_fl/components/text_box_widget.dart';
-import 'package:talent_bridge_fl/services/firebase_service.dart';
 import 'package:talent_bridge_fl/analytics/analytics_timer.dart';
+import 'dart:ui';
+import 'package:talent_bridge_fl/components/user_pfp_cached.dart';
+
+// ===== Brand palette =====
+const kPrimaryBlue = Color(0xFF1F5AA6); // títulos/labels/links
+const kText = Color(0xFF2C2C2C); // texto principal
+const kMuted = Color(0xFF6B7280); // subtítulos
+const kAvatarBg = Color(0xFFEDEFF2); // fondos suaves
 
 class UserProfile extends ConsumerWidget {
   const UserProfile({super.key, this.userId});
@@ -15,7 +20,6 @@ class UserProfile extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Si nos pasan userId => perfil de otro usuario; si no, el propio
     final asyncUser = userId != null
         ? ref.watch(userProfileStreamProvider(userId!))
         : ref.watch(remoteProfileProvider).whenData((doc) {
@@ -36,7 +40,13 @@ class UserProfile extends ConsumerWidget {
         baseParams: const {'screen': 'Profile'},
         source: userId != null ? 'user_by_id' : 'current_user',
         child: Scaffold(
-          appBar: AppBar(title: const Text('Profile')),
+          appBar: AppBar(
+            title: const Text('Profile'),
+            backgroundColor: kPrimaryBlue,
+            foregroundColor: Colors.white,
+            elevation: 0,
+          ),
+
           body: Container(
             color: Colors.white,
             child: SingleChildScrollView(
@@ -63,12 +73,6 @@ class _ProfileBody extends StatelessWidget {
     final linkedin = (user.linkedin ?? '').trim();
     final number = (user.mobileNumber ?? '').trim();
     final desc = (user.description ?? '').trim();
-
-    // Ojo: si viene photoUrl en el doc y es http, lo usamos primero
-    final photoUrl = (user.photoUrl ?? '').trim().isEmpty
-        ? null
-        : user.photoUrl;
-
     final skills = user.skillsOrTopics ?? const <String>[];
     final projects = user.projects ?? const [];
 
@@ -79,28 +83,26 @@ class _ProfileBody extends StatelessWidget {
         Center(
           child: Column(
             children: [
-              _ProfileAvatar(
-                uid: user.id ?? '', // asegúrate que UserEntity expone id
-                photoUrl: photoUrl, // preferir http directo si existe
-              ),
+              // >>> Aquí usamos el avatar cacheado con cacheKey = uid
+              UserPfpCached(uid: user.id ?? '', radius: 48),
               const SizedBox(height: 12),
               Text(
                 displayName,
                 style: const TextStyle(
+                  color: kText,
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                   fontFamily: 'OpenSans',
                 ),
+
                 textAlign: TextAlign.center,
               ),
+              if (headline.isNotEmpty) const SizedBox(height: 4),
               if (headline.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4.0),
-                  child: Text(
-                    headline,
-                    style: const TextStyle(fontSize: 14),
-                    textAlign: TextAlign.center,
-                  ),
+                Text(
+                  headline,
+                  style: const TextStyle(color: kMuted, fontSize: 14),
+                  textAlign: TextAlign.center,
                 ),
             ],
           ),
@@ -119,7 +121,7 @@ class _ProfileBody extends StatelessWidget {
         const _SectionTitle('Description'),
         Text(
           desc.isNotEmpty ? desc : '—',
-          style: const TextStyle(fontSize: 14, height: 1.4),
+          style: const TextStyle(color: kText, fontSize: 14, height: 1.4),
         ),
         const SizedBox(height: 20),
 
@@ -168,11 +170,11 @@ class _ProfileBody extends StatelessWidget {
         ),
         const SizedBox(height: 24),
 
-        // ===== Proyectos del usuario =====
+        // ===== Proyectos =====
         const _SectionTitle('Projects'),
         const SizedBox(height: 8),
         if (projects.isEmpty)
-          const Text('This user doesnt´n have published projects')
+          const Text("This user doesn't have published projects")
         else
           Column(
             children: projects.map((p) {
@@ -198,54 +200,6 @@ class _ProfileBody extends StatelessWidget {
   }
 }
 
-/// Avatar con 3 niveles de fallback: photoUrl http → Storage/profile_pictures/<uid> → asset
-class _ProfileAvatar extends StatelessWidget {
-  const _ProfileAvatar({
-    super.key,
-    required this.uid,
-    required this.photoUrl,
-  });
-
-  final String uid;
-  final String? photoUrl;
-
-  @override
-  Widget build(BuildContext context) {
-    // 1) Si viene un http directo desde Firestore, úsalo (con cache)
-    if (photoUrl != null && photoUrl!.startsWith('http')) {
-      return _circle(CachedNetworkImageProvider(photoUrl!));
-    }
-
-    // 2) Si no hay url en el doc, intenta Firebase Storage por uid
-    return FutureBuilder<String?>(
-      future: FirebaseService().getPfpUrlByUid(uid),
-      builder: (context, snap) {
-        if (snap.connectionState == ConnectionState.waiting) {
-          return const CircleAvatar(
-            radius: 48,
-            backgroundColor: Color(0xFFEFEFEF),
-          );
-        }
-        if (snap.hasData && snap.data != null) {
-          return _circle(CachedNetworkImageProvider(snap.data!));
-        }
-        // 3) Fallback a asset local
-        return const CircleAvatar(
-          radius: 48,
-          backgroundImage: AssetImage('assets/images/pfp.png'),
-          backgroundColor: Color(0xFFEFEFEF),
-        );
-      },
-    );
-  }
-
-  Widget _circle(ImageProvider provider) => CircleAvatar(
-    radius: 48,
-    backgroundImage: provider,
-    backgroundColor: const Color(0xFFEFEFEF),
-  );
-}
-
 class _SectionTitle extends StatelessWidget {
   const _SectionTitle(this.text);
   final String text;
@@ -255,7 +209,7 @@ class _SectionTitle extends StatelessWidget {
     return Text(
       text,
       style: const TextStyle(
-        color: Color(0xFF3E6990),
+        color: kPrimaryBlue,
         fontSize: 18,
         fontWeight: FontWeight.bold,
         fontFamily: 'OpenSans',
@@ -279,6 +233,12 @@ class _ContactItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final clickable = onTap != null && value != '—';
+    final textStyle = TextStyle(
+      color: clickable ? kPrimaryBlue : kText,
+      decoration: clickable ? TextDecoration.underline : TextDecoration.none,
+      fontSize: 14,
+    );
+
     return Padding(
       padding: const EdgeInsets.only(bottom: 10),
       child: Row(
@@ -288,7 +248,7 @@ class _ContactItem extends StatelessWidget {
             child: Text(
               '$label:',
               style: const TextStyle(
-                color: Colors.green,
+                color: kPrimaryBlue,
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
@@ -299,16 +259,9 @@ class _ContactItem extends StatelessWidget {
             child: clickable
                 ? InkWell(
                     onTap: onTap,
-                    child: Text(
-                      value,
-                      style: const TextStyle(
-                        decoration: TextDecoration.underline,
-                        color: Colors.blue,
-                        fontSize: 14,
-                      ),
-                    ),
+                    child: Text(value, style: textStyle),
                   )
-                : Text(value, style: const TextStyle(fontSize: 14)),
+                : Text(value, style: textStyle),
           ),
         ],
       ),
@@ -319,15 +272,17 @@ class _ContactItem extends StatelessWidget {
 class _TagPill extends StatelessWidget {
   const _TagPill(this.text);
   final String text;
+
   @override
   Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFF3E6990)),
+        color: kAvatarBg,
+        border: Border.all(color: kPrimaryBlue.withOpacity(.45)),
         borderRadius: BorderRadius.circular(999),
       ),
-      child: Text(text, style: const TextStyle(fontSize: 12)),
+      child: Text(text, style: const TextStyle(color: kText, fontSize: 12)),
     );
   }
 }
