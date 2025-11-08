@@ -9,13 +9,22 @@ import 'package:talent_bridge_fl/components/text_box_widget.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
 import 'package:talent_bridge_fl/analytics/analytics_timer.dart';
 
+/// ----- Brand palette -----
+class TBColors {
+  static const cream = Color(0xFFFFF7E6); // background
+  static const ink = Color(0xFF222222); // main text
+  static const mute = Color(0xFF6B7280); // secondary text
+  static const gold = Color(0xFFFFC300); // section titles
+  static const blue = Color(0xFF3E6990); // accents/borders
+  static const link = Color(0xFF0A66C2); // link color
+}
+
 class UserProfile extends ConsumerWidget {
   const UserProfile({super.key, this.userId});
   final String? userId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    // Si nos pasan userId => perfil de otro usuario; si no, el propio
     final asyncUser = userId != null
         ? ref.watch(userProfileStreamProvider(userId!))
         : ref.watch(remoteProfileProvider).whenData((doc) {
@@ -28,7 +37,10 @@ class UserProfile extends ConsumerWidget {
         body: Center(child: CircularProgressIndicator()),
       ),
       error: (e, _) => Scaffold(
-        appBar: AppBar(),
+        appBar: AppBar(
+          backgroundColor: TBColors.cream,
+          foregroundColor: TBColors.ink,
+        ),
         body: Center(child: Text('Error: $e')),
       ),
       data: (user) => _BQFirstFrameProbe(
@@ -36,9 +48,14 @@ class UserProfile extends ConsumerWidget {
         baseParams: const {'screen': 'Profile'},
         source: userId != null ? 'user_by_id' : 'current_user',
         child: Scaffold(
-          appBar: AppBar(title: const Text('Profile')),
+          appBar: AppBar(
+            title: const Text('Profile'),
+            backgroundColor: TBColors.cream,
+            foregroundColor: TBColors.ink,
+            elevation: 0,
+          ),
           body: Container(
-            color: Colors.white,
+            color: TBColors.cream,
             child: SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
               child: _ProfileBody(user: user),
@@ -64,7 +81,6 @@ class _ProfileBody extends StatelessWidget {
     final number = (user.mobileNumber ?? '').trim();
     final desc = (user.description ?? '').trim();
 
-    // Ojo: si viene photoUrl en el doc y es http, lo usamos primero
     final photoUrl = (user.photoUrl ?? '').trim().isEmpty
         ? null
         : user.photoUrl;
@@ -80,8 +96,8 @@ class _ProfileBody extends StatelessWidget {
           child: Column(
             children: [
               _ProfileAvatar(
-                uid: user.id ?? '', // asegúrate que UserEntity expone id
-                photoUrl: photoUrl, // preferir http directo si existe
+                uid: user.id ?? '',
+                photoUrl: photoUrl,
               ),
               const SizedBox(height: 12),
               Text(
@@ -90,17 +106,16 @@ class _ProfileBody extends StatelessWidget {
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                   fontFamily: 'OpenSans',
+                  color: TBColors.ink,
                 ),
                 textAlign: TextAlign.center,
               ),
+              if (headline.isNotEmpty) const SizedBox(height: 4),
               if (headline.isNotEmpty)
-                Padding(
-                  padding: const EdgeInsets.only(top: 4.0),
-                  child: Text(
-                    headline,
-                    style: const TextStyle(fontSize: 14),
-                    textAlign: TextAlign.center,
-                  ),
+                Text(
+                  headline,
+                  style: const TextStyle(fontSize: 14, color: TBColors.mute),
+                  textAlign: TextAlign.center,
                 ),
             ],
           ),
@@ -108,18 +123,22 @@ class _ProfileBody extends StatelessWidget {
 
         const SizedBox(height: 20),
 
-        // ===== Carrera =====
+        // ===== Major =====
         if (carrera.isNotEmpty) ...[
           const _SectionTitle('Major'),
           _TagPill(carrera),
           const SizedBox(height: 20),
         ],
 
-        // ===== Descripción =====
+        // ===== Description =====
         const _SectionTitle('Description'),
         Text(
           desc.isNotEmpty ? desc : '—',
-          style: const TextStyle(fontSize: 14, height: 1.4),
+          style: const TextStyle(
+            fontSize: 14,
+            height: 1.4,
+            color: TBColors.ink,
+          ),
         ),
         const SizedBox(height: 20),
 
@@ -127,7 +146,10 @@ class _ProfileBody extends StatelessWidget {
         const _SectionTitle('My Flags'),
         const SizedBox(height: 8),
         skills.isEmpty
-            ? const Text('—', style: TextStyle(fontSize: 14))
+            ? const Text(
+                '—',
+                style: TextStyle(fontSize: 14, color: TBColors.ink),
+              )
             : Wrap(
                 spacing: 8,
                 runSpacing: 8,
@@ -137,7 +159,7 @@ class _ProfileBody extends StatelessWidget {
               ),
         const SizedBox(height: 20),
 
-        // ===== Contacto =====
+        // ===== Contact =====
         const _SectionTitle('Contact'),
         const SizedBox(height: 8),
         _ContactItem(
@@ -168,11 +190,14 @@ class _ProfileBody extends StatelessWidget {
         ),
         const SizedBox(height: 24),
 
-        // ===== Proyectos del usuario =====
+        // ===== Projects =====
         const _SectionTitle('Projects'),
         const SizedBox(height: 8),
         if (projects.isEmpty)
-          const Text('This user doesnt´n have published projects')
+          const Text(
+            'This user doesn\'t have published projects',
+            style: TextStyle(color: TBColors.mute),
+          )
         else
           Column(
             children: projects.map((p) {
@@ -183,9 +208,17 @@ class _ProfileBody extends StatelessWidget {
                 child: ListTile(
                   title: Text(
                     p.title,
-                    style: const TextStyle(fontWeight: FontWeight.w600),
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w600,
+                      color: TBColors.ink,
+                    ),
                   ),
-                  subtitle: subtitle != null ? Text(subtitle) : null,
+                  subtitle: subtitle != null
+                      ? Text(
+                          subtitle,
+                          style: const TextStyle(color: TBColors.mute),
+                        )
+                      : null,
                   dense: true,
                 ),
               );
@@ -198,7 +231,7 @@ class _ProfileBody extends StatelessWidget {
   }
 }
 
-/// Avatar con 3 niveles de fallback: photoUrl http → Storage/profile_pictures/<uid> → asset
+/// Avatar with 3-level fallback: http photoUrl → Storage/profile_pictures/<uid> → asset
 class _ProfileAvatar extends StatelessWidget {
   const _ProfileAvatar({
     super.key,
@@ -211,38 +244,43 @@ class _ProfileAvatar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // 1) Si viene un http directo desde Firestore, úsalo (con cache)
     if (photoUrl != null && photoUrl!.startsWith('http')) {
       return _circle(CachedNetworkImageProvider(photoUrl!));
     }
 
-    // 2) Si no hay url en el doc, intenta Firebase Storage por uid
     return FutureBuilder<String?>(
       future: FirebaseService().getPfpUrlByUid(uid),
       builder: (context, snap) {
         if (snap.connectionState == ConnectionState.waiting) {
           return const CircleAvatar(
             radius: 48,
-            backgroundColor: Color(0xFFEFEFEF),
+            backgroundColor: TBColors.cream,
           );
         }
         if (snap.hasData && snap.data != null) {
           return _circle(CachedNetworkImageProvider(snap.data!));
         }
-        // 3) Fallback a asset local
         return const CircleAvatar(
           radius: 48,
           backgroundImage: AssetImage('assets/images/pfp.png'),
-          backgroundColor: Color(0xFFEFEFEF),
+          backgroundColor: TBColors.cream,
         );
       },
     );
   }
 
-  Widget _circle(ImageProvider provider) => CircleAvatar(
+  Widget _circle(ImageProvider provider) => const CircleAvatar(
     radius: 48,
-    backgroundImage: provider,
-    backgroundColor: const Color(0xFFEFEFEF),
+    backgroundColor: TBColors.cream,
+    foregroundImage: null, // keep backgroundImage for compatibility
+  ).copyWith(backgroundImage: provider);
+}
+
+extension on CircleAvatar {
+  CircleAvatar copyWith({ImageProvider? backgroundImage}) => CircleAvatar(
+    radius: radius,
+    backgroundColor: backgroundColor,
+    backgroundImage: backgroundImage ?? this.backgroundImage,
   );
 }
 
@@ -255,7 +293,7 @@ class _SectionTitle extends StatelessWidget {
     return Text(
       text,
       style: const TextStyle(
-        color: Color(0xFF3E6990),
+        color: TBColors.gold,
         fontSize: 18,
         fontWeight: FontWeight.bold,
         fontFamily: 'OpenSans',
@@ -288,7 +326,7 @@ class _ContactItem extends StatelessWidget {
             child: Text(
               '$label:',
               style: const TextStyle(
-                color: Colors.green,
+                color: TBColors.gold,
                 fontSize: 14,
                 fontWeight: FontWeight.w600,
               ),
@@ -303,12 +341,15 @@ class _ContactItem extends StatelessWidget {
                       value,
                       style: const TextStyle(
                         decoration: TextDecoration.underline,
-                        color: Colors.blue,
+                        color: TBColors.link,
                         fontSize: 14,
                       ),
                     ),
                   )
-                : Text(value, style: const TextStyle(fontSize: 14)),
+                : Text(
+                    value,
+                    style: const TextStyle(fontSize: 14, color: TBColors.ink),
+                  ),
           ),
         ],
       ),
@@ -324,15 +365,18 @@ class _TagPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        border: Border.all(color: const Color(0xFF3E6990)),
+        border: Border.all(color: TBColors.blue),
         borderRadius: BorderRadius.circular(999),
       ),
-      child: Text(text, style: const TextStyle(fontSize: 12)),
+      child: Text(
+        text,
+        style: const TextStyle(fontSize: 12, color: TBColors.ink),
+      ),
     );
   }
 }
 
-/// ---- Mini wrapper stateful SOLO para la BQ ----
+/// ---- Mini wrapper stateful ONLY for analytics timing ----
 class _BQFirstFrameProbe extends StatefulWidget {
   const _BQFirstFrameProbe({
     required this.child,
