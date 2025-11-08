@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:talent_bridge_fl/domain/user_entity.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
+import 'package:talent_bridge_fl/components/user_pfp_cached.dart';
+import 'package:talent_bridge_fl/views//user-profile/user_profile.dart';
 
-// ---- BQ timer helper (nuevo) ----
 import 'package:talent_bridge_fl/analytics/analytics_timer.dart';
 
 // ---- Tokens ----
@@ -210,6 +211,21 @@ class _SearchState extends State<Search> {
                       (user) => SearchCard(
                         title: user.displayName,
                         score: _userScores[user],
+                        // 👇 Avatar real cacheado
+                        leading: UserPfpCached(
+                          uid: user.id,
+                          radius: 18, // un pelín más grande si quieres
+                        ),
+                        // 👇 Navegación real al perfil del usuario
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => UserProfile(
+                                userId: user.id,
+                              ),
+                            ),
+                          );
+                        },
                       ),
                     ),
                     const SizedBox(height: 24),
@@ -240,11 +256,19 @@ class SearchCard extends StatelessWidget {
     required this.title,
     this.score,
     this.isRecent = false,
+    this.leading,
+    this.onTap,
   });
 
   final String title;
   final bool isRecent;
   final double? score;
+
+  /// Widget opcional para mostrar a la izquierda (ej: avatar real)
+  final Widget? leading;
+
+  /// Acción opcional al tocar la tarjeta
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -258,7 +282,7 @@ class SearchCard extends StatelessWidget {
               Icons.access_time,
               color: Colors.black45,
             ),
-          const SizedBox(width: 8),
+          if (isRecent) const SizedBox(width: 8),
           Expanded(
             child: Material(
               color: Colors.white,
@@ -267,11 +291,13 @@ class SearchCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               child: InkWell(
                 borderRadius: BorderRadius.circular(12),
-                onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Abrir "$title"'),
-                  ),
-                ),
+                onTap:
+                    onTap ??
+                    () => ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Opening "$title"'),
+                      ),
+                    ),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
@@ -279,15 +305,17 @@ class SearchCard extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      CircleAvatar(
-                        radius: 16,
-                        backgroundColor: Colors.purple.shade200,
-                        child: const Icon(
-                          Icons.blur_on,
-                          size: 18,
-                          color: Colors.white,
-                        ),
-                      ),
+                      // 👇 Si me pasan leading lo uso; si no, uso el avatar genérico
+                      leading ??
+                          CircleAvatar(
+                            radius: 16,
+                            backgroundColor: Colors.purple.shade200,
+                            child: const Icon(
+                              Icons.blur_on,
+                              size: 18,
+                              color: Colors.white,
+                            ),
+                          ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
@@ -300,7 +328,12 @@ class SearchCard extends StatelessWidget {
                         ),
                       ),
                       if (score != null)
-                        Expanded(child: Text(score!.toStringAsPrecision(3))),
+                        Expanded(
+                          child: Text(
+                            score!.toStringAsPrecision(3),
+                            textAlign: TextAlign.end,
+                          ),
+                        ),
                     ],
                   ),
                 ),
