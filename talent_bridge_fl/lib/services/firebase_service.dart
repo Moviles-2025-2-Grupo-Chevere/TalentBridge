@@ -71,6 +71,16 @@ class FirebaseService {
     return _db.collection('users').doc(uid).snapshots();
   }
 
+  Stream<UserEntity> userStreamById(String uid) {
+    return _db.collection('users').doc(uid).snapshots().map((snap) {
+      final data = snap.data() ?? <String, dynamic>{};
+      return UserEntity.fromMap({
+        ...data,
+        'id': snap.id,
+      });
+    });
+  }
+
   Future<UserEntity?> getCurrentUserEntity(bool? useOnline) async {
     final uid = currentUid();
     if (uid == null) return null;
@@ -502,6 +512,17 @@ class FirebaseService {
       }
       rethrow;
     } catch (e) {
+      rethrow;
+    }
+  }
+
+  Future<String?> getPfpUrlByUid(String uid) async {
+    try {
+      final ref = _storage.ref().child('profile_pictures/$uid');
+      return await ref.getDownloadURL();
+    } on FirebaseException catch (e) {
+      if (e.code == 'object-not-found') return null;
+      if (e.code == 'unauthorized') return null;
       rethrow;
     }
   }
