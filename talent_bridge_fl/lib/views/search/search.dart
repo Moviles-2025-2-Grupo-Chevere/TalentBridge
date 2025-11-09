@@ -7,6 +7,7 @@ import 'package:talent_bridge_fl/views//user-profile/user_profile.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:talent_bridge_fl/components/project_post_pfp.dart';
 import 'package:talent_bridge_fl/analytics/analytics_timer.dart';
+import 'package:talent_bridge_fl/services/search_local_cache.dart';
 
 // ---- Tokens ----
 const kBg = Color(0xFFFEF7E6); // cream
@@ -111,10 +112,8 @@ class _SearchState extends State<Search> {
         .where((u) => u.displayName.toLowerCase().contains(q))
         .toList();
 
-    // ---- BQ: primera vez que hay resultados -> dispara evento ----
     if (!_ttfcSent && filteredUsers.isNotEmpty) {
       _ttfcSent = true;
-      // Fuente 'cache' porque la lista sale de memoria local (no pegamos a red aquí)
       _tPeople.endOnce(source: 'cache', itemCount: filteredUsers.length);
     }
 
@@ -132,6 +131,12 @@ class _SearchState extends State<Search> {
       _userScores = scores;
       _searchResults = filteredUsers;
     });
+
+    // 👇 NUEVO: guardamos los resultados en cache local
+    if (filteredUsers.isNotEmpty) {
+      // ignore: unawaited_futures
+      SearchLocalCache.saveLastUserResults(filteredUsers);
+    }
   }
 
   void _applySearch() {
