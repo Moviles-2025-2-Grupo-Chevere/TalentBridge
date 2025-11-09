@@ -561,4 +561,15 @@ class FirebaseService {
       rethrow;
     }
   }
+
+  Future<String?> getMemberUrlByUid(String uid) async {
+    try {
+      final ref = _storage.ref().child('credits_pictures/$uid.jpg');
+      return await ref.getDownloadURL();
+    } on FirebaseException catch (e) {
+      if (e.code == 'object-not-found') return null;
+      if (e.code == 'unauthorized') return null;
+      rethrow;
+    }
+  }
 }

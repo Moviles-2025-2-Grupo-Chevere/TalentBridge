@@ -20,6 +20,7 @@ class Credits extends StatefulWidget {
 class _CreditsState extends State<Credits> {
   final firebaseService = FirebaseService();
   List<MemberEntity> _members = [];
+  Map<String, String?> _memberPhotoUrls = {};
   bool _isLoading = true;
 
   @override
@@ -31,6 +32,15 @@ class _CreditsState extends State<Credits> {
   Future<void> _loadMembers() async {
     try {
       final members = await firebaseService.getAllMembers();
+
+      // Load profile pictures for each member
+      for (var member in members) {
+        debugPrint('Loading photo URL for member: ${member.id}');
+        final photoUrl = await firebaseService.getMemberUrlByUid(member.id);
+        debugPrint('Loaded photo URL for ${member.id}: $photoUrl');
+        _memberPhotoUrls[member.id] = photoUrl;
+      }
+
       setState(() {
         _members = members;
         _isLoading = false;
@@ -111,6 +121,8 @@ class _CreditsState extends State<Credits> {
   }
 
   Widget _buildMemberCard(MemberEntity member) {
+    final photoUrl = _memberPhotoUrls[member.id];
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -133,13 +145,8 @@ class _CreditsState extends State<Credits> {
             CircleAvatar(
               radius: 40,
               backgroundColor: kBrandGreen.withOpacity(0.2),
-              backgroundImage: member.description.isNotEmpty
-                  ? AssetImage(member.description)
-                  : null,
-              onBackgroundImageError: member.description.isNotEmpty
-                  ? (_, __) {}
-                  : null,
-              child: member.description.isEmpty
+              backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
+              child: photoUrl == null
                   ? const Icon(
                       Icons.person,
                       size: 40,
