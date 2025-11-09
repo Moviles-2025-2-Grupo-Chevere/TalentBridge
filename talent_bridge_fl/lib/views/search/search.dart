@@ -162,7 +162,6 @@ class _SearchState extends State<Search> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Buscando: "$q"')),
     );
-    // TODO: hook real search here
   }
 
   @override
@@ -201,13 +200,12 @@ class _SearchState extends State<Search> {
                             inputFormatters: [
                               LengthLimitingTextInputFormatter(100),
                             ],
-                            decoration: _pillInput(), // sin icono de lupa
+                            decoration: _pillInput(),
                           ),
                         ),
                       ),
                       const SizedBox(width: 8),
 
-                      // Botón redondo de filtros
                       _shadowWrap(
                         Material(
                           color: Colors.white,
@@ -232,7 +230,6 @@ class _SearchState extends State<Search> {
 
                   const SizedBox(height: 24),
 
-                  // 🔹 Resultados en vivo
                   if (_searchResults.isNotEmpty) ...[
                     Text('Results', style: labelStyle),
                     const SizedBox(height: 12),
@@ -258,7 +255,6 @@ class _SearchState extends State<Search> {
                     const SizedBox(height: 24),
                   ],
 
-                  // 🔹 Fallback: resultados cacheados
                   if (_searchResults.isEmpty &&
                       queryText.isNotEmpty &&
                       fallbackResults.isNotEmpty) ...[
@@ -318,10 +314,8 @@ class SearchCard extends StatelessWidget {
   final bool isRecent;
   final double? score;
 
-  /// Widget opcional para mostrar a la izquierda (ej: avatar real)
   final Widget? leading;
 
-  /// Acción opcional al tocar la tarjeta
   final VoidCallback? onTap;
 
   @override
@@ -359,7 +353,6 @@ class SearchCard extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      // Si me pasan leading lo uso; si no, uso el avatar genérico
                       leading ??
                           CircleAvatar(
                             radius: 16,
