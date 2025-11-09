@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:talent_bridge_fl/components/member_pfp.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
 import 'package:talent_bridge_fl/domain/member_entity.dart';
 
@@ -20,7 +21,6 @@ class Credits extends StatefulWidget {
 class _CreditsState extends State<Credits> {
   final firebaseService = FirebaseService();
   List<MemberEntity> _members = [];
-  Map<String, String?> _memberPhotoUrls = {};
   bool _isLoading = true;
 
   @override
@@ -32,14 +32,6 @@ class _CreditsState extends State<Credits> {
   Future<void> _loadMembers() async {
     try {
       final members = await firebaseService.getAllMembers();
-
-      // Load profile pictures for each member
-      for (var member in members) {
-        debugPrint('Loading photo URL for member: ${member.id}');
-        final photoUrl = await firebaseService.getMemberUrlByUid(member.id);
-        debugPrint('Loaded photo URL for ${member.id}: $photoUrl');
-        _memberPhotoUrls[member.id] = photoUrl;
-      }
 
       setState(() {
         _members = members;
@@ -121,8 +113,6 @@ class _CreditsState extends State<Credits> {
   }
 
   Widget _buildMemberCard(MemberEntity member) {
-    final photoUrl = _memberPhotoUrls[member.id];
-
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -141,18 +131,10 @@ class _CreditsState extends State<Credits> {
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Profile Picture
-            CircleAvatar(
+            // Profile Picture with Caching
+            MemberProfilePicture(
+              memberId: member.id,
               radius: 40,
-              backgroundColor: kBrandGreen.withOpacity(0.2),
-              backgroundImage: photoUrl != null ? NetworkImage(photoUrl) : null,
-              child: photoUrl == null
-                  ? const Icon(
-                      Icons.person,
-                      size: 40,
-                      color: kBrandGreen,
-                    )
-                  : null,
             ),
             const SizedBox(width: 16),
 
