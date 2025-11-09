@@ -11,8 +11,9 @@ const kHomeBtn = Color(0xFF2E6674);
 // Simple data holder for each teammate
 class _Member {
   final String name;
-  final String? asset; // e.g., 'assets/images/daniel.png'; null => placeholder
-  const _Member(this.name, this.asset);
+  final String?
+  description; // e.g., 'assets/images/daniel.png'; null => placeholder
+  const _Member(this.name, this.description);
 }
 
 class Credits extends StatefulWidget {
@@ -90,7 +91,7 @@ class _CreditsState extends State<Credits> {
 
                       // avatar widget with placeholder fallback
                       Widget avatar;
-                      if (m.asset == null) {
+                      if (m.description == null) {
                         avatar = const CircleAvatar(
                           radius: 34,
                           backgroundColor: Color(0xFFE0E0E0),
@@ -104,7 +105,7 @@ class _CreditsState extends State<Credits> {
                         avatar = CircleAvatar(
                           radius: 34,
                           backgroundColor: Colors.grey.shade200,
-                          backgroundImage: AssetImage(m.asset!),
+                          backgroundImage: AssetImage(m.description!),
                           onBackgroundImageError: (_, __) {},
                         );
                       }
