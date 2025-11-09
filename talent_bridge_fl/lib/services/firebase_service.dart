@@ -8,6 +8,7 @@ import 'package:firebase_auth/firebase_auth.dart' as firebase_core;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:talent_bridge_fl/domain/member_entity.dart';
 import 'package:talent_bridge_fl/domain/project_entity.dart';
 import 'package:talent_bridge_fl/domain/update_user_dto.dart';
 import 'package:talent_bridge_fl/domain/user_entity.dart' hide Source;
@@ -537,6 +538,26 @@ class FirebaseService {
       debugPrint(e.code);
       rethrow;
     } catch (e) {
+      rethrow;
+    }
+  }
+
+  //------------------ CREDITS ----------------
+  Future<List<MemberEntity>> getAllMembers() async {
+    try {
+      final querySnapshot = await _db.collection('credits').get();
+
+      List<MemberEntity> allMembers = [];
+
+      for (var doc in querySnapshot.docs) {
+        final memberData = doc.data();
+        final MemberEntity memberEntity = MemberEntity.fromMap(memberData);
+        allMembers.add(memberEntity);
+      }
+
+      return allMembers;
+    } catch (e) {
+      debugPrint("Error getting all members: " + e.toString());
       rethrow;
     }
   }

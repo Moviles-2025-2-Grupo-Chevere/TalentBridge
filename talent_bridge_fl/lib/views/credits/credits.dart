@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:talent_bridge_fl/services/firebase_service.dart';
+import 'package:talent_bridge_fl/domain/member_entity.dart';
 
 // ---- Tokens ----
 const kBg = Color(0xFFFEF7E6); // cream
@@ -8,14 +10,6 @@ const kShadowCol = Color(0x33000000); // soft shadow
 const kPillRadius = 26.0;
 const kHomeBtn = Color(0xFF2E6674);
 
-// Simple data holder for each teammate
-class _Member {
-  final String name;
-  final String?
-  description; // e.g., 'assets/images/daniel.png'; null => placeholder
-  const _Member(this.name, this.description);
-}
-
 class Credits extends StatefulWidget {
   const Credits({super.key});
 
@@ -24,44 +18,57 @@ class Credits extends StatefulWidget {
 }
 
 class _CreditsState extends State<Credits> {
-  // Edit these to point to your real asset files (leave null for placeholder)
-  final List<_Member> _members = const [
-    _Member('Daniel', 'assets/images/DANIEL.jpg'),
-    _Member('David', 'assets/images/DAVID.jpg'),
-    _Member('Mariana', 'assets/images/MARIANA.jpg'),
-    _Member('Manuela', 'assets/images/MANUELA.jpg'),
-    _Member('Juan Diego', 'assets/images/JUDI.jpg'), // map as you need
-    _Member('María Pau', 'assets/images/MP.jpg'),
-  ];
+  final firebaseService = FirebaseService();
+  List<MemberEntity> _members = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadMembers();
+  }
+
+  Future<void> _loadMembers() async {
+    try {
+      final members = await firebaseService.getAllMembers();
+      setState(() {
+        _members = members;
+        _isLoading = false;
+      });
+    } catch (e) {
+      debugPrint('Error loading members: $e');
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text('Credits'),
+        title: const Text('Credits'),
       ),
       backgroundColor: kBg,
       body: SafeArea(
-        child: Column(
-          children: [
-            // ---------- Body ----------
-            Expanded(
-              child: SingleChildScrollView(
-                padding: const EdgeInsets.fromLTRB(16, 20, 16, 24),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : Column(
+                children: [
+                  // ---------- Header ----------
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
+                    child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
                         Expanded(
                           child: Center(
                             child: Image.asset(
                               'assets/images/talent_bridge_logo.png',
-                              height: 120,
+                              height: 100,
                               errorBuilder: (_, __, ___) => const Icon(
                                 Icons.account_balance,
-                                size: 120,
+                                size: 100,
                                 color: kBrandGreen,
                               ),
                             ),
@@ -81,76 +88,92 @@ class _CreditsState extends State<Credits> {
                         ),
                       ],
                     ),
+                  ),
 
-                    const SizedBox(height: 28),
-
-                    // ---- Team members (alternating left/right) ----
-                    ...List.generate(_members.length, (i) {
-                      final m = _members[i];
-                      final even = i.isEven;
-
-                      // avatar widget with placeholder fallback
-                      Widget avatar;
-                      if (m.description == null) {
-                        avatar = const CircleAvatar(
-                          radius: 34,
-                          backgroundColor: Color(0xFFE0E0E0),
-                          child: Icon(
-                            Icons.person,
-                            color: Colors.white,
-                            size: 28,
-                          ),
-                        );
-                      } else {
-                        avatar = CircleAvatar(
-                          radius: 34,
-                          backgroundColor: Colors.grey.shade200,
-                          backgroundImage: AssetImage(m.description!),
-                          onBackgroundImageError: (_, __) {},
-                        );
-                      }
-
-                      final nameText = Text(
-                        m.name,
-                        style: const TextStyle(
-                          color: kAmber,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      );
-
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        child: Row(
-                          mainAxisAlignment: even
-                              ? MainAxisAlignment.start
-                              : MainAxisAlignment.end,
-                          children: [
-                            if (even) ...[
-                              avatar,
-                              const SizedBox(width: 16),
-                              nameText,
-                            ] else ...[
-                              nameText,
-                              const SizedBox(width: 16),
-                              avatar,
-                            ],
-                          ],
-                        ),
-                      );
-                    }),
-
-                    // (Optional) bottom decorative logo like your mock:
-                    const SizedBox(height: 32),
-                    const Center(
-                      child: Icon(
-                        Icons.account_balance,
-                        color: kBrandGreen,
-                        size: 28,
+                  // ---------- Team Cards ----------
+                  Expanded(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
                       ),
+                      itemCount: _members.length,
+                      itemBuilder: (context, index) {
+                        final member = _members[index];
+                        return _buildMemberCard(member);
+                      },
                     ),
-                  ],
-                ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+
+  Widget _buildMemberCard(MemberEntity member) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: kShadowCol,
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.all(20),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Profile Picture
+            CircleAvatar(
+              radius: 40,
+              backgroundColor: kBrandGreen.withOpacity(0.2),
+              backgroundImage: member.description.isNotEmpty
+                  ? AssetImage(member.description)
+                  : null,
+              onBackgroundImageError: member.description.isNotEmpty
+                  ? (_, __) {}
+                  : null,
+              child: member.description.isEmpty
+                  ? const Icon(
+                      Icons.person,
+                      size: 40,
+                      color: kBrandGreen,
+                    )
+                  : null,
+            ),
+            const SizedBox(width: 16),
+
+            // Name and Description
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    member.name,
+                    style: const TextStyle(
+                      color: kAmber,
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    member.description.isNotEmpty
+                        ? member.description
+                        : 'Team Member',
+                    style: const TextStyle(
+                      color: Colors.black87,
+                      fontSize: 14,
+                      height: 1.4,
+                    ),
+                  ),
+                ],
               ),
             ),
           ],
