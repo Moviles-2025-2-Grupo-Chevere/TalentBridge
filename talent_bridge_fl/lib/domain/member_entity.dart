@@ -14,8 +14,8 @@ class MemberEntity {
   factory MemberEntity.fromMap(Map<String, dynamic> map) {
     return MemberEntity(
       id: map['id'] ?? '',
-      name: map['Name'] ?? '',
-      description: map['Description'] ?? '',
+      name: map['Name'] ?? map['name'] ?? '',
+      description: map['Description'] ?? map['description'] ?? '',
     );
   }
 
@@ -26,4 +26,9 @@ class MemberEntity {
       'description': description,
     };
   }
+
+  String toJson() => json.encode(toMap());
+
+  factory MemberEntity.fromJson(String source) =>
+      MemberEntity.fromMap(json.decode(source));
 }

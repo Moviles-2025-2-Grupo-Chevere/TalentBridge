@@ -12,12 +12,14 @@ import 'package:talent_bridge_fl/domain/member_entity.dart';
 import 'package:talent_bridge_fl/domain/project_entity.dart';
 import 'package:talent_bridge_fl/domain/update_user_dto.dart';
 import 'package:talent_bridge_fl/domain/user_entity.dart' hide Source;
+import 'package:talent_bridge_fl/services/member_local_cache.dart';
 
 class FirebaseService {
   final _auth = FirebaseAuth.instance;
   final _db = FirebaseFirestore.instance;
   final _storage = FirebaseStorage.instance;
   final _analytics = FirebaseAnalytics.instance;
+  final _memberCache = MemberCacheService();
 
   String? currentUid() => _auth.currentUser?.uid;
 
@@ -545,6 +547,21 @@ class FirebaseService {
   //------------------ CREDITS ----------------
   Future<List<MemberEntity>> getAllMembers() async {
     try {
+      // Check connectivity
+      final connection = await Connectivity().checkConnectivity();
+      final hasConnection = connection[0] != ConnectivityResult.none;
+
+      // Try to get cached members first
+      final cachedMembers = await _memberCache.getCachedMembers();
+
+      if (!hasConnection) {
+        // If offline, return cached data or empty list
+        debugPrint('Offline: Using cached members');
+        return cachedMembers ?? [];
+      }
+
+      // If online, fetch fresh data
+      debugPrint('Online: Fetching fresh member data');
       final querySnapshot = await _db.collection('credits').get();
 
       List<MemberEntity> allMembers = [];
@@ -555,9 +572,23 @@ class FirebaseService {
         allMembers.add(memberEntity);
       }
 
+      // Sort by name alphabetically
+      allMembers.sort((a, b) => a.name.compareTo(b.name));
+
+      // Cache the fresh data
+      await _memberCache.cacheMembers(allMembers);
+
       return allMembers;
     } catch (e) {
-      debugPrint("Error getting all members: " + e.toString());
+      debugPrint("Error getting all members: $e");
+
+      // On error, try to return cached data
+      final cachedMembers = await _memberCache.getCachedMembers();
+      if (cachedMembers != null) {
+        debugPrint('Error occurred, returning cached members');
+        return cachedMembers;
+      }
+
       rethrow;
     }
   }

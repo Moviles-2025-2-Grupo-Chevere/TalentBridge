@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:talent_bridge_fl/components/member_pfp.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
 import 'package:talent_bridge_fl/domain/member_entity.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 // ---- Tokens ----
 const kBg = Color(0xFFFEF7E6); // cream
@@ -22,15 +23,25 @@ class _CreditsState extends State<Credits> {
   final firebaseService = FirebaseService();
   List<MemberEntity> _members = [];
   bool _isLoading = true;
+  bool _isOffline = false;
 
   @override
   void initState() {
     super.initState();
+    _checkConnectivity();
     _loadMembers();
+  }
+
+  Future<void> _checkConnectivity() async {
+    final connection = await Connectivity().checkConnectivity();
+    setState(() {
+      _isOffline = connection[0] == ConnectivityResult.none;
+    });
   }
 
   Future<void> _loadMembers() async {
     try {
+      await _checkConnectivity();
       final members = await firebaseService.getAllMembers();
 
       setState(() {
@@ -42,6 +53,16 @@ class _CreditsState extends State<Credits> {
       setState(() {
         _isLoading = false;
       });
+
+      // Show error snackbar
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error loading team members: ${e.toString()}'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
     }
   }
 
@@ -50,6 +71,13 @@ class _CreditsState extends State<Credits> {
     return Scaffold(
       appBar: AppBar(
         title: const Text('Credits'),
+        actions: [
+          if (_isOffline)
+            const Padding(
+              padding: EdgeInsets.all(16.0),
+              child: Icon(Icons.cloud_off, color: Colors.grey),
+            ),
+        ],
       ),
       backgroundColor: kBg,
       body: SafeArea(
@@ -57,6 +85,25 @@ class _CreditsState extends State<Credits> {
             ? const Center(child: CircularProgressIndicator())
             : Column(
                 children: [
+                  // Offline indicator
+                  if (_isOffline)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(8),
+                      color: Colors.orange.shade100,
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.info_outline, size: 16),
+                          SizedBox(width: 8),
+                          Text(
+                            'Showing cached data (Offline)',
+                            style: TextStyle(fontSize: 12),
+                          ),
+                        ],
+                      ),
+                    ),
+
                   // ---------- Header ----------
                   Padding(
                     padding: const EdgeInsets.fromLTRB(16, 20, 16, 16),
@@ -94,17 +141,24 @@ class _CreditsState extends State<Credits> {
 
                   // ---------- Team Cards ----------
                   Expanded(
-                    child: ListView.builder(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      itemCount: _members.length,
-                      itemBuilder: (context, index) {
-                        final member = _members[index];
-                        return _buildMemberCard(member);
-                      },
-                    ),
+                    child: _members.isEmpty
+                        ? const Center(
+                            child: Text(
+                              'No team members available',
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          )
+                        : ListView.builder(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            itemCount: _members.length,
+                            itemBuilder: (context, index) {
+                              final member = _members[index];
+                              return _buildMemberCard(member);
+                            },
+                          ),
                   ),
                 ],
               ),
