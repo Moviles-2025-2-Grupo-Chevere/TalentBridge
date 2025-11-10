@@ -32,11 +32,68 @@ class UserProfile extends ConsumerWidget {
       loading: () => const Scaffold(
         body: Center(child: CircularProgressIndicator()),
       ),
-      error: (e, _) => Scaffold(
-        appBar: AppBar(),
-        body: Center(child: Text('Error: $e')),
-      ),
+
+      error: (e, _) {
+        // Si es un perfil por ID (desde Feed/Search), intentamos leer del cache local
+        if (userId != null) {
+          return FutureBuilder<UserEntity?>(
+            future: UserLocalCache.getUser(userId!),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Scaffold(
+                  body: Center(child: CircularProgressIndicator()),
+                );
+              }
+
+              final cachedUser = snapshot.data;
+              if (cachedUser == null) {
+                // No había nada cacheado → mostramos el error normal
+                return Scaffold(
+                  appBar: AppBar(),
+                  body: Center(child: Text('Error: $e')),
+                );
+              }
+
+              print('UserLocalCache: usando perfil cacheado para uid=$userId');
+
+              // ✅ Sí había cache → mostramos el perfil usando esos datos
+              return _BQFirstFrameProbe(
+                eventName: 'first_content_profile',
+                baseParams: const {'screen': 'Profile'},
+                source:
+                    'cache_user_by_id', // para distinguir en analytics si quieres
+                child: Scaffold(
+                  appBar: AppBar(
+                    title: const Text('Profile'),
+                    backgroundColor: kPrimaryBlue,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                  ),
+                  body: Container(
+                    color: Colors.white,
+                    child: SingleChildScrollView(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 16,
+                      ),
+                      child: _ProfileBody(user: cachedUser),
+                    ),
+                  ),
+                ),
+              );
+            },
+          );
+        }
+
+        // Caso userId == null (perfil del usuario logueado): dejamos el manejo viejo
+        return Scaffold(
+          appBar: AppBar(),
+          body: Center(child: Text('Error: $e')),
+        );
+      },
+
       data: (user) {
+        // ignore: unawaited_futures
         UserLocalCache.saveUser(user);
 
         return _BQFirstFrameProbe(

@@ -7,6 +7,7 @@ import 'package:talent_bridge_fl/views//user-profile/user_profile.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:talent_bridge_fl/components/project_post_pfp.dart';
 import 'package:talent_bridge_fl/analytics/analytics_timer.dart';
+import 'package:talent_bridge_fl/services/search_local_cache.dart';
 
 // ---- Tokens ----
 const kBg = Color(0xFFFEF7E6); // cream
@@ -39,6 +40,9 @@ class _SearchState extends State<Search> {
   List<UserEntity> _searchResults = [];
   Map<UserEntity, double> _userScores = {};
 
+  // Resultados cacheados (uid + displayName)
+  List<SearchUserSummary> _cachedResults = [];
+
   // Fake “recent” items for the UI
   final _recents = const <String>[
     'Daniel Triviño',
@@ -56,6 +60,7 @@ class _SearchState extends State<Search> {
     );
 
     _loadUserData();
+    _loadCachedSearchResults();
     // Listen for search bar changes
     _queryCtrl.addListener(_onQueryChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {});
@@ -80,6 +85,14 @@ class _SearchState extends State<Search> {
     });
   }
 
+  Future<void> _loadCachedSearchResults() async {
+    final cached = await SearchLocalCache.getLastUserResults();
+    if (!mounted) return;
+    setState(() {
+      _cachedResults = cached;
+    });
+  }
+
   @override
   void dispose() {
     _queryCtrl.removeListener(_onQueryChanged);
@@ -95,26 +108,28 @@ class _SearchState extends State<Search> {
       });
       return;
     }
+
     final projects = _currentUser?.projects ?? [];
     final skills = projects
         .expand((i) => i.skills)
         .map((j) => j.toLowerCase())
         .toList();
+
     final frequencies = skills.fold<Map<String, int>>(
       {},
       (map, item) => map..update(item, (v) => v + 1, ifAbsent: () => 1),
     );
+
     final weights = frequencies.map(
       (s, i) => MapEntry(s, i / (skills.isEmpty ? 1 : skills.length)),
     );
+
     final filteredUsers = _allUsers
         .where((u) => u.displayName.toLowerCase().contains(q))
         .toList();
 
-    // ---- BQ: primera vez que hay resultados -> dispara evento ----
     if (!_ttfcSent && filteredUsers.isNotEmpty) {
       _ttfcSent = true;
-      // Fuente 'cache' porque la lista sale de memoria local (no pegamos a red aquí)
       _tPeople.endOnce(source: 'cache', itemCount: filteredUsers.length);
     }
 
@@ -127,11 +142,18 @@ class _SearchState extends State<Search> {
       }
       scores[u] = score;
     }
+
     filteredUsers.sort((a, b) => -scores[a]!.compareTo(scores[b]!));
     setState(() {
       _userScores = scores;
       _searchResults = filteredUsers;
     });
+
+    // Guardamos los resultados en cache local
+    if (filteredUsers.isNotEmpty) {
+      // ignore: unawaited_futures
+      SearchLocalCache.saveLastUserResults(filteredUsers);
+    }
   }
 
   void _applySearch() {
@@ -140,7 +162,6 @@ class _SearchState extends State<Search> {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(content: Text('Buscando: "$q"')),
     );
-    // TODO: hook real search here
   }
 
   @override
@@ -148,6 +169,12 @@ class _SearchState extends State<Search> {
     final labelStyle = Theme.of(
       context,
     ).textTheme.bodyMedium?.copyWith(color: kAmber);
+
+    final queryText = _queryCtrl.text.trim().toLowerCase();
+
+    final fallbackResults = _cachedResults
+        .where((s) => s.displayName.toLowerCase().contains(queryText))
+        .toList();
 
     return SafeArea(
       child: Column(
@@ -173,13 +200,12 @@ class _SearchState extends State<Search> {
                             inputFormatters: [
                               LengthLimitingTextInputFormatter(100),
                             ],
-                            decoration: _pillInput(), // sin icono de lupa
+                            decoration: _pillInput(),
                           ),
                         ),
                       ),
                       const SizedBox(width: 8),
 
-                      // Botón redondo de filtros
                       _shadowWrap(
                         Material(
                           color: Colors.white,
@@ -204,7 +230,6 @@ class _SearchState extends State<Search> {
 
                   const SizedBox(height: 24),
 
-                  // Search results
                   if (_searchResults.isNotEmpty) ...[
                     Text('Results', style: labelStyle),
                     const SizedBox(height: 12),
@@ -212,16 +237,41 @@ class _SearchState extends State<Search> {
                       (user) => SearchCard(
                         title: user.displayName,
                         score: _userScores[user],
-                        // 👇 Avatar real cacheado
-                        leading: ProjectPostPfp(
+                        leading: UserPfpCached(
                           uid: user.id,
+                          radius: 18,
                         ),
-                        // 👇 Navegación real al perfil del usuario
                         onTap: () {
                           Navigator.of(context).push(
                             MaterialPageRoute(
                               builder: (_) => UserProfile(
                                 userId: user.id,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+
+                  if (_searchResults.isEmpty &&
+                      queryText.isNotEmpty &&
+                      fallbackResults.isNotEmpty) ...[
+                    Text('Last results (cached)', style: labelStyle),
+                    const SizedBox(height: 12),
+                    ...fallbackResults.map(
+                      (summary) => SearchCard(
+                        title: summary.displayName,
+                        leading: UserPfpCached(
+                          uid: summary.uid,
+                          radius: 18,
+                        ),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => UserProfile(
+                                userId: summary.uid,
                               ),
                             ),
                           );
@@ -264,10 +314,8 @@ class SearchCard extends StatelessWidget {
   final bool isRecent;
   final double? score;
 
-  /// Widget opcional para mostrar a la izquierda (ej: avatar real)
   final Widget? leading;
 
-  /// Acción opcional al tocar la tarjeta
   final VoidCallback? onTap;
 
   @override
@@ -305,7 +353,6 @@ class SearchCard extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      // 👇 Si me pasan leading lo uso; si no, uso el avatar genérico
                       leading ??
                           CircleAvatar(
                             radius: 16,
