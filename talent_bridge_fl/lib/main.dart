@@ -16,7 +16,7 @@ import 'package:hive_flutter/hive_flutter.dart';
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // await deleteDatabase(join(await getDatabasesPath(), 'talent_bridge.db'));
+  //await deleteDatabase(join(await getDatabasesPath(), 'talent_bridge.db'));
 
   await Hive.initFlutter(); // Initialize Hive for local storage
   await Firebase.initializeApp(

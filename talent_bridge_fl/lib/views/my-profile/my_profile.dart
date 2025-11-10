@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:firebase_storage/firebase_storage.dart' as firebase_core;
@@ -12,6 +13,7 @@ import 'package:talent_bridge_fl/domain/update_user_dto.dart';
 import 'package:talent_bridge_fl/domain/user_entity.dart';
 import 'package:talent_bridge_fl/providers/profile_provider.dart';
 import 'package:talent_bridge_fl/providers/upload_queue.dart';
+import 'package:talent_bridge_fl/providers/upload_queue_cv.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
 import 'package:talent_bridge_fl/services/profile_pic_storage.dart';
 import 'package:talent_bridge_fl/views/add_project/add_project.dart';
@@ -22,6 +24,8 @@ import 'package:talent_bridge_fl/views/edit_profile/edit_profile.dart';
 import 'package:talent_bridge_fl/views/my-profile/contact_item.dart';
 import 'package:talent_bridge_fl/views/my-profile/project_summary.dart';
 import 'package:talent_bridge_fl/views/my-profile/download_cvs.dart';
+import 'package:talent_bridge_fl/services/connectivity_service.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 
 const darkBlue = Color(0xFF3E6990);
 
@@ -42,6 +46,8 @@ class _MyProfileState extends ConsumerState<MyProfile> {
   ImageProvider? pfpProvider;
   String? _bannerImageUrl;
   bool syncingImage = false;
+  StreamSubscription<List<ConnectivityResult>>? _connectivitySubscription;
+  bool _isOnline = true;
   final fb = FirebaseService();
   final projectService = ProjectService();
 
@@ -50,6 +56,47 @@ class _MyProfileState extends ConsumerState<MyProfile> {
     super.initState();
     getPfP();
     setBannerFromUrl(FirebaseStorage.instance, fb.currentUid()!);
+    _checkConnectivity();
+
+    // Listen to connectivity changes
+    _connectivitySubscription = Connectivity().onConnectivityChanged.listen((
+      results,
+    ) {
+      final isConnected = results.any(
+        (result) =>
+            result == ConnectivityResult.mobile ||
+            result == ConnectivityResult.wifi ||
+            result == ConnectivityResult.ethernet,
+      );
+
+      if (mounted) {
+        setState(() {
+          _isOnline = isConnected;
+        });
+      }
+    });
+  }
+
+  Future<void> _checkConnectivity() async {
+    final results = await Connectivity().checkConnectivity();
+    final isConnected = results.any(
+      (result) =>
+          result == ConnectivityResult.mobile ||
+          result == ConnectivityResult.wifi ||
+          result == ConnectivityResult.ethernet,
+    );
+
+    if (mounted) {
+      setState(() {
+        _isOnline = isConnected;
+      });
+    }
+  }
+
+  @override
+  void dispose() {
+    _connectivitySubscription?.cancel();
+    super.dispose();
   }
 
   /// Uses offline first, online fallback for getting the profile picture.
@@ -178,6 +225,7 @@ class _MyProfileState extends ConsumerState<MyProfile> {
   }
 
   // Handle PDF selection and upload
+  // Handle PDF selection and upload with queue system
   Future<void> _pickAndUploadCVs() async {
     try {
       print('Picking PDF files...');
@@ -193,12 +241,6 @@ class _MyProfileState extends ConsumerState<MyProfile> {
         return;
       }
 
-      // Show a loading indicator
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Preparing to upload PDFs...')),
-      );
-
       // Convert PlatformFile objects to File objects
       final List<File> files = result.paths
           .where((path) => path != null)
@@ -213,52 +255,49 @@ class _MyProfileState extends ConsumerState<MyProfile> {
         return;
       }
 
-      // Show upload progress dialog
+      // Show preparing message
       if (!mounted) return;
-      showDialog(
-        context: context,
-        barrierDismissible: false,
-        builder: (BuildContext context) {
-          return AlertDialog(
-            title: const Text('Uploading CVs'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const CircularProgressIndicator(),
-                const SizedBox(height: 16),
-                Text('Uploading ${files.length} file(s)...'),
-              ],
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Preparing to upload ${files.length} CV(s)...')),
+      );
+
+      // Enqueue CV uploads
+      final results = await ref
+          .read(cvUploadProvider.notifier)
+          .enqueueCVUploads(files);
+
+      if (!mounted) return;
+
+      if (results.isNotEmpty) {
+        // Successfully uploaded immediately
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Successfully uploaded ${results.length} CV(s)'),
+            backgroundColor: Colors.green,
+          ),
+        );
+
+        // Update portfolio timestamp
+        await fb.updateLastPortfolioUpdate();
+      } else {
+        // Queued for later upload
+        final cvText = files.length == 1 ? 'CV' : '${files.length} CVs';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              '$cvText will be uploaded once connectivity is regained',
             ),
-          );
-        },
-      );
-
-      // Upload files concurrently
-      final List<TaskSnapshot> results = await fb.uploadMultipleCVs(files);
-
-      // Close the progress dialog
-      if (!mounted) return;
-      Navigator.of(context).pop();
-
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Successfully uploaded ${results.length} CVs'),
-          backgroundColor: Colors.green,
-        ),
-      );
-
-      // Update portfolio timestamp
-      await fb.updateLastPortfolioUpdate();
+            backgroundColor: Colors.orange,
+            duration: const Duration(seconds: 4),
+          ),
+        );
+      }
     } catch (e) {
-      // Close the progress dialog if it's open
-      if (!mounted) return;
-      Navigator.of(context).pop();
-
       // Show error message
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error uploading CVs: $e'),
+          content: Text('Error preparing CVs: $e'),
           backgroundColor: Colors.red,
         ),
       );
@@ -514,6 +553,8 @@ class _MyProfileState extends ConsumerState<MyProfile> {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint("Connectivity status in MyProfile: $_isOnline");
+
     ref.listen(
       pfpUploadProvider,
       (prev, next) {
@@ -524,7 +565,27 @@ class _MyProfileState extends ConsumerState<MyProfile> {
         }
       },
     );
+
+    ref.listen(
+      cvUploadProvider,
+      (prev, next) {
+        if (prev != null && prev.isNotEmpty && next.length < prev.length) {
+          final uploadedCount = prev.length - next.length;
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                uploadedCount == 1
+                    ? 'CV uploaded successfully'
+                    : '$uploadedCount CVs uploaded successfully',
+              ),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+      },
+    );
     final pendingUpload = ref.watch(pfpUploadProvider) != null;
+    final pendingCVUploads = ref.watch(cvUploadProvider).length;
     final userEntity = ref.watch(profileProvider);
 
     return SingleChildScrollView(
@@ -770,18 +831,57 @@ class _MyProfileState extends ConsumerState<MyProfile> {
                     Expanded(
                       child: Column(
                         children: [
-                          AddElementWidget(
-                            title: 'Add CV',
-                            onTap: _pickAndUploadCVs,
+                          Stack(
+                            children: [
+                              AddElementWidget(
+                                title: 'Add CV',
+                                onTap: _pickAndUploadCVs,
+                              ),
+                              if (pendingCVUploads > 0)
+                                Positioned(
+                                  top: 8,
+                                  right: 8,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(6),
+                                    decoration: const BoxDecoration(
+                                      color: Colors.orange,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Text(
+                                      '$pendingCVUploads',
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
                           ),
                           const SizedBox(height: 8),
                           TextButton(
-                            onPressed: _viewUploadedCVs,
-                            child: const Text(
-                              'View My CVs',
-                              style: TextStyle(
-                                color: Colors.blue,
-                              ),
+                            onPressed: _isOnline ? _viewUploadedCVs : null,
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  'View My CVs',
+                                  style: TextStyle(
+                                    color: _isOnline
+                                        ? Colors.blue
+                                        : Colors.grey,
+                                  ),
+                                ),
+                                if (!_isOnline) ...[
+                                  const SizedBox(width: 4),
+                                  const Icon(
+                                    Icons.cloud_off,
+                                    size: 16,
+                                    color: Colors.grey,
+                                  ),
+                                ],
+                              ],
                             ),
                           ),
                         ],
