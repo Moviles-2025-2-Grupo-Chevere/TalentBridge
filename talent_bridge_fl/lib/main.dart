@@ -2,6 +2,8 @@ import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:path/path.dart';
+import 'package:sqflite/sqflite.dart';
 import 'package:talent_bridge_fl/providers/fcm_provider.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
 import 'package:talent_bridge_fl/views/splash_screen.dart';
@@ -9,7 +11,6 @@ import 'services/connectivity_service.dart';
 import 'package:firebase_analytics/firebase_analytics.dart';
 import 'firebase_options.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 // Global navigator key
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -18,8 +19,6 @@ void main() async {
   // await deleteDatabase(join(await getDatabasesPath(), 'talent_bridge.db'));
 
   await Hive.initFlutter(); // Initialize Hive for local storage
-
-  // await deleteDatabase(join(await getDatabasesPath(), 'talent_bridge.db'));
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );

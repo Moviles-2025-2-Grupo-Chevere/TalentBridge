@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:talent_bridge_fl/components/project_post.dart';
@@ -76,7 +74,7 @@ class _ProjectListState extends ConsumerState<ProjectList> {
   Future<void> onSaveProject(ProjectEntity project) async {
     var scaffoldMessenger = ScaffoldMessenger.of(context);
     try {
-      await dbService.insertSavedProject(project);
+      await dbService.insertSavedProject(project, true);
       if (context.mounted) {
         scaffoldMessenger.clearSnackBars();
         scaffoldMessenger.showSnackBar(
@@ -213,8 +211,9 @@ class _ProjectListState extends ConsumerState<ProjectList> {
       itemBuilder: (ctx, index) => Dismissible(
         key: ValueKey(projects[index]),
         onDismissed: (direction) {
-          if (direction == DismissDirection.endToStart &&
-              projects[index].isFavorite) {
+          if (direction == DismissDirection.endToStart ||
+              direction == DismissDirection.startToEnd &&
+                  projects[index].isFavorite) {
             onRemoveProjectFromFavorites(projects[index]);
           }
         },
