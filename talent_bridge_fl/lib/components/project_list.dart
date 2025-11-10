@@ -28,6 +28,10 @@ class _ProjectListState extends ConsumerState<ProjectList> {
     String createdById,
     String projectId,
   ) async {
+    // Capture the ScaffoldMessenger before any async operations
+    final scaffoldMessenger = ScaffoldMessenger.of(context);
+    final navigator = Navigator.of(context);
+
     try {
       final result = await ref
           .read(projectApplyUploadProvider.notifier)
@@ -36,32 +40,33 @@ class _ProjectListState extends ConsumerState<ProjectList> {
             projectId,
             createdById,
           );
-      // Only show queued message if there's no internet ;)
-      if (!result && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+
+      // Close the dialog first
+      navigator.pop();
+
+      // Then show the appropriate message
+      if (!result) {
+        scaffoldMessenger.showSnackBar(
+          const SnackBar(
             content: Text('The application will be sent later, when online'),
           ),
         );
-      } else if (result && context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+      } else {
+        debugPrint('Project application submitted successfully');
+        scaffoldMessenger.showSnackBar(
+          const SnackBar(
             content: Text('The application has been submitted successfully'),
           ),
         );
       }
     } catch (e) {
       debugPrint(e.toString());
-      if (context.mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Error submitting application: $e'),
-          ),
-        );
-      }
-    }
-    if (context.mounted) {
-      Navigator.of(context).pop();
+      navigator.pop(); // Close dialog on error too
+      scaffoldMessenger.showSnackBar(
+        SnackBar(
+          content: Text('Error submitting application: $e'),
+        ),
+      );
     }
   }
 
@@ -198,9 +203,12 @@ class _ProjectListState extends ConsumerState<ProjectList> {
     ref.listen(
       projectApplyUploadProvider,
       (prev, next) {
-        if (prev != null && next == null) {
+        if (prev != null && prev.isNotEmpty && next.length < prev.length) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text("Application uploaded successfully")),
+            SnackBar(
+              content: Text("Application uploaded successfully"),
+              backgroundColor: Colors.green,
+            ),
           );
         }
       },
