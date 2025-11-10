@@ -1,0 +1,687 @@
+[
+    {
+        "code": "ADMI",
+        "name": "ADMINISTRACION",
+        "icon": "work"
+    },
+    {
+        "code": "AFIN",
+        "name": "ESPE.ADMINISTRACION FINANCIERA",
+        "icon": "account_balance"
+    },
+    {
+        "code": "ANTR",
+        "name": "ANTROPOLOGIA",
+        "icon": "travel_explore"
+    },
+    {
+        "code": "APCL",
+        "name": "ESPEC.ADUANAS,PTOS,CAMB,LOGIST",
+        "icon": "local_shipping"
+    },
+    {
+        "code": "ARQT",
+        "name": "ARQUITECTURA",
+        "icon": "architecture"
+    },
+    {
+        "code": "ARQU",
+        "name": "ARQUITECTURA-PENSUM ANTERIOR",
+        "icon": "architecture"
+    },
+    {
+        "code": "ARTE",
+        "name": "ARTE",
+        "icon": "palette"
+    },
+    {
+        "code": "ARTI",
+        "name": "MAEST.EN ARQUITECTURAS DE TI",
+        "icon": "domain"
+    },
+    {
+        "code": "BCOM",
+        "name": "MAEST.BIOLOGIA COMPUTACIONAL",
+        "icon": "biotech"
+    },
+    {
+        "code": "BIOE",
+        "name": "MAEST.BIOETICA Y ETICA INVEST.",
+        "icon": "health_and_safety"
+    },
+    {
+        "code": "BIOL",
+        "name": "BIOLOGIA",
+        "icon": "biotech"
+    },
+    {
+        "code": "CBIO",
+        "name": "POSTGRADO CIENCIAS BIOLOGICAS",
+        "icon": "biotech"
+    },
+    {
+        "code": "CHNA",
+        "name": "INSTITUTO CONFUCIO",
+        "icon": "translate"
+    },
+    {
+        "code": "CIDE",
+        "name": "CIDER",
+        "icon": "science"
+    },
+    {
+        "code": "CIRG",
+        "name": "ESPECIALIZAC.EN CIRUGIA GRAL",
+        "icon": "medical_services"
+    },
+    {
+        "code": "CISO",
+        "name": "CIENCIAS SOCIALES",
+        "icon": "people"
+    },
+    {
+        "code": "CONT",
+        "name": "CONTADURIA INTERNACIONAL",
+        "icon": "calculate"
+    },
+    {
+        "code": "CPER",
+        "name": "CENTRO DE PERIODISMO - CEPER",
+        "icon": "campaign"
+    },
+    {
+        "code": "CPOL",
+        "name": "CIENCIA POLITICA",
+        "icon": "gavel"
+    },
+    {
+        "code": "DADM",
+        "name": "DOCTORADO EN ADMINISTRACION",
+        "icon": "school"
+    },
+    {
+        "code": "DATA",
+        "name": "CIENCIA DE DATOS",
+        "icon": "insights"
+    },
+    {
+        "code": "DCHO",
+        "name": "DERECHO - PROGRAMA REFORMADO",
+        "icon": "gavel"
+    },
+    {
+        "code": "DCOM",
+        "name": "DERECHO COMERCIAL",
+        "icon": "business_center"
+    },
+    {
+        "code": "DDER",
+        "name": "DOCTORADO EN DERECHO",
+        "icon": "school"
+    },
+    {
+        "code": "DECA",
+        "name": "DECANATURA ESTUDIANTES",
+        "icon": "school"
+    },
+    {
+        "code": "DEIN",
+        "name": "MAESTRIA DERECHO INTERNAL",
+        "icon": "public"
+    },
+    {
+        "code": "DEMP",
+        "name": "ESPEC.DERECHO DE LA EMPRESA",
+        "icon": "work"
+    },
+    {
+        "code": "DENI",
+        "name": "ESPECIAL.DEREC.NEGOC.INTERNALE",
+        "icon": "public"
+    },
+    {
+        "code": "DEPI",
+        "name": "MAESTRIA PROPIEDAD INTELECTUAL",
+        "icon": "lightbulb"
+    },
+    {
+        "code": "DEPO",
+        "name": "DEPORTES",
+        "icon": "sports_soccer"
+    },
+    {
+        "code": "DEPR",
+        "name": "MAESTRIA EN DERECHO PRIVADO",
+        "icon": "lock"
+    },
+    {
+        "code": "DERE",
+        "name": "DERECHO",
+        "icon": "gavel"
+    },
+    {
+        "code": "DERP",
+        "name": "MAESTRIA EN DERECHO PENAL",
+        "icon": "balance"
+    },
+    {
+        "code": "DGGJ",
+        "name": "MAEST.DERE.GOB.Y GEST.JUSTICIA",
+        "icon": "gavel"
+    },
+    {
+        "code": "DGIT",
+        "name": "DOCTORADO GEST.INNOVAC.TECNOL.",
+        "icon": "school"
+    },
+    {
+        "code": "DISO",
+        "name": "DISEÑO",
+        "icon": "design_services"
+    },
+    {
+        "code": "DLIT",
+        "name": "DOCTORADO EN LITERATURA",
+        "icon": "school"
+    },
+    {
+        "code": "DPEN",
+        "name": "ESPECIALIZACION DERECHO PENAL",
+        "icon": "security"
+    },
+    {
+        "code": "DPRO",
+        "name": "MAEST.DISEÑO PROCES.Y PRODUCT.",
+        "icon": "precision_manufacturing"
+    },
+    {
+        "code": "DPUB",
+        "name": "MAES.EN DER.PUBLICO GEST.ADMIN",
+        "icon": "public"
+    },
+    {
+        "code": "DPUC",
+        "name": "ESP.DERE.PUBL.GEST.ADM(CARIBE)",
+        "icon": "public"
+    },
+    {
+        "code": "DTSD",
+        "name": "MAEST.DERE.TECNOLOG.SOC.DIG.",
+        "icon": "devices"
+    },
+    {
+        "code": "ECON",
+        "name": "ECONOMIA",
+        "icon": "attach_money"
+    },
+    {
+        "code": "EDUC",
+        "name": "EDUCACION",
+        "icon": "menu_book"
+    },
+    {
+        "code": "EECO",
+        "name": "ESPECIALIZACION EN ECONOMIA",
+        "icon": "bar_chart"
+    },
+    {
+        "code": "EGOB",
+        "name": "ESCUELA DE GOBIERNO",
+        "icon": "domain"
+    },
+    {
+        "code": "EINT",
+        "name": "ESTUDIOS INTERNALES",
+        "icon": "groups"
+    },
+    {
+        "code": "EMAT",
+        "name": "MAESTRIA EDUCACION MATEMATICA",
+        "icon": "calculate"
+    },
+    {
+        "code": "EMBA",
+        "name": "MAESTRIA ADMON EJECUTIVO",
+        "icon": "person"
+    },
+    {
+        "code": "ENEG",
+        "name": "ESPEC. EN NEGOCIACION (ADMON)",
+        "icon": "handshake"
+    },
+    {
+        "code": "EPAH",
+        "name": "ESCUELA POSTGRADOS ARTE Y HUM",
+        "icon": "palette"
+    },
+    {
+        "code": "EPEM",
+        "name": "ESPEC.EDUCACION MATEMATICA",
+        "icon": "calculate"
+    },
+    {
+        "code": "EPID",
+        "name": "EPIDEMIOLOGIA",
+        "icon": "coronavirus"
+    },
+    {
+        "code": "ETRI",
+        "name": "ESPECIALIZACION EN TRIBUTACION",
+        "icon": "receipt_long"
+    },
+    {
+        "code": "FARH",
+        "name": "FACULTAD ARTES Y HUMANIDADES",
+        "icon": "palette"
+    },
+    {
+        "code": "FCIE",
+        "name": "FACULTAD DE CIENCIAS",
+        "icon": "science"
+    },
+    {
+        "code": "FILO",
+        "name": "FILOSOFIA",
+        "icon": "psychology"
+    },
+    {
+        "code": "FISI",
+        "name": "FISICA",
+        "icon": "offline_bolt"
+    },
+    {
+        "code": "GEOC",
+        "name": "GEOCIENCIAS",
+        "icon": "terrain"
+    },
+    {
+        "code": "GEST",
+        "name": "MAESTRIA GERENCIA ESTRATEGICA",
+        "icon": "leaderboard"
+    },
+    {
+        "code": "GINE",
+        "name": "ESPECIAL.GINECOLOG.Y OBSTETRIC",
+        "icon": "child_care"
+    },
+    {
+        "code": "GLOB",
+        "name": "ESTUDIOS GLOBALES",
+        "icon": "public"
+    },
+    {
+        "code": "GPUB",
+        "name": "ESPECIALIZ.GESTION PUBLICA",
+        "icon": "account_balance"
+    },
+    {
+        "code": "HART",
+        "name": "HISTORIA DEL ARTE",
+        "icon": "museum"
+    },
+    {
+        "code": "HDIG",
+        "name": "MAEST.HUMANIDADES DIGITALES",
+        "icon": "memory"
+    },
+    {
+        "code": "HIST",
+        "name": "HISTORIA",
+        "icon": "history_edu"
+    },
+    {
+        "code": "IBIO",
+        "name": "INGENIERIA BIOMEDICA",
+        "icon": "healing"
+    },
+    {
+        "code": "ICYA",
+        "name": "INGENIERIA CIVIL Y AMBIENTAL",
+        "icon": "construction"
+    },
+    {
+        "code": "IDOC",
+        "name": "DOCTORADO EN INGENIERIA",
+        "icon": "school"
+    },
+    {
+        "code": "IELE",
+        "name": "ING. ELECTRICA Y ELECTRONICA",
+        "icon": "bolt"
+    },
+    {
+        "code": "IIND",
+        "name": "INGENIERIA INDUSTRIAL",
+        "icon": "factory"
+    },
+    {
+        "code": "IING",
+        "name": "INGENIERIA",
+        "icon": "construction"
+    },
+    {
+        "code": "IMEC",
+        "name": "INGENIERIA MECANICA",
+        "icon": "precision_manufacturing"
+    },
+    {
+        "code": "IMER",
+        "name": "ESP.INTELIGENCIA DE MERCADOS",
+        "icon": "show_chart"
+    },
+    {
+        "code": "INTL",
+        "name": "DIRECCION INTERNACIONALIZACION",
+        "icon": "public"
+    },
+    {
+        "code": "IQYA",
+        "name": "INGENIERIA QUIMICA Y ALIMENTOS",
+        "icon": "science"
+    },
+    {
+        "code": "ISIS",
+        "name": "INGENIERIA DE SISTEMAS",
+        "icon": "computer"
+    },
+    {
+        "code": "LEGI",
+        "name": "LEGISLACION FINANCIERA",
+        "icon": "description"
+    },
+    {
+        "code": "LENG",
+        "name": "LENGUAS Y CULTURA",
+        "icon": "language"
+    },
+    {
+        "code": "LITE",
+        "name": "LITERATURA",
+        "icon": "menu_book"
+    },
+    {
+        "code": "MAGF",
+        "name": "MAEST.ANALIT.Y GESTION FINANC.",
+        "icon": "analytics"
+    },
+    {
+        "code": "MAGI",
+        "name": "MAESTR.GERENC.DE LA INGENIERIA",
+        "icon": "engineering"
+    },
+    {
+        "code": "MAIA",
+        "name": "MAEST.INTELIGENCIA ARTIFICIAL",
+        "icon": "memory"
+    },
+    {
+        "code": "MAIT",
+        "name": "MAESTR.GERENC.TECNOLO.INFORMAC",
+        "icon": "devices"
+    },
+    {
+        "code": "MARQ",
+        "name": "MAESTRIA EN ARQUITECTURA",
+        "icon": "architecture"
+    },
+    {
+        "code": "MART",
+        "name": "MAESTRIA ARTES PLAST.ELECT.Y T",
+        "icon": "palette"
+    },
+    {
+        "code": "MATE",
+        "name": "MATEMATICAS",
+        "icon": "calculate"
+    },
+    {
+        "code": "MBIO",
+        "name": "MICROBIOLOGIA",
+        "icon": "coronavirus"
+    },
+    {
+        "code": "MBIT",
+        "name": "MAESTR.TECNOLOG.INFORMAC.NEGOC",
+        "icon": "workspaces"
+    },
+    {
+        "code": "MCLA",
+        "name": "MAESTRIA EN ESTUDIOS CLASICOS",
+        "icon": "menu_book"
+    },
+    {
+        "code": "MDER",
+        "name": "MAESTRIA EN DERECHO",
+        "icon": "gavel"
+    },
+    {
+        "code": "MDIS",
+        "name": "MAESTRIA EN DISEÑO",
+        "icon": "design_services"
+    },
+    {
+        "code": "MECA",
+        "name": "MAESTRIA EN ECONOMIA APLICADA",
+        "icon": "savings"
+    },
+    {
+        "code": "MECU",
+        "name": "MAESTRIA EN ESTUD.CULTURALES",
+        "icon": "theaters"
+    },
+    {
+        "code": "MEDI",
+        "name": "MEDICINA",
+        "icon": "local_hospital"
+    },
+    {
+        "code": "MFIN",
+        "name": "MAESTRIA EN FINANZAS",
+        "icon": "account_balance_wallet"
+    },
+    {
+        "code": "MGAD",
+        "name": "MAEST GER AMB. Y PRAC. DRLLO.",
+        "icon": "nature"
+    },
+    {
+        "code": "MGAP",
+        "name": "MAEST EN GERENCIA AMBIENTAL TP",
+        "icon": "energy_savings_leaf"
+    },
+    {
+        "code": "MGEO",
+        "name": "MAESTRIA EN GEOGRAFIA",
+        "icon": "map"
+    },
+    {
+        "code": "MGIT",
+        "name": "MAESTRIA GEST.INNOVAC.TECNOL.",
+        "icon": "memory"
+    },
+    {
+        "code": "MGPA",
+        "name": "MAEST.GESTION PROYECT.ARQUIT.",
+        "icon": "domain"
+    },
+    {
+        "code": "MGPD",
+        "name": "MAEST.GERENC Y PRACT.DESARROLL",
+        "icon": "insights"
+    },
+    {
+        "code": "MGPU",
+        "name": "MAESTRIA EN GESTION PUBLICA",
+        "icon": "account_balance"
+    },
+    {
+        "code": "MHAR",
+        "name": "MAESTRIA EN HISTORIA DEL ARTE",
+        "icon": "museum"
+    },
+    {
+        "code": "MIAD",
+        "name": "MAESTR.EN INVESTIG.EN ADMON",
+        "icon": "search"
+    },
+    {
+        "code": "MIIA",
+        "name": "MAEST.INTELIG.ANALIT.TOMA DECI",
+        "icon": "bar_chart"
+    },
+    {
+        "code": "MIID",
+        "name": "MAEST-INTELIGENC.ANALIT.DATOS",
+        "icon": "analytics"
+    },
+    {
+        "code": "MIMC",
+        "name": "MAEST.GERENCIA INTERNACIONAL",
+        "icon": "public"
+    },
+    {
+        "code": "MINE",
+        "name": "MAEST.INGENIER.DE INFORMACION",
+        "icon": "dns"
+    },
+    {
+        "code": "MINT",
+        "name": "INTERCAMBIO POST ADMI",
+        "icon": "swap_horiz"
+    },
+    {
+        "code": "MISE",
+        "name": "MAEST.INNOVAC.SISTEMAS ENERGET",
+        "icon": "bolt"
+    },
+    {
+        "code": "MISW",
+        "name": "MAESTR.ING.DE SOFTWARE-VIRTUAL",
+        "icon": "code"
+    },
+    {
+        "code": "MLIT",
+        "name": "MAESTRIA EN LITERATURA",
+        "icon": "menu_book"
+    },
+    {
+        "code": "MMBA",
+        "name": "MAESTRIA EN ADMINISTRACION",
+        "icon": "business"
+    },
+    {
+        "code": "MMER",
+        "name": "MAESTRIA EN MERCADEO",
+        "icon": "shopping_cart"
+    },
+    {
+        "code": "MMUS",
+        "name": "MAESTRIA EN MUSICA",
+        "icon": "music_note"
+    },
+    {
+        "code": "MPAZ",
+        "name": "MAESTRIA EN CONTRUCCION DE PAZ",
+        "icon": "temple_buddhist"
+    },
+    {
+        "code": "MPCU",
+        "name": "MAEST.PATRIMONIO CULTURAL MUEB",
+        "icon": "museum"
+    },
+    {
+        "code": "MPER",
+        "name": "MAESTRIA EN PERIODISMO",
+        "icon": "mic"
+    },
+    {
+        "code": "MPET",
+        "name": "MAEST.INGENIERIA DE PETROLEOS",
+        "icon": "oil_barrel"
+    },
+    {
+        "code": "MSCM",
+        "name": "MAESTRIA GEST.CADENA SUMINISTR",
+        "icon": "inventory_2"
+    },
+    {
+        "code": "MSIN",
+        "name": "MAESTR.SEGURIDAD INFORMACION",
+        "icon": "security"
+    },
+    {
+        "code": "MTRI",
+        "name": "MAESTRIA EN TRIBUTACION",
+        "icon": "receipt"
+    },
+    {
+        "code": "MTRM",
+        "name": "MAESTRIA EN TRIBUTACION-EAFIT",
+        "icon": "receipt"
+    },
+    {
+        "code": "MUSI",
+        "name": "MUSICA",
+        "icon": "music_note"
+    },
+    {
+        "code": "NADI",
+        "name": "NARRATIVAS DIGITALES",
+        "icon": "movie_filter"
+    },
+    {
+        "code": "PATO",
+        "name": "ESPECIALIZACION EN PATOLOGIA",
+        "icon": "science"
+    },
+    {
+        "code": "PEDI",
+        "name": "ESPECIALIZACION EN PEDIATRIA",
+        "icon": "child_friendly"
+    },
+    {
+        "code": "PMED",
+        "name": "POSTGRADOS MEDICINA",
+        "icon": "medical_services"
+    },
+    {
+        "code": "PSCL",
+        "name": "MAEST.PSICOLOG.CLINICA Y SALUD",
+        "icon": "healing"
+    },
+    {
+        "code": "PSIC",
+        "name": "PSICOLOGIA -PENSUM ANTERIOR",
+        "icon": "psychology"
+    },
+    {
+        "code": "PSIG",
+        "name": "PSICOLOGIA",
+        "icon": "psychology"
+    },
+    {
+        "code": "PSIQ",
+        "name": "ESPECIALIZACION EN PSIQUIATRIA",
+        "icon": "self_improvement"
+    },
+    {
+        "code": "QUIM",
+        "name": "QUIMICA",
+        "icon": "science"
+    },
+    {
+        "code": "SOCI",
+        "name": "SOCIOLOGIA",
+        "icon": "diversity_3"
+    },
+    {
+        "code": "SPUB",
+        "name": "POSTGR.SALUD PUBLICA",
+        "icon": "health_and_safety"
+    },
+    {
+        "code": "UROL",
+        "name": "ESPECIALIZACION EN UROLOGIA",
+        "icon": "healing"
+    }
+]

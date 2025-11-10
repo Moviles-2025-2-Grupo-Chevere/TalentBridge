@@ -6,6 +6,7 @@ import 'package:talent_bridge_fl/domain/skill_entity.dart';
 import 'package:talent_bridge_fl/domain/update_user_dto.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
 import 'package:talent_bridge_fl/services/skills_service.dart';
+import 'package:talent_bridge_fl/views/edit_profile/major_image.dart';
 import 'package:talent_bridge_fl/views/select_skills/select_skills.dart';
 
 const darkBlue = Color(0xFF3E6990);
@@ -254,25 +255,49 @@ class _EditProfileState extends State<EditProfile> {
       validator: validateDescription,
       onSaved: (newValue) => description = newValue ?? '',
     );
-    var majorField = DropdownButtonFormField(
-      value: user.major,
-      items: [
-        DropdownMenuItem(
-          value: '',
-          child: Text('None'),
-        ),
-        ...MajorService.getMajors().map(
-          (e) => DropdownMenuItem(
-            value: e,
-            child: Text(e),
+    var majorField = FutureBuilder(
+      future: MajorService.getMajors(),
+      builder: (context, snap) {
+        List<DropdownMenuItem<String>> majorWidgets = [];
+        Set<String> names = {};
+        if (snap.hasData) {
+          var majorData = snap.data!;
+          majorWidgets = majorData
+              .map(
+                (e) => DropdownMenuItem(
+                  value: e.name,
+                  child: Row(
+                    children: [
+                      if (e.icon != null)
+                        MajorImage(
+                          icon: e.icon!,
+                        ),
+                      SizedBox(width: 8),
+                      Text(e.name),
+                    ],
+                  ),
+                ),
+              )
+              .toList();
+          names.addAll(majorData.map((e) => e.name));
+        }
+        var userMajor = names.contains(user.major) ? user.major : null;
+        return DropdownButtonFormField(
+          value: userMajor,
+          items: [
+            DropdownMenuItem(
+              value: '',
+              child: Text('None'),
+            ),
+            ...majorWidgets,
+          ],
+          onChanged: (value) {},
+          onSaved: (newValue) => major = newValue ?? '',
+          decoration: const InputDecoration(
+            label: Text('Major'),
           ),
-        ),
-      ],
-      onChanged: (value) {},
-      onSaved: (newValue) => major = newValue ?? '',
-      decoration: const InputDecoration(
-        label: Text('Major'),
-      ),
+        );
+      },
     );
     return SizedBox(
       height: double.infinity,
