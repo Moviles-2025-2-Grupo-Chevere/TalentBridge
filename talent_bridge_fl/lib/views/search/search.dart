@@ -8,6 +8,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:talent_bridge_fl/components/project_post_pfp.dart';
 import 'package:talent_bridge_fl/analytics/analytics_timer.dart';
 import 'package:talent_bridge_fl/services/search_local_cache.dart';
+import 'package:talent_bridge_fl/views/search/search_analytics_debug.dart';
 
 // ---- Tokens ----
 const kBg = Color(0xFFFEF7E6); // cream
