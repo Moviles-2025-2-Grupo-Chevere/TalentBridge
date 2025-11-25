@@ -9,6 +9,7 @@ import 'package:talent_bridge_fl/components/project_post_pfp.dart';
 import 'package:talent_bridge_fl/analytics/analytics_timer.dart';
 import 'package:talent_bridge_fl/services/search_local_cache.dart';
 import 'package:talent_bridge_fl/views/search/search_analytics_debug.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 
 // ---- Tokens ----
 const kBg = Color(0xFFFEF7E6); // cream
@@ -28,6 +29,7 @@ class _SearchState extends State<Search> {
   // Search state
   final _queryCtrl = TextEditingController();
   final _firebaseService = FirebaseService();
+  final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
 
   // ---- BQ: medir time-to-first-content de People ----
   late final ScreenTimer _tPeople;
@@ -174,10 +176,21 @@ class _SearchState extends State<Search> {
     final q = _queryCtrl.text.trim();
     if (q.isEmpty) return;
 
-    // número de resultados actuales en memoria
     final resultsCount = _searchResults.length;
+    final isZeroResult = resultsCount == 0;
 
+    // 1) Log en Firestore
     await _logSearchAnalytics(q, resultsCount);
+
+    // 2) Log en Firebase Analytics
+    await _analytics.logEvent(
+      name: 'search_users',
+      parameters: {
+        'query': q.toLowerCase(),
+        'results_count': resultsCount,
+        'zero_result': isZeroResult,
+      },
+    );
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
