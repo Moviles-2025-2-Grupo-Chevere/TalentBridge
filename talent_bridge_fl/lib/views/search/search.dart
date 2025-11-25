@@ -323,6 +323,23 @@ class _SearchState extends State<Search> {
                       isRecent: true,
                     ),
                   ),
+                  // Botón debug para ver analytics de búsqueda
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const SearchAnalyticsDebugPage(),
+                          ),
+                        );
+                      },
+                      child: const Text(
+                        'Open search analytics (debug)',
+                        style: TextStyle(fontSize: 12),
+                      ),
+                    ),
+                  ),
                 ],
               ),
             ),
