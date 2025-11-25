@@ -156,11 +156,31 @@ class _SearchState extends State<Search> {
     }
   }
 
-  void _applySearch() {
+  Future<void> _logSearchAnalytics(String query, int resultsCount) async {
+    try {
+      await FirebaseFirestore.instance.collection('search_logs').add({
+        'query': query.trim().toLowerCase(),
+        'resultsCount': resultsCount,
+        'timestamp': FieldValue.serverTimestamp(),
+        'userId': _currentUser?.id,
+      });
+    } catch (e) {
+      debugPrint('Error logging search: $e');
+    }
+  }
+
+  Future<void> _applySearch() async {
     final q = _queryCtrl.text.trim();
     if (q.isEmpty) return;
+
+    // número de resultados actuales en memoria
+    final resultsCount = _searchResults.length;
+
+    await _logSearchAnalytics(q, resultsCount);
+
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Buscando: "$q"')),
+      SnackBar(content: Text('Searching: "$q" ($resultsCount results)')),
     );
   }
 
@@ -277,6 +297,18 @@ class _SearchState extends State<Search> {
                           );
                         },
                       ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+
+                  if (_searchResults.isEmpty &&
+                      queryText.isNotEmpty &&
+                      fallbackResults.isEmpty) ...[
+                    Text('No results found', style: labelStyle),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Try searching for another name or check the spelling.',
+                      style: TextStyle(fontSize: 12),
                     ),
                     const SizedBox(height: 24),
                   ],
