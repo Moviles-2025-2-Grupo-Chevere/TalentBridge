@@ -179,6 +179,8 @@ class _EditProfileState extends State<EditProfile> {
     });
   }
 
+  final TextEditingController _descriptionController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -196,7 +198,7 @@ class _EditProfileState extends State<EditProfile> {
         (e) => SkillEntity(e, null),
       ),
     );
-    // 🪄 Schedule validation after first frame
+    _descriptionController.text = widget.existingData.description;
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final currentState = _formKey.currentState;
       if (currentState != null) {
@@ -256,7 +258,8 @@ class _EditProfileState extends State<EditProfile> {
       onSaved: (newValue) => mobileNumber = newValue ?? '',
     );
     var descriptionField = TextFormField(
-      initialValue: user.description,
+      // initialValue: user.description,
+      controller: _descriptionController,
       autovalidateMode: AutovalidateMode.onUserInteraction,
       maxLength: 1000,
       decoration: const InputDecoration(
@@ -289,8 +292,13 @@ class _EditProfileState extends State<EditProfile> {
         final prompt = [
           Content.text(promptText),
         ];
-        final response = await model.generateContent(prompt);
-        print(response.text);
+        final response = model.generateContentStream(prompt);
+        var textResponse = "";
+        await for (final chunk in response) {
+          print("${chunk.text} - ");
+          textResponse += chunk.text ?? '';
+          _descriptionController.text = textResponse;
+        }
       },
       label: Text("Generate Description"),
       icon: Icon(Icons.auto_awesome),
