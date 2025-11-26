@@ -1,5 +1,6 @@
 import 'dart:collection';
 
+import 'package:firebase_ai/firebase_ai.dart';
 import 'package:flutter/material.dart';
 import 'package:talent_bridge_fl/data/major_service.dart';
 import 'package:talent_bridge_fl/domain/skill_entity.dart';
@@ -38,6 +39,17 @@ class _EditProfileState extends State<EditProfile> {
   String major = '';
   List<SkillEntity> _skills = SkillsService.getFallbackSkills();
   final _selectedSkills = HashSet<SkillEntity>();
+  final model = FirebaseAI.googleAI().generativeModel(
+    model: 'gemini-2.5-flash',
+    systemInstruction: Content.system(
+      """ Eres un generador de descripciones para perfiles de linkedin.
+          En base a una serie de atributos del usuario debes generar una descripción de menos de 50
+          palabras para el usuario que sea atractiva para potenciales empleadores.
+          Escríbelo como si el usuario dueño del perfil lo hubiera escrito en primera persona.
+          Solo escribe la descripción sin ningún tipo de preámbulo o texto adicional.
+          Solo escribe una única opción.""",
+    ),
+  );
 
   _submitData() async {
     if (_formKey.currentState!.validate()) {
@@ -208,6 +220,7 @@ class _EditProfileState extends State<EditProfile> {
       ),
       validator: validateDisplayName,
       onSaved: (newValue) => displayName = newValue ?? '',
+      onChanged: (value) => displayName = value,
     );
 
     var headlineField = TextFormField(
@@ -219,6 +232,7 @@ class _EditProfileState extends State<EditProfile> {
       ),
       validator: validateHeadline,
       onSaved: (newValue) => headline = newValue ?? '',
+      onChanged: (newValue) => headline = newValue,
     );
     var linkedinField = TextFormField(
       initialValue: user.linkedin,
@@ -254,6 +268,32 @@ class _EditProfileState extends State<EditProfile> {
       maxLines: null,
       validator: validateDescription,
       onSaved: (newValue) => description = newValue ?? '',
+    );
+    var generateButton = ElevatedButton.icon(
+      onPressed: () async {
+        var promptText =
+            """Para el siguiente perfil, retorna una única descripción para su perfil de linkedin.
+          
+          # Perfil
+
+          + Nombre: ${displayName.isNotEmpty ? displayName : user.displayName}
+          + Carrera: ${major.isNotEmpty ? major : user.major}
+          + Habilidades: ${_selectedSkills.map(
+              (e) => e.label,
+            ).join(", ")}
+          + Headline: ${headline.isNotEmpty ? headline : user.headline}
+          
+          Descripción:
+          """;
+        print(promptText);
+        final prompt = [
+          Content.text(promptText),
+        ];
+        final response = await model.generateContent(prompt);
+        print(response.text);
+      },
+      label: Text("Generate Description"),
+      icon: Icon(Icons.auto_awesome),
     );
     var majorField = FutureBuilder(
       future: MajorService.getMajors(),
@@ -291,7 +331,7 @@ class _EditProfileState extends State<EditProfile> {
             ),
             ...majorWidgets,
           ],
-          onChanged: (value) {},
+          onChanged: (value) => major = value ?? '',
           onSaved: (newValue) => major = newValue ?? '',
           decoration: const InputDecoration(
             label: Text('Major'),
@@ -322,6 +362,8 @@ class _EditProfileState extends State<EditProfile> {
                 mobileNumberField,
                 SizedBox(height: 16),
                 descriptionField,
+                SizedBox(height: 8),
+                generateButton,
                 SizedBox(height: 16),
                 majorField,
                 SizedBox(height: 16),
