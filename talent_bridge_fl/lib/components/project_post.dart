@@ -5,6 +5,7 @@ import 'package:talent_bridge_fl/components/project_post_pfp.dart';
 import 'package:talent_bridge_fl/domain/project_entity.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
 import 'package:talent_bridge_fl/views/user-profile/user_profile.dart';
+import 'package:talent_bridge_fl/views/project/project_comments_page.dart';
 
 class ProjectPost extends StatelessWidget {
   ProjectPost({
@@ -88,7 +89,17 @@ class ProjectPost extends StatelessWidget {
             Wrap(
               spacing: 4,
               children: [
-                TextButton(onPressed: () {}, child: Text('Comments')),
+                TextButton(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => ProjectCommentsPage(project: project),
+                      ),
+                    );
+                  },
+                  child: const Text('Comments'),
+                ),
+
                 if (!project.isFavorite)
                   TextButton(
                     onPressed: () => showSaveModal(project),
