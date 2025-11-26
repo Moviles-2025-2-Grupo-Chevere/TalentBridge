@@ -8,6 +8,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:talent_bridge_fl/components/project_post_pfp.dart';
 import 'package:talent_bridge_fl/analytics/analytics_timer.dart';
 import 'package:talent_bridge_fl/services/search_local_cache.dart';
+import 'package:talent_bridge_fl/views/search/search_analytics_debug.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 
 // ---- Tokens ----
 const kBg = Color(0xFFFEF7E6); // cream
@@ -27,6 +29,7 @@ class _SearchState extends State<Search> {
   // Search state
   final _queryCtrl = TextEditingController();
   final _firebaseService = FirebaseService();
+  final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
 
   // ---- BQ: medir time-to-first-content de People ----
   late final ScreenTimer _tPeople;
@@ -156,11 +159,42 @@ class _SearchState extends State<Search> {
     }
   }
 
-  void _applySearch() {
+  Future<void> _logSearchAnalytics(String query, int resultsCount) async {
+    try {
+      await FirebaseFirestore.instance.collection('search_logs').add({
+        'query': query.trim().toLowerCase(),
+        'resultsCount': resultsCount,
+        'timestamp': FieldValue.serverTimestamp(),
+        'userId': _currentUser?.id,
+      });
+    } catch (e) {
+      debugPrint('Error logging search: $e');
+    }
+  }
+
+  Future<void> _applySearch() async {
     final q = _queryCtrl.text.trim();
     if (q.isEmpty) return;
+
+    final resultsCount = _searchResults.length;
+    final isZeroResult = resultsCount == 0;
+
+    // 1) Log en Firestore
+    await _logSearchAnalytics(q, resultsCount);
+
+    // 2) Log en Firebase Analytics
+    await _analytics.logEvent(
+      name: 'search_users',
+      parameters: {
+        'query': q.toLowerCase(),
+        'results_count': resultsCount,
+        'zero_result': isZeroResult,
+      },
+    );
+
+    if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Buscando: "$q"')),
+      SnackBar(content: Text('Searching: "$q" ($resultsCount results)')),
     );
   }
 
@@ -281,6 +315,18 @@ class _SearchState extends State<Search> {
                     const SizedBox(height: 24),
                   ],
 
+                  if (_searchResults.isEmpty &&
+                      queryText.isNotEmpty &&
+                      fallbackResults.isEmpty) ...[
+                    Text('No results found', style: labelStyle),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Try searching for another name or check the spelling.',
+                      style: TextStyle(fontSize: 12),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+
                   // “Recientes”
                   Text('Recent searches', style: labelStyle),
                   const SizedBox(height: 12),
@@ -288,6 +334,23 @@ class _SearchState extends State<Search> {
                     (title) => SearchCard(
                       title: title,
                       isRecent: true,
+                    ),
+                  ),
+                  // Botón debug para ver analytics de búsqueda
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const SearchAnalyticsDebugPage(),
+                          ),
+                        );
+                      },
+                      child: const Text(
+                        'Open search analytics (debug)',
+                        style: TextStyle(fontSize: 12),
+                      ),
                     ),
                   ),
                 ],
