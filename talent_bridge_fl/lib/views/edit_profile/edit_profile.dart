@@ -32,7 +32,7 @@ class _EditProfileState extends State<EditProfile> {
   final _formKey = GlobalKey<FormState>();
   var _formIsValid = false;
   var _showDescriptionProgress = false;
-  var _analytics = FirebaseAnalytics.instance;
+  final _analytics = FirebaseAnalytics.instance;
   // Form values
   String displayName = '';
   String headline = '';
