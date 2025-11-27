@@ -90,7 +90,6 @@ class _ProjectCommentsPageState extends State<ProjectCommentsPage> {
             child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
               stream: _commentsCol
                   .where('project_id', isEqualTo: widget.project.id ?? '')
-                  .orderBy('createdAt', descending: false)
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
