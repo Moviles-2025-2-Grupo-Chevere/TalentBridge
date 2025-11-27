@@ -24,7 +24,6 @@ import 'package:talent_bridge_fl/views/edit_profile/edit_profile.dart';
 import 'package:talent_bridge_fl/views/my-profile/contact_item.dart';
 import 'package:talent_bridge_fl/views/my-profile/project_summary.dart';
 import 'package:talent_bridge_fl/views/my-profile/download_cvs.dart';
-import 'package:talent_bridge_fl/services/connectivity_service.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 
 const darkBlue = Color(0xFF3E6990);
@@ -677,7 +676,7 @@ class _MyProfileState extends ConsumerState<MyProfile> {
                                             borderRadius: BorderRadius.circular(
                                               60,
                                             ),
-                                            child: Container(
+                                            child: SizedBox(
                                               width: 120,
                                               height: 120,
                                             ),
@@ -720,7 +719,7 @@ class _MyProfileState extends ConsumerState<MyProfile> {
                           alignment: Alignment.bottomRight,
                           child: IconButton(
                             onPressed: userEntity != null
-                                ? () => _openEditProfileOverlay(userEntity!)
+                                ? () => _openEditProfileOverlay(userEntity)
                                 : () {},
                             icon: Icon(Icons.edit),
                           ),

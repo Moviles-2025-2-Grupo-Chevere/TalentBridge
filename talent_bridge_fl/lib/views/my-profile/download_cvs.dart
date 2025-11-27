@@ -1,4 +1,3 @@
-import 'dart:typed_data';
 import 'package:archive/archive_io.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
@@ -97,10 +96,10 @@ class DownloadCVs {
 
     final duration = DateTime.now().difference(startTime);
     debugPrint(
-      'Zip creation completed in ${duration.inMilliseconds}ms, final size: ${zipBytes?.length ?? 0} bytes',
+      'Zip creation completed in ${duration.inMilliseconds}ms, final size: ${zipBytes.length ?? 0} bytes',
     );
 
-    return Uint8List.fromList(zipBytes!);
+    return Uint8List.fromList(zipBytes);
   }
 
   /// Main method that downloads and zips CVs (runs in isolate)

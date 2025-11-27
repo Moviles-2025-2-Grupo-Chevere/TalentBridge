@@ -41,7 +41,7 @@ class SearchLocalCache {
         .where((u) => (u.id ?? '').isNotEmpty)
         .map(
           (u) => SearchUserSummary(
-            uid: u.id!,
+            uid: u.id,
             displayName: u.displayName,
           ).toMap(),
         )

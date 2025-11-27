@@ -142,7 +142,7 @@ class FirebaseService {
 
       return allProjects;
     } catch (e) {
-      print("Error mapping projects: " + e.toString());
+      print("Error mapping projects: $e");
       rethrow;
     }
   }

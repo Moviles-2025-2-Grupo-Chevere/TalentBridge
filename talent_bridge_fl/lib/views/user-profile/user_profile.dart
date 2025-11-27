@@ -5,7 +5,6 @@ import 'package:talent_bridge_fl/providers/profile_provider.dart';
 import 'package:talent_bridge_fl/domain/user_entity.dart';
 import 'package:talent_bridge_fl/components/text_box_widget.dart';
 import 'package:talent_bridge_fl/analytics/analytics_timer.dart';
-import 'dart:ui';
 import 'package:talent_bridge_fl/components/user_pfp_cached.dart';
 import 'package:talent_bridge_fl/services/user_local_cache.dart';
 

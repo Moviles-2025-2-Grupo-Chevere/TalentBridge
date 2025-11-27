@@ -15,13 +15,13 @@ class UserLocalCache {
   static String _keyForUid(String uid) => '$_prefix$uid';
 
   static Future<void> saveUser(UserEntity user) async {
-    if (user.id == null || user.id!.isEmpty) {
+    if (user.id.isEmpty) {
       print('UserLocalCache: user.id vacío, no se guarda en cache.');
       return;
     }
 
     final prefs = await SharedPreferences.getInstance();
-    final key = _keyForUid(user.id!);
+    final key = _keyForUid(user.id);
 
     try {
       // 👇 Mapa "seguro": SOLO tipos simples (String, List<String>, etc.)

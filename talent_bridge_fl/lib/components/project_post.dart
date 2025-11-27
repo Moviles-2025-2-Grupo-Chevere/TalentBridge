@@ -1,4 +1,3 @@
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:talent_bridge_fl/components/project_post_image.dart';
 import 'package:talent_bridge_fl/components/project_post_pfp.dart';
@@ -7,7 +6,7 @@ import 'package:talent_bridge_fl/services/firebase_service.dart';
 import 'package:talent_bridge_fl/views/user-profile/user_profile.dart';
 
 class ProjectPost extends StatelessWidget {
-  ProjectPost({
+  const ProjectPost({
     super.key,
     required this.project,
     required this.showApplyModal,
