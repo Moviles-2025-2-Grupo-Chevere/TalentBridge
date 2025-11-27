@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/services.dart';
+
 import 'package:talent_bridge_fl/domain/project_entity.dart';
+import 'package:talent_bridge_fl/services/comments_local_helper.dart';
 
 class ProjectCommentsPage extends StatefulWidget {
   const ProjectCommentsPage({
@@ -38,7 +40,7 @@ class _ProjectCommentsPageState extends State<ProjectCommentsPage> {
 
     try {
       await FirebaseFirestore.instance.collection('comments').add({
-        'comment_id': '', // Firestore generará el ID real
+        // comment_id: usamos el id del doc si lo necesitas luego
         'authorId': authorId,
         'authorName': authorName,
         'createdAt': FieldValue.serverTimestamp(),
@@ -60,6 +62,12 @@ class _ProjectCommentsPageState extends State<ProjectCommentsPage> {
         const SnackBar(content: Text('Error sending comment')),
       );
     }
+  }
+
+  @override
+  void dispose() {
+    _commentCtrl.dispose();
+    super.dispose();
   }
 
   @override
@@ -93,47 +101,121 @@ class _ProjectCommentsPageState extends State<ProjectCommentsPage> {
                 }
 
                 final docs = snapshot.data?.docs ?? [];
-                if (docs.isEmpty) {
-                  return const Center(
-                    child: Text(
-                      'No comments yet.\nBe the first to write one!',
-                      textAlign: TextAlign.center,
+
+                // 📝 Si hay datos de Firestore, los mostramos y además los cacheamos localmente
+                if (docs.isNotEmpty) {
+                  // Guardamos versión simple en local (máx 50)
+                  final toCache = docs.take(50).map((doc) {
+                    final data = doc.data();
+                    final ts = data['createdAt'];
+                    int? millis;
+                    if (ts is Timestamp) {
+                      millis = ts.millisecondsSinceEpoch;
+                    }
+                    return <String, dynamic>{
+                      'text': data['text'] ?? '',
+                      'authorName': data['authorName'] ?? 'Unknown',
+                      'createdAtMillis': millis,
+                    };
+                  }).toList();
+
+                  // No bloqueamos el build: lo mandamos a microtask
+                  Future.microtask(
+                    () => CommentsLocalHelper.saveProjectComments(
+                      projectId,
+                      toCache,
                     ),
+                  );
+
+                  return ListView.builder(
+                    itemCount: docs.length,
+                    itemBuilder: (context, index) {
+                      final doc = docs[index];
+                      final data = doc.data();
+                      final text = (data['text'] ?? '') as String;
+                      final authorName =
+                          (data['authorName'] ?? 'Unknown') as String;
+                      final ts = data['createdAt'];
+                      DateTime? createdAt;
+                      if (ts is Timestamp) createdAt = ts.toDate();
+
+                      final isPending = doc.metadata.hasPendingWrites;
+                      final dateLabel = createdAt == null
+                          ? ''
+                          : '${createdAt.toLocal().toString().split(".")[0]} · ';
+
+                      return ListTile(
+                        leading: const CircleAvatar(
+                          child: Icon(Icons.person),
+                        ),
+                        title: Text(
+                          authorName,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.w500,
+                            fontSize: 14,
+                          ),
+                        ),
+                        subtitle: Text(
+                          '$dateLabel$text${isPending ? " (pending sync...)" : ""}',
+                          style: const TextStyle(fontSize: 12),
+                        ),
+                      );
+                    },
                   );
                 }
 
-                return ListView.builder(
-                  itemCount: docs.length,
-                  itemBuilder: (context, index) {
-                    final doc = docs[index];
-                    final data = doc.data();
-                    final text = (data['text'] ?? '') as String;
-                    final authorName =
-                        (data['authorName'] ?? 'Unknown') as String;
-                    final ts = data['createdAt'];
-                    DateTime? createdAt;
-                    if (ts is Timestamp) createdAt = ts.toDate();
+                // 🧊 Si Firestore viene vacío, intentamos local storage
+                return FutureBuilder<List<Map<String, dynamic>>>(
+                  future: CommentsLocalHelper.getProjectComments(projectId),
+                  builder: (context, snapLocal) {
+                    if (snapLocal.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
 
-                    final isPending = doc.metadata.hasPendingWrites;
-                    final dateLabel = createdAt == null
-                        ? ''
-                        : '${createdAt.toLocal().toString().split(".")[0]} · ';
-
-                    return ListTile(
-                      leading: const CircleAvatar(
-                        child: Icon(Icons.person),
-                      ),
-                      title: Text(
-                        authorName,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.w500,
-                          fontSize: 14,
+                    final localComments = snapLocal.data ?? [];
+                    if (localComments.isEmpty) {
+                      return const Center(
+                        child: Text(
+                          'No comments yet.\nBe the first to write one!',
+                          textAlign: TextAlign.center,
                         ),
-                      ),
-                      subtitle: Text(
-                        '$dateLabel$text${isPending ? " (pending sync...)" : ""}',
-                        style: const TextStyle(fontSize: 12),
-                      ),
+                      );
+                    }
+
+                    return ListView.builder(
+                      itemCount: localComments.length,
+                      itemBuilder: (context, index) {
+                        final c = localComments[index];
+                        final text = (c['text'] ?? '') as String;
+                        final authorName =
+                            (c['authorName'] ?? 'Unknown') as String;
+                        final millis = c['createdAtMillis'] as int?;
+                        String dateLabel = '';
+                        if (millis != null) {
+                          final dt = DateTime.fromMillisecondsSinceEpoch(
+                            millis,
+                          );
+                          dateLabel =
+                              '${dt.toLocal().toString().split(".")[0]} · ';
+                        }
+
+                        return ListTile(
+                          leading: const CircleAvatar(
+                            child: Icon(Icons.person),
+                          ),
+                          title: Text(
+                            authorName,
+                            style: const TextStyle(
+                              fontWeight: FontWeight.w500,
+                              fontSize: 14,
+                            ),
+                          ),
+                          subtitle: Text(
+                            '$dateLabel$text (local cached)',
+                            style: const TextStyle(fontSize: 12),
+                          ),
+                        );
+                      },
                     );
                   },
                 );
@@ -156,7 +238,9 @@ class _ProjectCommentsPageState extends State<ProjectCommentsPage> {
                   Expanded(
                     child: TextField(
                       controller: _commentCtrl,
-                      inputFormatters: [LengthLimitingTextInputFormatter(200)],
+                      inputFormatters: [
+                        LengthLimitingTextInputFormatter(200),
+                      ],
                       decoration: InputDecoration(
                         filled: true,
                         fillColor: Colors.white,
