@@ -30,6 +30,7 @@ class _EditProfileState extends State<EditProfile> {
   final _fb = FirebaseService();
   final _formKey = GlobalKey<FormState>();
   var _formIsValid = false;
+  var _showDescriptionProgress = false;
   // Form values
   String displayName = '';
   String headline = '';
@@ -272,37 +273,58 @@ class _EditProfileState extends State<EditProfile> {
       validator: validateDescription,
       onSaved: (newValue) => description = newValue ?? '',
     );
+
     var generateButton = ElevatedButton.icon(
-      onPressed: () async {
-        var promptText =
-            """Para el siguiente perfil, retorna una única descripción para su perfil de linkedin.
+      onPressed: _showDescriptionProgress
+          ? null
+          : () async {
+              var promptText =
+                  """Para el siguiente perfil, retorna una única descripción para su perfil de linkedin.
           
           # Perfil
 
           + Nombre: ${displayName.isNotEmpty ? displayName : user.displayName}
           + Carrera: ${major.isNotEmpty ? major : user.major}
           + Habilidades: ${_selectedSkills.map(
-              (e) => e.label,
-            ).join(", ")}
+                    (e) => e.label,
+                  ).join(", ")}
           + Headline: ${headline.isNotEmpty ? headline : user.headline}
           
           Descripción:
           """;
-        print(promptText);
-        final prompt = [
-          Content.text(promptText),
-        ];
-        final response = model.generateContentStream(prompt);
-        var textResponse = "";
-        await for (final chunk in response) {
-          print("${chunk.text} - ");
-          textResponse += chunk.text ?? '';
-          _descriptionController.text = textResponse;
-        }
-      },
+              print(promptText);
+              final prompt = [
+                Content.text(promptText),
+              ];
+              final response = model.generateContentStream(prompt);
+              var textResponse = "";
+              setState(() {
+                _showDescriptionProgress = true;
+              });
+              await for (final chunk in response) {
+                print("${chunk.text} - ");
+                textResponse += chunk.text ?? '';
+                _descriptionController.text = textResponse;
+              }
+              setState(() {
+                _showDescriptionProgress = false;
+              });
+            },
       label: Text("Generate Description"),
       icon: Icon(Icons.auto_awesome),
     );
+
+    var generateButtonRow = Row(
+      children: [
+        generateButton,
+        Spacer(),
+        if (_showDescriptionProgress) CircularProgressIndicator(),
+        SizedBox(
+          width: 8,
+        ),
+      ],
+    );
+
     var majorField = FutureBuilder(
       future: MajorService.getMajors(),
       builder: (context, snap) {
@@ -371,7 +393,7 @@ class _EditProfileState extends State<EditProfile> {
                 SizedBox(height: 16),
                 descriptionField,
                 SizedBox(height: 8),
-                generateButton,
+                generateButtonRow,
                 SizedBox(height: 16),
                 majorField,
                 SizedBox(height: 16),
