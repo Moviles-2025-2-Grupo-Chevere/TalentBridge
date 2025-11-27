@@ -17,13 +17,9 @@ class ProjectCommentsPage extends StatefulWidget {
 
 class _ProjectCommentsPageState extends State<ProjectCommentsPage> {
   final _commentCtrl = TextEditingController();
-  // Colección: projects/<projectId>/comments
-  CollectionReference<Map<String, dynamic>> get _commentsRef {
-    final projectId = widget.project.id ?? '';
-    return FirebaseFirestore.instance
-        .collection('projects')
-        .doc(projectId)
-        .collection('comments');
+  // Colección PLANA: comments
+  CollectionReference<Map<String, dynamic>> get _commentsCol {
+    return FirebaseFirestore.instance.collection('comments');
   }
 
   @override
@@ -37,6 +33,8 @@ class _ProjectCommentsPageState extends State<ProjectCommentsPage> {
     if (text.isEmpty) return;
 
     final projectId = widget.project.id ?? '';
+    final projectOwnerId = widget.project.createdById ?? '';
+
     if (projectId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Error: project without ID')),
@@ -49,11 +47,18 @@ class _ProjectCommentsPageState extends State<ProjectCommentsPage> {
     final authorName = user?.displayName ?? 'Unknown user';
 
     try {
-      await _commentsRef.add({
-        'text': text,
+      // Creamos doc con ID generado por Firestore
+      final docRef = _commentsCol.doc();
+      final commentId = docRef.id;
+
+      await docRef.set({
+        'comment_id': commentId,
         'authorId': authorId,
         'authorName': authorName,
         'createdAt': FieldValue.serverTimestamp(),
+        'text': text,
+        'project_id': projectId,
+        'project_user_id': projectOwnerId,
       });
 
       _commentCtrl.clear();
@@ -83,7 +88,8 @@ class _ProjectCommentsPageState extends State<ProjectCommentsPage> {
         children: [
           Expanded(
             child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-              stream: _commentsRef
+              stream: _commentsCol
+                  .where('project_id', isEqualTo: widget.project.id ?? '')
                   .orderBy('createdAt', descending: false)
                   .snapshots(),
               builder: (context, snapshot) {
