@@ -1,6 +1,7 @@
 import 'dart:collection';
 
 import 'package:firebase_ai/firebase_ai.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:talent_bridge_fl/data/major_service.dart';
 import 'package:talent_bridge_fl/domain/skill_entity.dart';
@@ -31,6 +32,7 @@ class _EditProfileState extends State<EditProfile> {
   final _formKey = GlobalKey<FormState>();
   var _formIsValid = false;
   var _showDescriptionProgress = false;
+  var _analytics = FirebaseAnalytics.instance;
   // Form values
   String displayName = '';
   String headline = '';
@@ -38,6 +40,7 @@ class _EditProfileState extends State<EditProfile> {
   String mobileNumber = '';
   String description = '';
   String major = '';
+  bool _descriptionAiGenerated = false;
   List<SkillEntity> _skills = SkillsService.getFallbackSkills();
   final _selectedSkills = HashSet<SkillEntity>();
   final model = FirebaseAI.googleAI().generativeModel(
@@ -66,6 +69,11 @@ class _EditProfileState extends State<EditProfile> {
       );
       await _fb.updateUserProfile(
         updateUserDto,
+      );
+
+      await _analytics.logEvent(
+        name: "profile_updated_fl",
+        parameters: {'aiGenerated': _descriptionAiGenerated.toString()},
       );
       print("Updated user document");
       widget.onUpdate(updateUserDto);
@@ -200,6 +208,14 @@ class _EditProfileState extends State<EditProfile> {
       ),
     );
     _descriptionController.text = widget.existingData.description;
+    _descriptionController.addListener(
+      () {
+        var value = _descriptionController.value;
+        if (value.text.isEmpty) {
+          _descriptionAiGenerated = false;
+        }
+      },
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final currentState = _formKey.currentState;
       if (currentState != null) {
@@ -308,6 +324,7 @@ class _EditProfileState extends State<EditProfile> {
               }
               setState(() {
                 _showDescriptionProgress = false;
+                _descriptionAiGenerated = true;
               });
             },
       label: Text("Generate Description"),
