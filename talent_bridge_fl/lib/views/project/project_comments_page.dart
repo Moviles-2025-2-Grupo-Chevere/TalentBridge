@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:talent_bridge_fl/domain/project_entity.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/services.dart';
+import 'package:talent_bridge_fl/domain/project_entity.dart';
 
 class ProjectCommentsPage extends StatefulWidget {
   const ProjectCommentsPage({
@@ -17,23 +18,16 @@ class ProjectCommentsPage extends StatefulWidget {
 
 class _ProjectCommentsPageState extends State<ProjectCommentsPage> {
   final _commentCtrl = TextEditingController();
-  // Colección PLANA: comments
-  CollectionReference<Map<String, dynamic>> get _commentsCol {
-    return FirebaseFirestore.instance.collection('comments');
-  }
-
-  @override
-  void dispose() {
-    _commentCtrl.dispose();
-    super.dispose();
-  }
 
   Future<void> _sendComment() async {
     final text = _commentCtrl.text.trim();
     if (text.isEmpty) return;
 
+    final user = FirebaseAuth.instance.currentUser;
+    final authorId = user?.uid ?? 'anon';
+    final authorName = user?.displayName ?? 'Unknown user';
     final projectId = widget.project.id ?? '';
-    final projectOwnerId = widget.project.createdById ?? '';
+    final projectUserId = widget.project.createdById ?? '';
 
     if (projectId.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -42,23 +36,15 @@ class _ProjectCommentsPageState extends State<ProjectCommentsPage> {
       return;
     }
 
-    final user = FirebaseAuth.instance.currentUser;
-    final authorId = user?.uid ?? 'anon';
-    final authorName = user?.displayName ?? 'Unknown user';
-
     try {
-      // Creamos doc con ID generado por Firestore
-      final docRef = _commentsCol.doc();
-      final commentId = docRef.id;
-
-      await docRef.set({
-        'comment_id': commentId,
+      await FirebaseFirestore.instance.collection('comments').add({
+        'comment_id': '', // Firestore generará el ID real
         'authorId': authorId,
         'authorName': authorName,
         'createdAt': FieldValue.serverTimestamp(),
         'text': text,
         'project_id': projectId,
-        'project_user_id': projectOwnerId,
+        'project_user_id': projectUserId,
       });
 
       _commentCtrl.clear();
@@ -78,31 +64,35 @@ class _ProjectCommentsPageState extends State<ProjectCommentsPage> {
 
   @override
   Widget build(BuildContext context) {
-    final p = widget.project;
+    final projectId = widget.project.id ?? '';
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Comments · ${p.title}'),
+        title: Text('Comments · ${widget.project.title}'),
       ),
       body: Column(
         children: [
+          // 📜 Lista de comentarios filtrados por proyecto
           Expanded(
             child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
-              stream: _commentsCol
-                  .where('project_id', isEqualTo: widget.project.id ?? '')
-                  .snapshots(),
+              stream: FirebaseFirestore.instance
+                  .collection('comments')
+                  .where('project_id', isEqualTo: projectId)
+                  .snapshots(includeMetadataChanges: true),
               builder: (context, snapshot) {
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
                 }
                 if (snapshot.hasError) {
                   return Center(
-                    child: Text('Error loading comments: ${snapshot.error}'),
+                    child: Text(
+                      'Error loading comments: ${snapshot.error}',
+                      textAlign: TextAlign.center,
+                    ),
                   );
                 }
 
                 final docs = snapshot.data?.docs ?? [];
-
                 if (docs.isEmpty) {
                   return const Center(
                     child: Text(
@@ -113,29 +103,37 @@ class _ProjectCommentsPageState extends State<ProjectCommentsPage> {
                 }
 
                 return ListView.builder(
-                  padding: const EdgeInsets.all(16),
                   itemCount: docs.length,
                   itemBuilder: (context, index) {
-                    final data = docs[index].data();
+                    final doc = docs[index];
+                    final data = doc.data();
                     final text = (data['text'] ?? '') as String;
                     final authorName =
                         (data['authorName'] ?? 'Unknown') as String;
                     final ts = data['createdAt'];
                     DateTime? createdAt;
-                    if (ts is Timestamp) {
-                      createdAt = ts.toDate();
-                    }
+                    if (ts is Timestamp) createdAt = ts.toDate();
 
-                    final subtitle = createdAt == null
-                        ? text
-                        : '${createdAt.toLocal()} · $text';
+                    final isPending = doc.metadata.hasPendingWrites;
+                    final dateLabel = createdAt == null
+                        ? ''
+                        : '${createdAt.toLocal().toString().split(".")[0]} · ';
 
                     return ListTile(
                       leading: const CircleAvatar(
                         child: Icon(Icons.person),
                       ),
-                      title: Text(authorName),
-                      subtitle: Text(subtitle),
+                      title: Text(
+                        authorName,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w500,
+                          fontSize: 14,
+                        ),
+                      ),
+                      subtitle: Text(
+                        '$dateLabel$text${isPending ? " (pending sync...)" : ""}',
+                        style: const TextStyle(fontSize: 12),
+                      ),
                     );
                   },
                 );
@@ -143,11 +141,11 @@ class _ProjectCommentsPageState extends State<ProjectCommentsPage> {
             ),
           ),
 
-          // 🔹 Caja de texto para escribir el comentario
+          // 💬 Input para añadir un comentario nuevo
           SafeArea(
             top: false,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: const BoxDecoration(
                 border: Border(
                   top: BorderSide(color: Colors.black12),
@@ -158,18 +156,37 @@ class _ProjectCommentsPageState extends State<ProjectCommentsPage> {
                   Expanded(
                     child: TextField(
                       controller: _commentCtrl,
-                      maxLength: 200, // límite que dijiste
-                      maxLines: null,
-                      decoration: const InputDecoration(
+                      inputFormatters: [LengthLimitingTextInputFormatter(200)],
+                      decoration: InputDecoration(
+                        filled: true,
+                        fillColor: Colors.white,
                         hintText: 'Write a comment...',
-                        counterText: '', // oculta "0/200" si molesta
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 10,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: Colors.black12,
+                            width: 1.2,
+                          ),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(
+                            color: Colors.black26,
+                            width: 1.6,
+                          ),
+                        ),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 6),
                   IconButton(
                     onPressed: _sendComment,
-                    icon: const Icon(Icons.send),
+                    icon: const Icon(Icons.send, size: 20),
                   ),
                 ],
               ),
