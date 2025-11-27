@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:talent_bridge_fl/domain/project_entity.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class ProjectCommentsPage extends StatefulWidget {
   const ProjectCommentsPage({
@@ -15,6 +17,14 @@ class ProjectCommentsPage extends StatefulWidget {
 
 class _ProjectCommentsPageState extends State<ProjectCommentsPage> {
   final _commentCtrl = TextEditingController();
+  // Colección: projects/<projectId>/comments
+  CollectionReference<Map<String, dynamic>> get _commentsRef {
+    final projectId = widget.project.id ?? '';
+    return FirebaseFirestore.instance
+        .collection('projects')
+        .doc(projectId)
+        .collection('comments');
+  }
 
   @override
   void dispose() {
@@ -22,20 +32,43 @@ class _ProjectCommentsPageState extends State<ProjectCommentsPage> {
     super.dispose();
   }
 
-  void _sendComment() {
+  Future<void> _sendComment() async {
     final text = _commentCtrl.text.trim();
     if (text.isEmpty) return;
 
-    // 👇 Por ahora solo lo mostramos en consola.
-    // Más adelante aquí vamos a guardar en Firestore.
-    debugPrint(
-      '[COMMENTS] send "${widget.project.id}" -> "$text"',
-    );
+    final projectId = widget.project.id ?? '';
+    if (projectId.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error: project without ID')),
+      );
+      return;
+    }
 
-    _commentCtrl.clear();
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Comment sent (mock, sin backend aún)')),
-    );
+    final user = FirebaseAuth.instance.currentUser;
+    final authorId = user?.uid ?? 'anon';
+    final authorName = user?.displayName ?? 'Unknown user';
+
+    try {
+      await _commentsRef.add({
+        'text': text,
+        'authorId': authorId,
+        'authorName': authorName,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+
+      _commentCtrl.clear();
+
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Comment sent')),
+      );
+    } catch (e) {
+      debugPrint('Error sending comment: $e');
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Error sending comment')),
+      );
+    }
   }
 
   @override
@@ -48,16 +81,60 @@ class _ProjectCommentsPageState extends State<ProjectCommentsPage> {
       ),
       body: Column(
         children: [
-          // 🔹 Más adelante aquí pondremos la lista real de comentarios (Firestore)
           Expanded(
-            child: ListView(
-              padding: const EdgeInsets.all(16),
-              children: const [
-                Text(
-                  'Here will appear the comments for this project.\n'
-                  '(Next step: connect to Firestore.)',
-                ),
-              ],
+            child: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
+              stream: _commentsRef
+                  .orderBy('createdAt', descending: false)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text('Error loading comments: ${snapshot.error}'),
+                  );
+                }
+
+                final docs = snapshot.data?.docs ?? [];
+
+                if (docs.isEmpty) {
+                  return const Center(
+                    child: Text(
+                      'No comments yet.\nBe the first to write one!',
+                      textAlign: TextAlign.center,
+                    ),
+                  );
+                }
+
+                return ListView.builder(
+                  padding: const EdgeInsets.all(16),
+                  itemCount: docs.length,
+                  itemBuilder: (context, index) {
+                    final data = docs[index].data();
+                    final text = (data['text'] ?? '') as String;
+                    final authorName =
+                        (data['authorName'] ?? 'Unknown') as String;
+                    final ts = data['createdAt'];
+                    DateTime? createdAt;
+                    if (ts is Timestamp) {
+                      createdAt = ts.toDate();
+                    }
+
+                    final subtitle = createdAt == null
+                        ? text
+                        : '${createdAt.toLocal()} · $text';
+
+                    return ListTile(
+                      leading: const CircleAvatar(
+                        child: Icon(Icons.person),
+                      ),
+                      title: Text(authorName),
+                      subtitle: Text(subtitle),
+                    );
+                  },
+                );
+              },
             ),
           ),
 
