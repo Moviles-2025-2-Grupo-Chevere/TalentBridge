@@ -4,6 +4,8 @@ import 'package:talent_bridge_fl/components/project_post_pfp.dart';
 import 'package:talent_bridge_fl/domain/project_entity.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
 import 'package:talent_bridge_fl/views/user-profile/user_profile.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:talent_bridge_fl/views/project/project_comments_page.dart';
 
 class ProjectPost extends StatelessWidget {
   const ProjectPost({
@@ -87,7 +89,8 @@ class ProjectPost extends StatelessWidget {
             Wrap(
               spacing: 4,
               children: [
-                TextButton(onPressed: () {}, child: Text('Comments')),
+                CommentsCounterButton(project: project),
+
                 if (!project.isFavorite)
                   TextButton(
                     onPressed: () => showSaveModal(project),
@@ -114,6 +117,49 @@ class ProjectPost extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+class CommentsCounterButton extends StatelessWidget {
+  const CommentsCounterButton({super.key, required this.project});
+
+  final ProjectEntity project;
+
+  @override
+  Widget build(BuildContext context) {
+    final projectId = project.id ?? '';
+    final projectUserId = project.createdById ?? '';
+
+    if (projectId.isEmpty) {
+      return const Text('Comments (0)');
+    }
+
+    final query = FirebaseFirestore.instance
+        .collection('comments')
+        .where('project_id', isEqualTo: projectId)
+        .where('project_user_id', isEqualTo: projectUserId);
+
+    return StreamBuilder(
+      stream: query.snapshots(),
+      builder: (context, snapshot) {
+        int count = 0;
+        if (snapshot.hasData && snapshot.data is QuerySnapshot) {
+          count = (snapshot.data as QuerySnapshot).size;
+        }
+
+        final label = 'Comments ($count)';
+        return TextButton(
+          onPressed: () {
+            Navigator.of(context).push(
+              MaterialPageRoute(
+                builder: (_) => ProjectCommentsPage(project: project),
+              ),
+            );
+          },
+          child: Text(label),
+        );
+      },
     );
   }
 }
