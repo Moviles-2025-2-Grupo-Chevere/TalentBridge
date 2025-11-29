@@ -11,6 +11,7 @@ import com.example.talent_bridge_kt.data.repository.ApplicationsLocalRepository
 import com.example.talent_bridge_kt.domain.model.Project
 import com.example.talent_bridge_kt.data.firebase.analytics.ApplicationAnalytics
 import com.example.talent_bridge_kt.data.firebase.analytics.FeatureUsageAnalytics
+import com.example.talent_bridge_kt.data.firebase.analytics.ProjectConversionAnalytics
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FieldValue
 import com.google.firebase.ktx.Firebase
@@ -146,7 +147,17 @@ class ProjectsViewModel(
                     userRef.update("applications", FieldValue.arrayUnion(application)).await()
                     appliedProjectIds.value = appliedProjectIds.value + project.id
                     
-                    // Trackear en Firebase Analytics (con major)
+                    // Verificar si el proyecto estaba guardado antes de aplicar
+                    val wasSaved = localRepo.isProjectSaved(project.id, userId)
+                    
+                    // Trackear conversión Saved → Applied
+                    ProjectConversionAnalytics.logProjectApplication(
+                        projectId = project.id,
+                        projectTitle = project.title,
+                        wasSaved = wasSaved
+                    )
+                    
+                    // Trackear en Firebase Analytics (con major) - mantener compatibilidad
                     trackApplicationAnalytics(uid, project.id, project.title)
                     
                     // Trackear como feature usage
@@ -217,6 +228,16 @@ class ProjectsViewModel(
                     applicationsLocal.remove(item.id)
                     appliedProjectIds.value = appliedProjectIds.value + item.projectId
                     
+                    // Verificar si el proyecto estaba guardado antes de aplicar (sincronización offline)
+                    val wasSaved = localRepo.isProjectSaved(item.projectId, userId)
+                    
+                    // Trackear conversión Saved → Applied (aplicación sincronizada offline)
+                    ProjectConversionAnalytics.logProjectApplication(
+                        projectId = item.projectId,
+                        projectTitle = item.projectTitle,
+                        wasSaved = wasSaved
+                    )
+                    
                     // Trackear en Firebase Analytics (aplicación sincronizada offline)
                     trackApplicationAnalytics(uid, item.projectId, item.projectTitle)
                     
@@ -255,10 +276,16 @@ class ProjectsViewModel(
     fun toggleFavorite(project: Project) {
         viewModelScope.launch {
             val entity = project.toEntity(userId)
-            if (localRepo.isProjectSaved(project.id, userId)) {
+            val wasSaved = localRepo.isProjectSaved(project.id, userId)
+            
+            if (wasSaved) {
+                // Proyecto estaba guardado, ahora se elimina
                 localRepo.removeProject(project.id, userId)
+                ProjectConversionAnalytics.logProjectUnsaved(project.id, project.title)
             } else {
+                // Proyecto no estaba guardado, ahora se guarda
                 localRepo.saveProject(entity)
+                ProjectConversionAnalytics.logProjectSaved(project.id, project.title)
             }
         }
     }
