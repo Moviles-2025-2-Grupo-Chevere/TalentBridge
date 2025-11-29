@@ -1,4 +1,7 @@
+import 'dart:async';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
@@ -13,6 +16,10 @@ class AddPortfolio extends StatefulWidget {
 }
 
 class _AddPortfolioState extends State<AddPortfolio> {
+  final _connectivity = Connectivity();
+  StreamSubscription<List<ConnectivityResult>>? _connSuscription;
+  bool _connected = true;
+
   final _titleController = TextEditingController();
 
   final _urlController = TextEditingController();
@@ -91,14 +98,35 @@ class _AddPortfolioState extends State<AddPortfolio> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    final suscription = _connectivity.onConnectivityChanged.listen(
+      (status) {
+        setState(() {
+          _connected = status[0] != ConnectivityResult.none;
+        });
+      },
+    );
+    _connSuscription = suscription;
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _connSuscription?.cancel();
+  }
+
+  @override
   Widget build(BuildContext context) {
     var titleField = TextField(
       controller: _titleController,
+      enabled: _connected,
       maxLength: 50,
       decoration: const InputDecoration(label: Text("Title")),
     );
     var urlField = TextField(
       controller: _urlController,
+      enabled: _connected,
       decoration: const InputDecoration(label: Text("Url of portfolio")),
     );
 
