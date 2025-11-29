@@ -18,7 +18,7 @@ class AddPortfolio extends StatefulWidget {
 class _AddPortfolioState extends State<AddPortfolio> {
   final _connectivity = Connectivity();
   StreamSubscription<List<ConnectivityResult>>? _connSuscription;
-  bool _connected = true;
+  bool _connected = false;
 
   final _titleController = TextEditingController();
 
@@ -100,6 +100,13 @@ class _AddPortfolioState extends State<AddPortfolio> {
   @override
   void initState() {
     super.initState();
+    _connectivity.checkConnectivity().then(
+      (value) {
+        setState(() {
+          _connected = value[0] != ConnectivityResult.none;
+        });
+      },
+    );
     final suscription = _connectivity.onConnectivityChanged.listen(
       (status) {
         setState(() {
@@ -131,9 +138,44 @@ class _AddPortfolioState extends State<AddPortfolio> {
     );
 
     var optionalImageButton = OutlinedButton.icon(
-      onPressed: _getAnImage,
+      onPressed: _connected ? _getAnImage : null,
       label: Text("Add image (optional)"),
       icon: Icon(Icons.image_search),
+    );
+
+    var noConnDisclaimer = Card.outlined(
+      child: Padding(
+        padding: EdgeInsetsGeometry.all(8),
+        child: Row(
+          children: [
+            Icon(Icons.warning),
+            SizedBox(
+              width: 8,
+            ),
+            Expanded(
+              child: const Text(
+                "Portfolios cannot be uploaded without a reliable connection",
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    var cancelButton = FilledButton.icon(
+      onPressed: _connected
+          ? () {
+              Navigator.pop(context);
+            }
+          : null,
+      label: const Text("Cancel"),
+      style: FilledButton.styleFrom(backgroundColor: Colors.red),
+    );
+    var submitButton = FilledButton.icon(
+      onPressed: _connected ? () => _submitData(context) : null,
+      label: Text('Save'),
+      style: FilledButton.styleFrom(
+        backgroundColor: darkBlue,
+      ),
     );
     return SizedBox(
       height: double.infinity,
@@ -146,6 +188,7 @@ class _AddPortfolioState extends State<AddPortfolio> {
                 "Add portfolio entry",
                 style: Theme.of(context).textTheme.headlineMedium,
               ),
+              if (!_connected) noConnDisclaimer,
               SizedBox(
                 height: 16,
               ),
@@ -163,21 +206,11 @@ class _AddPortfolioState extends State<AddPortfolio> {
               ),
               Row(
                 children: [
-                  FilledButton.icon(
-                    onPressed: () {},
-                    label: const Text("Cancel"),
-                    style: FilledButton.styleFrom(backgroundColor: Colors.red),
-                  ),
+                  cancelButton,
                   SizedBox(
                     width: 16,
                   ),
-                  FilledButton.icon(
-                    onPressed: () => _submitData(context),
-                    label: Text('Save'),
-                    style: FilledButton.styleFrom(
-                      backgroundColor: darkBlue,
-                    ),
-                  ),
+                  submitButton,
                 ],
               ),
             ],
