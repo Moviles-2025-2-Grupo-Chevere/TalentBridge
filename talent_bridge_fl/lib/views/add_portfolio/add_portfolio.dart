@@ -35,7 +35,6 @@ class _AddPortfolioState extends State<AddPortfolio> {
 
   final hiveBoxName = "portfolio_types";
   final hiveKey = "labels";
-  List<String> portfolioTypeLabels = [];
 
   bool isValidUrl(String value) {
     final uri = Uri.tryParse(value);
@@ -93,7 +92,11 @@ class _AddPortfolioState extends State<AddPortfolio> {
       "title": title,
       "url": url,
       "uid": uid,
+      "type": portfolioType,
     });
+    if (context.mounted) {
+      Navigator.pop(context);
+    }
   }
 
   Future<void> _getAnImage() async {
@@ -130,18 +133,18 @@ class _AddPortfolioState extends State<AddPortfolio> {
     if (labels is List) {
       print("Got data from hive");
       print(labels);
-      return labels as List<String>;
+      // await box.close();
+      return List<String>.from(labels);
     } else {
       print("no data");
       final docs = (await store.collection("portfolioTypes").get()).docs;
-      final labels =
-          docs.map((e) => e.data()["label"]).toList() as List<String>;
+      final labels = docs.map((e) => e.data()["label"]).toList();
       print("obtained data");
       print(labels);
       if (labels.isEmpty) return [];
       await box.put(hiveKey, labels);
-      await box.close();
-      return portfolioTypeLabels = labels;
+      // await box.close();
+      return List<String>.from(labels);
     }
   }
 
@@ -168,25 +171,31 @@ class _AddPortfolioState extends State<AddPortfolio> {
     var portfolioTypeMenu = FutureBuilder(
       future: getPortfolioLabels(),
       builder: (context, snapshot) {
-        List<DropdownMenuItem<String>> items = [];
-        if (snapshot.hasData) {
-          var labels = snapshot.data;
-          print("got labels");
-          print(labels);
-          items = labels!
-              .map(
-                (e) => DropdownMenuItem(value: e, child: Text(e)),
-              )
-              .toList();
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const CircularProgressIndicator();
+        }
+        if (snapshot.hasError) {
+          return Text('Error: ${snapshot.error}');
+        }
+        final labels = snapshot.data ?? [];
+        if (labels.isEmpty) {
+          return const Text('No portfolio types available');
         }
         return DropdownButtonFormField(
+          isExpanded: true,
+          value: "",
           decoration: const InputDecoration(label: Text("Portfolio Type")),
           items: [
             DropdownMenuItem(
               value: '',
-              child: Text('None'),
+              child: Text('N/A'),
             ),
-            ...items,
+            ...labels.map(
+              (label) => DropdownMenuItem(
+                value: label,
+                child: Text(label),
+              ),
+            ),
           ],
           onChanged: (value) {
             portfolioType = value ?? '';
