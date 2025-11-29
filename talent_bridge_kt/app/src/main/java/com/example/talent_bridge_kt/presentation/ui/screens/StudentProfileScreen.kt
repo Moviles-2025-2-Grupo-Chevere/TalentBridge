@@ -68,6 +68,7 @@ import java.io.InputStream
 import java.security.MessageDigest
 import kotlin.math.roundToInt
 import android.util.Log
+import androidx.compose.foundation.BorderStroke
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -83,7 +84,8 @@ fun StudentProfileScreen(
     onHome: () -> Unit = {},
     onSearch: () -> Unit = {},
     onExploreStudents: () -> Unit = {},
-    onFav: () -> Unit = {}
+    onFav: () -> Unit = {},
+    onContactCenter: () -> Unit = {}
 ) {
     // --------- estado de edición y campos básicos ---------
     var email by remember { mutableStateOf("") }
@@ -410,6 +412,20 @@ fun StudentProfileScreen(
                                     modifier = Modifier.fillMaxWidth()
                                 )
                             }
+                        }
+
+                        Spacer(Modifier.height(12.dp))
+                        OutlinedButton(
+                            onClick = onContactCenter,
+                            shape = RoundedCornerShape(24.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = Color.White,
+                                contentColor = LinkGreen
+                            ),
+                            border = BorderStroke(1.dp, LinkGreen),
+                            modifier = Modifier.align(Alignment.End)
+                        ) {
+                            Text("Contact Center")
                         }
                     }
                 }

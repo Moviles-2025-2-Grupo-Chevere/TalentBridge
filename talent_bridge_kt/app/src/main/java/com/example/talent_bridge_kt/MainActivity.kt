@@ -61,10 +61,7 @@ import com.example.talent_bridge_kt.ConnectivityViewModelFactory
 import kotlin.system.measureTimeMillis
 import androidx.room.Room
 import com.example.talent_bridge_kt.data.local.AppDatabase
-
-
-
-
+import com.example.talent_bridge_kt.presentation.ui.screens.ContactCenterScreen
 
 
 class MainActivity : ComponentActivity() {
@@ -272,7 +269,16 @@ class MainActivity : ComponentActivity() {
                                     onHome = { navController.navigate(Routes.StudentFeed) },
                                     onSearch = { navController.navigate(Routes.Search) },
                                     onExploreStudents = { navController.navigate(Routes.LeaderFeed) },
-                                    onFav = { navController.navigate(Routes.SavedProjects) }
+                                    onFav = { navController.navigate(Routes.SavedProjects) },
+                                    onContactCenter = { navController.navigate(Routes.ContactCenter) }
+                                )
+                            }
+                        }
+                        composable(Routes.ContactCenter) {
+                            HomeWithDrawer(navController = navController) { openDrawer ->
+                                ContactCenterScreen(
+                                    onBack = { navController.popBackStack() },
+                                    onOpenDrawer = { openDrawer() }
                                 )
                             }
                         }
