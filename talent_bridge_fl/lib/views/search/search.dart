@@ -113,6 +113,55 @@ class _SearchState extends State<Search> {
       return;
     }
 
+    void _runSearch(String q) {
+      final projects = _currentUser?.projects ?? [];
+      final skills = projects
+          .expand((i) => i.skills)
+          .map((j) => j.toLowerCase())
+          .toList();
+
+      final frequencies = skills.fold<Map<String, int>>(
+        {},
+        (map, item) => map..update(item, (v) => v + 1, ifAbsent: () => 1),
+      );
+
+      final weights = frequencies.map(
+        (s, i) => MapEntry(s, i / (skills.isEmpty ? 1 : skills.length)),
+      );
+
+      final filteredUsers = _allUsers
+          .where((u) => u.displayName.toLowerCase().contains(q))
+          .toList();
+
+      if (!_ttfcSent && filteredUsers.isNotEmpty) {
+        _ttfcSent = true;
+        _tPeople.endOnce(source: 'cache', itemCount: filteredUsers.length);
+      }
+
+      final Map<UserEntity, double> scores = {};
+      for (var u in filteredUsers) {
+        double score = 0;
+        var uSkills = (u.skillsOrTopics ?? []).map((i) => i.toLowerCase());
+        for (var skill in uSkills) {
+          score += weights[skill] ?? 0;
+        }
+        scores[u] = score;
+      }
+
+      filteredUsers.sort((a, b) => -scores[a]!.compareTo(scores[b]!));
+
+      setState(() {
+        _userScores = scores;
+        _searchResults = filteredUsers;
+      });
+
+      // Guardamos los resultados en cache local
+      if (filteredUsers.isNotEmpty) {
+        // ignore: unawaited_futures
+        SearchLocalCache.saveLastUserResults(filteredUsers);
+      }
+    }
+
     final projects = _currentUser?.projects ?? [];
     final skills = projects
         .expand((i) => i.skills)
