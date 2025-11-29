@@ -16,6 +16,7 @@ import 'package:talent_bridge_fl/providers/upload_queue.dart';
 import 'package:talent_bridge_fl/providers/upload_queue_cv.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
 import 'package:talent_bridge_fl/services/profile_pic_storage.dart';
+import 'package:talent_bridge_fl/views/add_portfolio/add_portfolio.dart';
 import 'package:talent_bridge_fl/views/add_project/add_project.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -530,6 +531,15 @@ class _MyProfileState extends ConsumerState<MyProfile> {
     );
   }
 
+  void _openAddPortfolioOverlay() {
+    showModalBottomSheet(
+      context: context,
+      useSafeArea: true,
+      isScrollControlled: true,
+      builder: (context) => AddPortfolio(),
+    );
+  }
+
   void _openEditProfileOverlay(UserEntity user) {
     showModalBottomSheet(
       useSafeArea: true,
@@ -890,9 +900,7 @@ class _MyProfileState extends ConsumerState<MyProfile> {
                     Expanded(
                       child: AddElementWidget(
                         title: 'Add Portfolio',
-                        onTap: () {
-                          // Add Portfolio action
-                        },
+                        onTap: _openAddPortfolioOverlay,
                       ),
                     ),
                   ],
