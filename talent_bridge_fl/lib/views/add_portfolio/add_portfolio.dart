@@ -5,13 +5,22 @@ import 'package:talent_bridge_fl/services/firebase_service.dart';
 
 const darkBlue = Color(0xFF3E6990);
 
-class AddPortfolio extends StatelessWidget {
-  AddPortfolio({super.key});
+class AddPortfolio extends StatefulWidget {
+  const AddPortfolio({super.key});
 
+  @override
+  State<AddPortfolio> createState() => _AddPortfolioState();
+}
+
+class _AddPortfolioState extends State<AddPortfolio> {
   final _titleController = TextEditingController();
+
   final _urlController = TextEditingController();
+
   final picker = ImagePicker();
+
   final fb = FirebaseService();
+
   final store = FirebaseFirestore.instance;
 
   bool isValidUrl(String value) {
