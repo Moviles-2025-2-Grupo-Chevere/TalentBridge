@@ -63,14 +63,18 @@ class ResumeEditStore(private val context: Context) {
         
         try {
             val queueArray = JSONArray(queueJson)
-            (0 until queueArray.length()).mapNotNull { i ->
+            val result = ArrayList<PendingResumeEdit>(queueArray.length())
+            for (i in 0 until queueArray.length()) {
                 val obj = queueArray.getJSONObject(i)
-                PendingResumeEdit(
-                    resumeId = obj.getString("resumeId"),
-                    fileName = obj.optString("fileName").takeIf { obj.has("fileName") },
-                    language = obj.optString("language").takeIf { obj.has("language") }
+                result.add(
+                    PendingResumeEdit(
+                        resumeId = obj.getString("resumeId"),
+                        fileName = obj.optString("fileName").takeIf { obj.has("fileName") },
+                        language = obj.optString("language").takeIf { obj.has("language") }
+                    )
                 )
             }
+            result
         } catch (e: Exception) {
             emptyList()
         }
@@ -94,8 +98,13 @@ class ResumeEditStore(private val context: Context) {
             for (i in 0 until resumesArray.length()) {
                 val resumeObj = resumesArray.getJSONObject(i)
                 if (resumeObj.getString("id") == resumeId) {
-                    // Apply edit
-                    val updatedObj = JSONObject(resumeObj.toString())
+
+                    val updatedObj = JSONObject()
+                    val keys = resumeObj.keys()
+                    while (keys.hasNext()) {
+                        val key = keys.next()
+                        updatedObj.put(key, resumeObj.get(key))
+                    }
                     fileName?.let { updatedObj.put("fileName", it) }
                     language?.let { updatedObj.put("language", it) }
                     updatedArray.put(updatedObj)
@@ -134,12 +143,14 @@ class ResumeEditStore(private val context: Context) {
         
         try {
             val queueArray = JSONArray(queueJson)
-            (0 until queueArray.length()).mapNotNull { i ->
+            val result = ArrayList<Pair<String, String?>>(queueArray.length())
+            for (i in 0 until queueArray.length()) {
                 val obj = queueArray.getJSONObject(i)
                 val resumeId = obj.getString("resumeId")
                 val storagePath = obj.optString("storagePath").takeIf { obj.has("storagePath") }
-                resumeId to storagePath
+                result.add(resumeId to storagePath)
             }
+            result
         } catch (e: Exception) {
             emptyList()
         }
