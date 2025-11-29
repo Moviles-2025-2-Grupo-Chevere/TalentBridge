@@ -42,6 +42,8 @@ import coil.compose.AsyncImage
 import com.example.talent_bridge_kt.R
 import com.example.talent_bridge_kt.data.firebase.FirebaseProfileRepository
 import com.example.talent_bridge_kt.data.repository.ResumeRepositorySimple
+import com.example.talent_bridge_kt.data.repository.PortfolioRepositorySimple
+import com.example.talent_bridge_kt.data.repository.OfflineFirstPortfolioRepository
 import com.example.talent_bridge_kt.domain.model.Project
 import com.example.talent_bridge_kt.domain.model.ResumeLanguage
 import com.example.talent_bridge_kt.domain.usecase.GetProfileUseCase
@@ -68,6 +70,7 @@ import java.io.InputStream
 import java.security.MessageDigest
 import kotlin.math.roundToInt
 import android.util.Log
+import androidx.compose.foundation.BorderStroke
 
 @OptIn(ExperimentalLayoutApi::class, ExperimentalMaterial3Api::class)
 @Composable
@@ -83,7 +86,8 @@ fun StudentProfileScreen(
     onHome: () -> Unit = {},
     onSearch: () -> Unit = {},
     onExploreStudents: () -> Unit = {},
-    onFav: () -> Unit = {}
+    onFav: () -> Unit = {},
+    onContactCenter: () -> Unit = {}
 ) {
     // --------- estado de edición y campos básicos ---------
     var email by remember { mutableStateOf("") }
@@ -195,9 +199,24 @@ fun StudentProfileScreen(
         )
     }
 
+    // --------- REPO de Portfolio  ---------
+    val offlinePortfolioRepo = remember {
+        com.example.talent_bridge_kt.data.repository.OfflineFirstPortfolioRepository(
+            context = context,
+            storage = com.google.firebase.storage.FirebaseStorage.getInstance(),
+            db = FirebaseFirestore.getInstance(),
+            auth = FirebaseAuth.getInstance(),
+            contentResolver = context.contentResolver
+        )
+    }
+
     // --------- Hoja (bottom sheet) de CV (multi + idioma por item) ---------
     var showCvSheet by remember { mutableStateOf(false) }
     val onAddCvInternal = remember<(Unit) -> Unit> { { showCvSheet = true } }
+
+    // --------- Hoja (bottom sheet) de Portfolio ---------
+    var showPortfolioSheet by remember { mutableStateOf(false) }
+    val onAddPortfolioInternal = remember<(Unit) -> Unit> { { showPortfolioSheet = true } }
 
     // --------- Lista de CVs (sección visible en perfil) -------------
     data class ResumeDoc(
@@ -214,6 +233,19 @@ fun StudentProfileScreen(
     var editingFileName by remember { mutableStateOf("") }
     var editingLanguage by remember { mutableStateOf<ResumeLanguage?>(null) }
     
+    // --------- Lista de Portfolios (sección visible en perfil) -------------
+    data class PortfolioDoc(
+        val id: String,
+        val fileName: String,
+        val title: String,
+        val url: String,
+        val uploadedAt: com.google.firebase.Timestamp?,
+        val storagePath: String? = null
+    )
+
+    var portfolios by remember { mutableStateOf<List<PortfolioDoc>>(emptyList()) }
+    var editingPortfolioId by remember { mutableStateOf<String?>(null) }
+    var editingPortfolioTitle by remember { mutableStateOf("") }
 
     val resumeScope = rememberCoroutineScope()
 
@@ -294,6 +326,82 @@ fun StudentProfileScreen(
             kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
                 offlineResumeRepo.syncPendingEditsAwait()
                 offlineResumeRepo.syncPendingDeletesAwait()
+                offlinePortfolioRepo.syncPendingEditsAwait()
+                offlinePortfolioRepo.syncPendingDeletesAwait()
+            }
+        }
+    }
+
+    // --------- Listener de Portfolios desde Firestore ---------
+    DisposableEffect(Unit) {
+        val uid = FirebaseAuth.getInstance().currentUser?.uid
+        var reg: ListenerRegistration? = null
+        if (uid != null) {
+            reg = FirebaseFirestore.getInstance()
+                .collection("users").document(uid)
+                .collection("portfolios")
+                .orderBy("uploadedAt", Query.Direction.DESCENDING)
+                .addSnapshotListener { snap, _ ->
+                    val list = snap?.documents?.map { d ->
+                        PortfolioDoc(
+                            id = d.id,
+                            fileName = d.getString("fileName") ?: "",
+                            title = d.getString("title") ?: "",
+                            url = d.getString("url") ?: "",
+                            uploadedAt = d.getTimestamp("uploadedAt"),
+                            storagePath = d.getString("storagePath")
+                        )
+                    } ?: emptyList()
+                    portfolios = list
+
+                    kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                        val portfoliosJson = org.json.JSONArray().apply {
+                            list.forEach { portfolio ->
+                                put(org.json.JSONObject().apply {
+                                    put("id", portfolio.id)
+                                    put("fileName", portfolio.fileName)
+                                    put("title", portfolio.title)
+                                    put("url", portfolio.url)
+                                    put("uploadedAt", portfolio.uploadedAt?.toDate()?.time)
+                                    portfolio.storagePath?.let { put("storagePath", it) }
+                                })
+                            }
+                        }.toString()
+                        offlinePortfolioRepo.editStore.saveLocalPortfolios(portfoliosJson)
+                    }
+                }
+        }
+        onDispose { reg?.remove() }
+    }
+
+    // --------- Cargar Portfolios desde local storage ---------
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            val localJson = offlinePortfolioRepo.editStore.getLocalPortfolios()
+            if (localJson != null && portfolios.isEmpty()) {
+                try {
+                    val array = org.json.JSONArray(localJson)
+                    val localPortfolios = ArrayList<PortfolioDoc>(array.length())
+                    for (i in 0 until array.length()) {
+                        val obj = array.getJSONObject(i)
+                        localPortfolios.add(
+                            PortfolioDoc(
+                                id = obj.getString("id"),
+                                fileName = obj.getString("fileName"),
+                                title = obj.getString("title"),
+                                url = obj.optString("url", ""),
+                                uploadedAt = obj.optLong("uploadedAt", -1).takeIf { it > 0 }
+                                    ?.let { com.google.firebase.Timestamp(java.util.Date(it)) },
+                                storagePath = obj.optString("storagePath").takeIf { obj.has("storagePath") }
+                            )
+                        )
+                    }
+                    withContext(kotlinx.coroutines.Dispatchers.Main) {
+                        portfolios = localPortfolios
+                    }
+                } catch (e: Exception) {
+                    // Error loading local portfolios
+                }
             }
         }
     }
@@ -357,7 +465,17 @@ fun StudentProfileScreen(
                         )
                         Spacer(Modifier.height(8.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            IconButton(onClick = { isEditing = !isEditing }) {
+                            IconButton(onClick = { 
+                                val wasEditing = isEditing
+                                isEditing = !isEditing
+                                // Trackear cuando se inicia la edición (cambia de false a true)
+                                if (!wasEditing && isEditing) {
+                                    com.example.talent_bridge_kt.data.firebase.analytics.ProfileEditConversionAnalytics.logProfileEditStarted()
+                                } else if (wasEditing && !isEditing) {
+                                    // Si estaba editando y ahora no, podría ser cancelación
+                                    // Pero no trackeamos aquí porque podría ser después de guardar
+                                }
+                            }) {
                                 Icon(
                                     if (isEditing) Icons.Filled.Close else Icons.Filled.Edit,
                                     contentDescription = null, tint = TitleGreen
@@ -410,6 +528,20 @@ fun StudentProfileScreen(
                                     modifier = Modifier.fillMaxWidth()
                                 )
                             }
+                        }
+
+                        Spacer(Modifier.height(12.dp))
+                        OutlinedButton(
+                            onClick = onContactCenter,
+                            shape = RoundedCornerShape(24.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = Color.White,
+                                contentColor = LinkGreen
+                            ),
+                            border = BorderStroke(1.dp, LinkGreen),
+                            modifier = Modifier.align(Alignment.End)
+                        ) {
+                            Text("Contact Center")
                         }
                     }
                 }
@@ -484,7 +616,7 @@ fun StudentProfileScreen(
                         AddBox(
                             title = "Add Portafolio",
                             modifier = Modifier.weight(1f),
-                            onClick = onAddPortfolio
+                            onClick = { onAddPortfolioInternal(Unit) }
                         )
                     }
                 }
@@ -705,6 +837,187 @@ fun StudentProfileScreen(
                     }
                 }
 
+                // ------------------ My Portfolios (lista desde Firestore) ---------
+                item { SectionTitle("My Portfolios") }
+                item {
+                    if (portfolios.isEmpty()) {
+                        Text("Aún no has subido portfolios.", color = Color.DarkGray, fontSize = 13.sp)
+                    } else {
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            portfolios.forEach { portfolio ->
+                                Card(
+                                    shape = RoundedCornerShape(12.dp),
+                                    colors = CardDefaults.cardColors(containerColor = Color.White),
+                                ) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(12.dp)
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.fillMaxWidth(),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Column(modifier = Modifier.weight(1f)) {
+                                                if (editingPortfolioId == portfolio.id) {
+                                                    // Edit mode
+                                                    OutlinedTextField(
+                                                        value = editingPortfolioTitle,
+                                                        onValueChange = { editingPortfolioTitle = it },
+                                                        label = { Text("Title") },
+                                                        singleLine = true,
+                                                        modifier = Modifier.fillMaxWidth()
+                                                    )
+                                                    Spacer(Modifier.height(8.dp))
+                                                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                                        OutlinedButton(onClick = {
+                                                            editingPortfolioId = null
+                                                            editingPortfolioTitle = ""
+                                                        }) {
+                                                            Text("Cancel")
+                                                        }
+                                                        Button(onClick = {
+                                                            resumeScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                                                                editingPortfolioTitle.takeIf { it.isNotBlank() }?.let {
+                                                                    offlinePortfolioRepo.updateTitle(portfolio.id, it)
+                                                                }
+                                                                
+                                                                val localJson = offlinePortfolioRepo.editStore.getLocalPortfolios()
+                                                                if (localJson != null) {
+                                                                    try {
+                                                                        val array = org.json.JSONArray(localJson)
+                                                                        val updatedPortfolios = ArrayList<PortfolioDoc>(array.length())
+                                                                        for (i in 0 until array.length()) {
+                                                                            val obj = array.getJSONObject(i)
+                                                                            updatedPortfolios.add(
+                                                                                PortfolioDoc(
+                                                                                    id = obj.getString("id"),
+                                                                                    fileName = obj.getString("fileName"),
+                                                                                    title = obj.getString("title"),
+                                                                                    url = obj.optString("url", ""),
+                                                                                    uploadedAt = obj.optLong("uploadedAt", -1).takeIf { it > 0 }
+                                                                                        ?.let { com.google.firebase.Timestamp(java.util.Date(it)) },
+                                                                                    storagePath = obj.optString("storagePath").takeIf { obj.has("storagePath") }
+                                                                                )
+                                                                            )
+                                                                        }
+                                                                        withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                                                            portfolios = updatedPortfolios
+                                                                        }
+                                                                    } catch (e: Exception) {
+                                                                        withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                                                            val updatedPortfolios = portfolios.map { p ->
+                                                                                if (p.id == portfolio.id) {
+                                                                                    p.copy(title = editingPortfolioTitle.takeIf { it.isNotBlank() } ?: p.title)
+                                                                                } else p
+                                                                            }
+                                                                            portfolios = updatedPortfolios
+                                                                        }
+                                                                    }
+                                                                } else {
+                                                                    withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                                                        val updatedPortfolios = portfolios.map { p ->
+                                                                            if (p.id == portfolio.id) {
+                                                                                p.copy(title = editingPortfolioTitle.takeIf { it.isNotBlank() } ?: p.title)
+                                                                            } else p
+                                                                        }
+                                                                        portfolios = updatedPortfolios
+                                                                    }
+                                                                }
+                                                                
+                                                                withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                                                    editingPortfolioId = null
+                                                                    editingPortfolioTitle = ""
+                                                                }
+                                                            }
+                                                        }) {
+                                                            Text("Save")
+                                                        }
+                                                    }
+                                                } else {
+                                                    // Display mode
+                                                    Text(portfolio.title, fontWeight = FontWeight.SemiBold, color = TitleGreen)
+                                                    Spacer(Modifier.height(2.dp))
+                                                    Text(portfolio.fileName, fontSize = 12.sp, color = Color.DarkGray)
+                                                }
+                                            }
+                                            if (editingPortfolioId != portfolio.id) {
+                                                Row(
+                                                    verticalAlignment = Alignment.CenterVertically,
+                                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                                ) {
+                                                    if (isEditing) {
+                                                        IconButton(onClick = {
+                                                            editingPortfolioId = portfolio.id
+                                                            editingPortfolioTitle = portfolio.title
+                                                        }) {
+                                                            Icon(Icons.Filled.Edit, contentDescription = "Edit", tint = TitleGreen)
+                                                        }
+                                                    }
+                                                    IconButton(onClick = {
+                                                        resumeScope.launch(kotlinx.coroutines.Dispatchers.IO) {
+                                                            offlinePortfolioRepo.deletePortfolio(portfolio.id, portfolio.storagePath)
+                                                            
+                                                            val localJson = offlinePortfolioRepo.editStore.getLocalPortfolios()
+                                                            if (localJson != null) {
+                                                                try {
+                                                                    val array = org.json.JSONArray(localJson)
+                                                                    val updatedPortfolios = ArrayList<PortfolioDoc>(array.length())
+                                                                    for (i in 0 until array.length()) {
+                                                                        val obj = array.getJSONObject(i)
+                                                                        updatedPortfolios.add(
+                                                                            PortfolioDoc(
+                                                                                id = obj.getString("id"),
+                                                                                fileName = obj.getString("fileName"),
+                                                                                title = obj.getString("title"),
+                                                                                url = obj.optString("url", ""),
+                                                                                uploadedAt = obj.optLong("uploadedAt", -1).takeIf { it > 0 }
+                                                                                    ?.let { com.google.firebase.Timestamp(java.util.Date(it)) },
+                                                                                storagePath = obj.optString("storagePath").takeIf { obj.has("storagePath") }
+                                                                            )
+                                                                        )
+                                                                    }
+                                                                    withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                                                        portfolios = updatedPortfolios
+                                                                    }
+                                                                } catch (e: Exception) {
+                                                                    withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                                                        portfolios = portfolios.filter { it.id != portfolio.id }
+                                                                    }
+                                                                }
+                                                            } else {
+                                                                withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                                                    portfolios = portfolios.filter { it.id != portfolio.id }
+                                                                }
+                                                            }
+                                                        }
+                                                    }) {
+                                                        Icon(
+                                                            Icons.Filled.Delete,
+                                                            contentDescription = "Delete Portfolio",
+                                                            tint = MaterialTheme.colorScheme.error
+                                                        )
+                                                    }
+                                                    val ctx = LocalContext.current
+                                                    TextButton(onClick = {
+                                                        if (portfolio.url.isNotBlank()) {
+                                                            val i = Intent(Intent.ACTION_VIEW, Uri.parse(portfolio.url))
+                                                            ctx.startActivity(i)
+                                                        }
+                                                    }) {
+                                                        Icon(Icons.Filled.OpenInNew, contentDescription = null)
+                                                        Spacer(Modifier.width(6.dp))
+                                                        Text("Ver")
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
 
                 // ------------------ My Projects ------------------
                 item { SectionTitle("My Projects") }
@@ -758,12 +1071,28 @@ fun StudentProfileScreen(
                             Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            OutlinedButton(onClick = { isEditing = false }, modifier = Modifier.weight(1f)) {
+                            OutlinedButton(
+                                onClick = { 
+                                    com.example.talent_bridge_kt.data.firebase.analytics.ProfileEditConversionAnalytics.logProfileEditCancelled()
+                                    isEditing = false 
+                                }, 
+                                modifier = Modifier.weight(1f)
+                            ) {
                                 Text("Cancel")
                             }
                             Button(
                                 onClick = {
                                     val cur = (uiState as? ProfileUiState.Ready)?.profile ?: return@Button
+                                    
+                                    // Detectar si hubo cambios
+                                    val hasChanges = email != cur.email ||
+                                        linkedin != (cur.linkedin ?: "") ||
+                                        number != cur.phone ||
+                                        bio != (cur.bio ?: "")
+                                    
+                                    // Trackear intento de guardar
+                                    com.example.talent_bridge_kt.data.firebase.analytics.ProfileEditConversionAnalytics.logProfileSaveAttempted(hasChanges)
+                                    
                                     vm.update(
                                         cur.copy(
                                             email = email,
@@ -807,6 +1136,14 @@ fun StudentProfileScreen(
         CvMultiUploadSheet(
             repo = offlineResumeRepo.baseRepo,
             onDismiss = { showCvSheet = false }
+        )
+    }
+
+    // ====== Hoja/BottomSheet para subir múltiples Portfolios ======
+    if (showPortfolioSheet) {
+        PortfolioMultiUploadSheet(
+            repo = offlinePortfolioRepo.baseRepo,
+            onDismiss = { showPortfolioSheet = false }
         )
     }
 
@@ -1300,5 +1637,267 @@ private fun computeSha256(input: InputStream?): String? {
             md.update(buf, 0, read)
         }
         md.digest().joinToString("") { b -> "%02x".format(b) }
+    }
+}
+
+// ========== Portfolio Upload Sheet (similar a CV pero sin idioma) ==========
+
+private data class PortfolioItemUi(
+    val uri: Uri,
+    val title: String = "",
+    val progress: Int = 0,
+    val done: Boolean = false,
+    val error: String? = null,
+    val sha256: String? = null
+)
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun PortfolioMultiUploadSheet(
+    repo: PortfolioRepositorySimple,
+    onDismiss: () -> Unit
+) {
+    val context = LocalContext.current
+    val scope = rememberCoroutineScope()
+
+    var portfolioItems by remember { mutableStateOf<List<PortfolioItemUi>>(emptyList()) }
+    var isUploading by remember { mutableStateOf(false) }
+    var globalError by remember { mutableStateOf<String?>(null) }
+    var uploadedCount by remember { mutableStateOf(0) }
+
+    val picker = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetMultipleContents(),
+        onResult = { uris ->
+            try {
+                val allowed = uris.filter { uri ->
+                    try {
+                        val mime = context.contentResolver.getType(uri).orEmpty()
+                        mime == "application/pdf" ||
+                                mime == "application/msword" ||
+                                mime == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+                    } catch (e: Exception) {
+                        Log.e("PortfolioUpload", "Error checking file type for URI: $uri", e)
+                        false
+                    }
+                }
+                val current = portfolioItems.map { it.uri }.toSet()
+                val merged = portfolioItems + allowed.filterNot { it in current }.map { 
+                    PortfolioItemUi(
+                        uri = it,
+                        title = it.lastPathSegment?.substringBeforeLast(".") ?: "Portfolio"
+                    )
+                }
+                portfolioItems = merged
+                globalError = null
+            } catch (e: Exception) {
+                Log.e("PortfolioUpload", "Error processing selected files", e)
+                globalError = "Error al procesar archivos: ${e.message}"
+            }
+        }
+    )
+
+    fun launchPicker() {
+        try {
+            picker.launch("*/*")
+        } catch (e: Exception) {
+            Log.e("PortfolioUpload", "Error launching file picker", e)
+            globalError = "Error al abrir el selector de archivos: ${e.message}"
+        }
+    }
+    
+    val sheetState = rememberModalBottomSheetState()
+
+    ModalBottomSheet(
+        onDismissRequest = onDismiss,
+        sheetState = sheetState
+    ) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Text(
+                "Cargar Portfolios",
+                fontWeight = FontWeight.SemiBold,
+                color = TitleGreen,
+                fontSize = 18.sp
+            )
+
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                OutlinedButton(
+                    onClick = { launchPicker() },
+                    enabled = !isUploading,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Filled.AttachFile, contentDescription = null)
+                    Spacer(Modifier.width(6.dp))
+                    Text("Añadir archivos")
+                }
+
+                OutlinedButton(
+                    onClick = {
+                        portfolioItems = emptyList()
+                        uploadedCount = 0
+                        globalError = null
+                    },
+                    enabled = !isUploading && portfolioItems.isNotEmpty(),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Filled.Delete, contentDescription = null)
+                    Spacer(Modifier.width(6.dp))
+                    Text("Limpiar lista")
+                }
+
+                Button(
+                    onClick = {
+                        if (portfolioItems.isEmpty() || isUploading) return@Button
+                        isUploading = true
+                        globalError = null
+                        uploadedCount = 0
+
+                        scope.launch(Main) {
+                            try {
+                                val withHashes: List<PortfolioItemUi> = supervisorScope {
+                                    portfolioItems.mapIndexed { index, item ->
+                                        async(IO) {
+                                            try {
+                                                val inputStream = context.contentResolver.openInputStream(item.uri)
+                                                val hash = computeSha256(inputStream)
+                                                index to item.copy(sha256 = hash)
+                                            } catch (e: Exception) {
+                                                index to item.copy(sha256 = null)
+                                            }
+                                        }
+                                    }.awaitAll()
+                                        .sortedBy { it.first }
+                                        .map { it.second }
+                                }
+                                portfolioItems = withHashes
+
+                                val results = withContext(IO) {
+                                    try {
+                                        repo.uploadAll(
+                                            items = withHashes.map { it.uri to it.title },
+                                            onProgress = { prog ->
+                                                scope.launch(Main) {
+                                                    portfolioItems = portfolioItems.map { current ->
+                                                        if (current.uri == prog.uri) {
+                                                            current.copy(progress = prog.percent.coerceIn(0, 100))
+                                                        } else current
+                                                    }
+                                                }
+                                            }
+                                        )
+                                    } catch (e: Exception) {
+                                        throw e
+                                    }
+                                }
+
+                                uploadedCount = results.size
+                                portfolioItems = portfolioItems.map { it.copy(progress = 100, done = true) }
+                            } catch (e: CancellationException) {
+                                throw e
+                            } catch (e: Exception) {
+                                Log.e("PortfolioUpload", "Error uploading portfolios", e)
+                                globalError = e.message ?: "Error desconocido: ${e.javaClass.simpleName}"
+                            } finally {
+                                isUploading = false
+                            }
+                        }
+                    },
+                    enabled = portfolioItems.isNotEmpty() && !isUploading,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(Icons.Filled.CloudUpload, contentDescription = null)
+                    Spacer(Modifier.width(6.dp))
+                    Text(if (isUploading) "Subiendo..." else "Subir todo (${portfolioItems.size})")
+                }
+            }
+
+            if (portfolioItems.isEmpty()) {
+                Text(
+                    "Selecciona uno o varios archivos PDF. Puedes tocar \"Añadir archivos\" varias veces para acumular.",
+                    color = Color.DarkGray, fontSize = 13.sp
+                )
+            }
+
+            if (globalError != null) {
+                Text("Error: $globalError", color = MaterialTheme.colorScheme.error)
+            }
+            if (uploadedCount > 0) {
+                Text("Listo: $uploadedCount portfolio(s) subido(s).", fontWeight = FontWeight.Medium, color = TitleGreen)
+            }
+
+            if (portfolioItems.isNotEmpty()) {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .heightIn(max = 320.dp)
+                ) {
+                    items(portfolioItems.size) { idx ->
+                        val it = portfolioItems[idx]
+                        PortfolioRow(
+                            item = it,
+                            onTitleChange = { title ->
+                                portfolioItems = portfolioItems.mapIndexed { i, cur -> 
+                                    if (i == idx) cur.copy(title = title) else cur 
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                OutlinedButton(onClick = onDismiss, modifier = Modifier.fillMaxWidth()) { Text("Cerrar") }
+            }
+            Spacer(Modifier.height(8.dp))
+        }
+    }
+}
+
+@Composable
+private fun PortfolioRow(
+    item: PortfolioItemUi,
+    onTitleChange: (String) -> Unit
+) {
+    var title by remember { mutableStateOf(item.title) }
+    
+    Card {
+        Column(Modifier.padding(12.dp)) {
+            OutlinedTextField(
+                value = title,
+                onValueChange = { 
+                    title = it
+                    onTitleChange(it)
+                },
+                label = { Text("Título del Portfolio") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(item.uri.lastPathSegment ?: item.uri.toString(), fontSize = 11.sp, color = Color.Gray)
+            item.sha256?.let {
+                Spacer(Modifier.height(4.dp))
+                Text("SHA-256: ${it.take(16)}...", fontSize = 11.sp, color = Color.Gray)
+            }
+            Spacer(Modifier.height(8.dp))
+            LinearProgressIndicator(
+                progress = item.progress / 100f,
+                modifier = Modifier.fillMaxWidth()
+            )
+            Spacer(Modifier.height(4.dp))
+            Text(
+                if (item.done) "Completado" else "Progreso: ${item.progress}%",
+                fontSize = 12.sp
+            )
+            item.error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+        }
     }
 }
