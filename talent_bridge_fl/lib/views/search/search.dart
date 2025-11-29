@@ -106,6 +106,10 @@ class _SearchState extends State<Search> {
 
   void _onQueryChanged() {
     final q = _queryCtrl.text.trim().toLowerCase();
+
+    // Cancelamos cualquier timer anterior si el usuario sigue escribiendo
+    _debounce?.cancel();
+
     if (q.isEmpty) {
       setState(() {
         _searchResults = [];
@@ -114,7 +118,11 @@ class _SearchState extends State<Search> {
       return;
     }
 
-    _runSearch(q);
+    // Debounce: esperamos 200 ms; si en ese tiempo no cambió el texto,
+    // ejecutamos la búsqueda pesada
+    _debounce = Timer(const Duration(milliseconds: 200), () {
+      _runSearch(q);
+    });
   }
 
   void _runSearch(String q) {
