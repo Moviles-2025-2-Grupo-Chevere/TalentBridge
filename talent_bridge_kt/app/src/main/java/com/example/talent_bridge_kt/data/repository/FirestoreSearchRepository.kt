@@ -25,45 +25,63 @@ class FirestoreSearchRepository(
     private val searchCache = SearchCache()
 
     override suspend fun searchUsers(queryCsv: String, mode: String, limit: Int): List<User> {
-        val terms = queryCsv.split(",")
-            .map { it.trim().normalizeAsciiLower() }
-            .filter { it.isNotEmpty() }
-            .distinct()
-            .take(10)
+        // Optimización: procesar términos con ArrayList en lugar de operaciones encadenadas
+        val parts = queryCsv.split(",")
+        val termsList = ArrayList<String>(parts.size)
+        val termsSet = HashSet<String>()
+        
+        for (part in parts) {
+            val normalized = part.trim().normalizeAsciiLower()
+            if (normalized.isNotEmpty() && termsSet.add(normalized) && termsList.size < 10) {
+                termsList.add(normalized)
+            }
+        }
 
-        if (terms.isEmpty()) return emptyList()
-        val termsSet = terms.toSet()
+        if (termsList.isEmpty()) return emptyList()
         val col = db.collection("users")
 
         return if (mode.lowercase() == "any") {
             val snap = col
                 .whereEqualTo("isPublic", true)
-                .whereArrayContainsAny("skillsOrTopics", terms)
+                .whereArrayContainsAny("skillsOrTopics", termsList)
                 .limit(400)
                 .get(Source.SERVER)
                 .await()
 
-            val users = snap.documents.map { UserDto.from(it).toDomain() }
-
-            users.asSequence()
-                .filter { it.isPublic }
-                .map { u ->
-                    val matches = u.skills.count { it in termsSet }
-                    Ranked(u, matches)
+            // Optimización: usar loops en lugar de operaciones encadenadas
+            val users = ArrayList<User>(snap.documents.size)
+            for (doc in snap.documents) {
+                val user = UserDto.from(doc).toDomain()
+                if (user.isPublic) {
+                    users.add(user)
                 }
-                .filter { it.matches > 0 }
-                .sortedWith(
-                    compareByDescending<Ranked> { it.matches }
-                        .thenByDescending { it.user.skills.size }
+            }
 
-                )
-                .map { it.user }
-                .take(limit)
-                .toList()
+            // Optimización: calcular matches y rankear en un solo paso
+            val ranked = ArrayList<Ranked>(users.size)
+            for (u in users) {
+                var matches = 0
+                for (skill in u.skills) {
+                    if (skill in termsSet) matches++
+                }
+                if (matches > 0) {
+                    ranked.add(Ranked(u, matches))
+                }
+            }
+
+            ranked.sortWith(
+                compareByDescending<Ranked> { it.matches }
+                    .thenByDescending { it.user.skills.size }
+            )
+
+            val result = ArrayList<User>(limit.coerceAtMost(ranked.size))
+            for (i in 0 until limit.coerceAtMost(ranked.size)) {
+                result.add(ranked[i].user)
+            }
+            result
 
         } else {
-
-            val seed = terms.first()
+            val seed = termsList[0]
             val snap = col
                 .whereEqualTo("isPublic", true)
                 .whereArrayContains("skillsOrTopics", seed)
@@ -71,17 +89,32 @@ class FirestoreSearchRepository(
                 .get(Source.SERVER)
                 .await()
 
-            val users = snap.documents.map { UserDto.from(it).toDomain() }
+            // Optimización: usar loops en lugar de operaciones encadenadas
+            val users = ArrayList<User>(snap.documents.size)
+            for (doc in snap.documents) {
+                val user = UserDto.from(doc).toDomain()
+                if (user.isPublic) {
+                    // Verificar que tiene todos los términos
+                    var hasAll = true
+                    for (term in termsList) {
+                        if (term !in user.skills) {
+                            hasAll = false
+                            break
+                        }
+                    }
+                    if (hasAll) {
+                        users.add(user)
+                    }
+                }
+            }
 
-            users.asSequence()
-                .filter { it.isPublic }
-                .filter { u -> terms.all { t -> u.skills.contains(t) } }
-                .sortedWith(
-                    compareByDescending<User> { it.skills.size }
+            users.sortWith(compareByDescending<User> { it.skills.size })
 
-                )
-                .take(limit)
-                .toList()
+            val result = ArrayList<User>(limit.coerceAtMost(users.size))
+            for (i in 0 until limit.coerceAtMost(users.size)) {
+                result.add(users[i])
+            }
+            result
         }
     }
     private data class Ranked(val user: User, val matches: Int)
@@ -102,20 +135,27 @@ class FirestoreSearchRepository(
             .get(Source.SERVER)
             .await()
         
-        val allUsers = snap.documents
-            .map { UserDto.from(it).toDomain() }
-            .filter { it.isPublic }
-        
-
-        val matchingUsers = allUsers.filter { user ->
-            user.skills.any { skill -> 
-
-                skill == normalizedTerm
+        // Optimización: usar loops en lugar de map/filter encadenados
+        val matchingUsers = ArrayList<User>(snap.documents.size)
+        for (doc in snap.documents) {
+            val user = UserDto.from(doc).toDomain()
+            if (user.isPublic) {
+                // Buscar el término en las habilidades
+                for (skill in user.skills) {
+                    if (skill == normalizedTerm) {
+                        matchingUsers.add(user)
+                        break
+                    }
+                }
             }
         }
-        
 
-        matchingUsers.take(limit)
+        val resultSize = limit.coerceAtMost(matchingUsers.size)
+        val result = ArrayList<User>(resultSize)
+        for (i in 0 until resultSize) {
+            result.add(matchingUsers[i])
+        }
+        result
     }
     
 
@@ -209,26 +249,45 @@ class FirestoreSearchRepository(
         val userMap = mutableMapOf<String, User>()
         val userMatchesMap = mutableMapOf<String, MutableSet<String>>()
         
-        allResults.forEach { (term, users) ->
-            users.forEach { user ->
-                if (term in user.skills.toSet()) {
+        // Optimización: evitar toSet() dentro del loop - usar contains directamente
+        for ((term, users) in allResults) {
+            for (user in users) {
+                // Verificar si el término está en las habilidades sin crear Set
+                var hasTerm = false
+                for (skill in user.skills) {
+                    if (skill == term) {
+                        hasTerm = true
+                        break
+                    }
+                }
+                if (hasTerm) {
                     userMap[user.id] = user
-                    userMatchesMap.getOrPut(user.id) { mutableSetOf() }.add(term)
+                    val matchesSet = userMatchesMap.getOrPut(user.id) { mutableSetOf() }
+                    matchesSet.add(term)
                 }
             }
         }
 
-        val ranked = userMap.values.map { user ->
+        // Optimización: usar loops en lugar de map/filter encadenados
+        val ranked = ArrayList<Ranked>(userMap.size)
+        for (user in userMap.values) {
             val matches = userMatchesMap[user.id]?.size ?: 0
-            Ranked(user, matches)
+            if (matches > 0) {
+                ranked.add(Ranked(user, matches))
+            }
         }
-            .filter { it.matches > 0 }
-            .sortedWith(
-                compareByDescending<Ranked> { it.matches }
-                    .thenByDescending { it.user.skills.size }
-            )
+
+        ranked.sortWith(
+            compareByDescending<Ranked> { it.matches }
+                .thenByDescending { it.user.skills.size }
+        )
         
-        ranked.map { it.user }.take(limit)
+        val resultSize = limit.coerceAtMost(ranked.size)
+        val result = ArrayList<User>(resultSize)
+        for (i in 0 until resultSize) {
+            result.add(ranked[i].user)
+        }
+        result
     }
     
     suspend fun getAllProfiles(limit: Int = 200): List<User> {
