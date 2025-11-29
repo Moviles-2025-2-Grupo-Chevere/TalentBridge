@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:async';
 import 'package:talent_bridge_fl/domain/user_entity.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
 import 'package:talent_bridge_fl/components/user_pfp_cached.dart';
@@ -29,6 +30,7 @@ class _SearchState extends State<Search> {
   final _queryCtrl = TextEditingController();
   final _firebaseService = FirebaseService();
   final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
+  Timer? _debounce;
 
   // ---- BQ: medir time-to-first-content de People ----
   late final ScreenTimer _tPeople;
