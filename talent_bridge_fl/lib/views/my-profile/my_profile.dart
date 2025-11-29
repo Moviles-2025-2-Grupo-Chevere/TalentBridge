@@ -536,7 +536,7 @@ class _MyProfileState extends ConsumerState<MyProfile> {
       context: context,
       useSafeArea: true,
       isScrollControlled: true,
-      builder: (context) => AddPortfolio(),
+      builder: (_) => AddPortfolio(),
     );
   }
 
