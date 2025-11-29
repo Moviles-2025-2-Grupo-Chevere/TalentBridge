@@ -5,10 +5,12 @@ import androidx.room.RoomDatabase
 import com.example.talent_bridge_kt.data.local.dao.FeedProjectDao
 import com.example.talent_bridge_kt.data.local.dao.FeedStudentDao
 import com.example.talent_bridge_kt.data.local.dao.PendingApplicationDao
+import com.example.talent_bridge_kt.data.local.dao.PendingContactReviewDao
 import com.example.talent_bridge_kt.data.local.dao.ProjectDao
 import com.example.talent_bridge_kt.data.local.entities.FeedProjectEntity
 import com.example.talent_bridge_kt.data.local.entities.FeedStudentEntity
 import com.example.talent_bridge_kt.data.local.entities.PendingApplicationEntity
+import com.example.talent_bridge_kt.data.local.entities.PendingContactReviewEntity
 import com.example.talent_bridge_kt.data.local.entities.ProjectEntity
 
 @Database(
@@ -16,13 +18,15 @@ import com.example.talent_bridge_kt.data.local.entities.ProjectEntity
         ProjectEntity::class,
         FeedProjectEntity::class,
         FeedStudentEntity::class,
-        PendingApplicationEntity::class
+        PendingApplicationEntity::class,
+        PendingContactReviewEntity::class
     ],
-    version = 6
+    version = 7
 )
 abstract class AppDatabase : RoomDatabase() {
     abstract fun projectDao(): ProjectDao
     abstract fun feedProjectDao(): FeedProjectDao
     abstract fun feedStudentDao(): FeedStudentDao
     abstract fun pendingApplicationDao(): PendingApplicationDao
+    abstract fun pendingContactReviewDao(): PendingContactReviewDao
 }

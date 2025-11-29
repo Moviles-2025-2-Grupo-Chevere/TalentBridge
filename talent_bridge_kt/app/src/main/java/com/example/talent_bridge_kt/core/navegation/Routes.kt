@@ -20,6 +20,7 @@ object Routes {
 
     const val InitiativeDetail = "initiative_detail"
     const val LateralMenu = "lateral_menu"
+    const val ContactCenter = "contact_center"
 
     fun someoneElse(uid: String) = "$SomeOneElseProfileBase/$uid"
 }
