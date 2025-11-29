@@ -15,6 +15,7 @@ import kotlinx.coroutines.launch
 import com.example.talent_bridge_kt.data.analytics.ProfileAnalytics
 import com.example.talent_bridge_kt.data.repository.EventualConnectivityProfileRepository
 import com.example.talent_bridge_kt.data.firebase.analytics.FeatureUsageAnalytics
+import com.example.talent_bridge_kt.data.firebase.analytics.ProfileEditConversionAnalytics
 
 sealed class ProfileUiState {
     data object Loading : ProfileUiState()
@@ -72,6 +73,19 @@ class ProfileViewModel(
                 ProfileAnalytics.pushUserProperties(res.data)
                 ProfileAnalytics.logProfileSaved(res.data)
                 
+                // Trackear conversión: guardado exitoso
+                val fieldsChanged = mutableListOf<String>()
+                before?.let { prev ->
+                    if (prev.email != res.data.email) fieldsChanged.add("email")
+                    if (prev.linkedin != res.data.linkedin) fieldsChanged.add("linkedin")
+                    if (prev.phone != res.data.phone) fieldsChanged.add("phone")
+                    if (prev.bio != res.data.bio) fieldsChanged.add("bio")
+                    if (prev.tags != res.data.tags) fieldsChanged.add("tags")
+                }
+                ProfileEditConversionAnalytics.logProfileSaveSuccess(
+                    fieldsChanged = if (fieldsChanged.isNotEmpty()) fieldsChanged else null
+                )
+                
                 // Trackear como feature usage (edit profile)
                 FeatureUsageAnalytics.logEditProfile()
                 
@@ -80,7 +94,11 @@ class ProfileViewModel(
                         .logProjectsUpdated(res.data.projects.size)
                 }
             }
-            is Resource.Error -> _uiState.value = ProfileUiState.Error(res.message)
+            is Resource.Error -> {
+                // Trackear conversión: guardado fallido
+                ProfileEditConversionAnalytics.logProfileSaveFailed(res.message)
+                _uiState.value = ProfileUiState.Error(res.message)
+            }
         }
     }
 
