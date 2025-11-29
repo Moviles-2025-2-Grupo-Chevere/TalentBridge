@@ -1,11 +1,14 @@
 import 'dart:collection';
 
+import 'package:firebase_ai/firebase_ai.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 import 'package:flutter/material.dart';
 import 'package:talent_bridge_fl/data/major_service.dart';
 import 'package:talent_bridge_fl/domain/skill_entity.dart';
 import 'package:talent_bridge_fl/domain/update_user_dto.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
 import 'package:talent_bridge_fl/services/skills_service.dart';
+import 'package:talent_bridge_fl/views/edit_profile/major_image.dart';
 import 'package:talent_bridge_fl/views/select_skills/select_skills.dart';
 
 const darkBlue = Color(0xFF3E6990);
@@ -28,6 +31,8 @@ class _EditProfileState extends State<EditProfile> {
   final _fb = FirebaseService();
   final _formKey = GlobalKey<FormState>();
   var _formIsValid = false;
+  var _showDescriptionProgress = false;
+  final _analytics = FirebaseAnalytics.instance;
   // Form values
   String displayName = '';
   String headline = '';
@@ -35,8 +40,20 @@ class _EditProfileState extends State<EditProfile> {
   String mobileNumber = '';
   String description = '';
   String major = '';
+  bool _descriptionAiGenerated = false;
   List<SkillEntity> _skills = SkillsService.getFallbackSkills();
   final _selectedSkills = HashSet<SkillEntity>();
+  final model = FirebaseAI.googleAI().generativeModel(
+    model: 'gemini-2.5-flash',
+    systemInstruction: Content.system(
+      """ Eres un generador de descripciones para perfiles de linkedin.
+          En base a una serie de atributos del usuario debes generar una descripción de menos de 50
+          palabras para el usuario que sea atractiva para potenciales empleadores.
+          Escríbelo como si el usuario dueño del perfil lo hubiera escrito en primera persona.
+          Solo escribe la descripción sin ningún tipo de preámbulo o texto adicional.
+          Solo escribe una única opción.""",
+    ),
+  );
 
   _submitData() async {
     if (_formKey.currentState!.validate()) {
@@ -52,6 +69,11 @@ class _EditProfileState extends State<EditProfile> {
       );
       await _fb.updateUserProfile(
         updateUserDto,
+      );
+
+      await _analytics.logEvent(
+        name: "profile_updated_fl",
+        parameters: {'aiGenerated': _descriptionAiGenerated.toString()},
       );
       print("Updated user document");
       widget.onUpdate(updateUserDto);
@@ -166,6 +188,8 @@ class _EditProfileState extends State<EditProfile> {
     });
   }
 
+  final TextEditingController _descriptionController = TextEditingController();
+
   @override
   void initState() {
     super.initState();
@@ -183,7 +207,15 @@ class _EditProfileState extends State<EditProfile> {
         (e) => SkillEntity(e, null),
       ),
     );
-    // 🪄 Schedule validation after first frame
+    _descriptionController.text = widget.existingData.description;
+    _descriptionController.addListener(
+      () {
+        var value = _descriptionController.value;
+        if (value.text.isEmpty) {
+          _descriptionAiGenerated = false;
+        }
+      },
+    );
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final currentState = _formKey.currentState;
       if (currentState != null) {
@@ -207,6 +239,7 @@ class _EditProfileState extends State<EditProfile> {
       ),
       validator: validateDisplayName,
       onSaved: (newValue) => displayName = newValue ?? '',
+      onChanged: (value) => displayName = value,
     );
 
     var headlineField = TextFormField(
@@ -218,6 +251,7 @@ class _EditProfileState extends State<EditProfile> {
       ),
       validator: validateHeadline,
       onSaved: (newValue) => headline = newValue ?? '',
+      onChanged: (newValue) => headline = newValue,
     );
     var linkedinField = TextFormField(
       initialValue: user.linkedin,
@@ -241,7 +275,8 @@ class _EditProfileState extends State<EditProfile> {
       onSaved: (newValue) => mobileNumber = newValue ?? '',
     );
     var descriptionField = TextFormField(
-      initialValue: user.description,
+      // initialValue: user.description,
+      controller: _descriptionController,
       autovalidateMode: AutovalidateMode.onUserInteraction,
       maxLength: 1000,
       decoration: const InputDecoration(
@@ -254,25 +289,102 @@ class _EditProfileState extends State<EditProfile> {
       validator: validateDescription,
       onSaved: (newValue) => description = newValue ?? '',
     );
-    var majorField = DropdownButtonFormField(
-      value: user.major,
-      items: [
-        DropdownMenuItem(
-          value: '',
-          child: Text('None'),
-        ),
-        ...MajorService.getMajors().map(
-          (e) => DropdownMenuItem(
-            value: e,
-            child: Text(e),
-          ),
+
+    var generateButton = ElevatedButton.icon(
+      onPressed: _showDescriptionProgress
+          ? null
+          : () async {
+              var promptText =
+                  """Para el siguiente perfil, retorna una única descripción para su perfil de linkedin.
+          
+          # Perfil
+
+          + Nombre: ${displayName.isNotEmpty ? displayName : user.displayName}
+          + Carrera: ${major.isNotEmpty ? major : user.major}
+          + Habilidades: ${_selectedSkills.map(
+                    (e) => e.label,
+                  ).join(", ")}
+          + Headline: ${headline.isNotEmpty ? headline : user.headline}
+          
+          Descripción:
+          """;
+              print(promptText);
+              final prompt = [
+                Content.text(promptText),
+              ];
+              final response = model.generateContentStream(prompt);
+              var textResponse = "";
+              setState(() {
+                _showDescriptionProgress = true;
+              });
+              await for (final chunk in response) {
+                print("${chunk.text} - ");
+                textResponse += chunk.text ?? '';
+                _descriptionController.text = textResponse;
+              }
+              setState(() {
+                _showDescriptionProgress = false;
+                _descriptionAiGenerated = true;
+              });
+            },
+      label: Text("Generate Description"),
+      icon: Icon(Icons.auto_awesome),
+    );
+
+    var generateButtonRow = Row(
+      children: [
+        generateButton,
+        Spacer(),
+        if (_showDescriptionProgress) CircularProgressIndicator(),
+        SizedBox(
+          width: 8,
         ),
       ],
-      onChanged: (value) {},
-      onSaved: (newValue) => major = newValue ?? '',
-      decoration: const InputDecoration(
-        label: Text('Major'),
-      ),
+    );
+
+    var majorField = FutureBuilder(
+      future: MajorService.getMajors(),
+      builder: (context, snap) {
+        List<DropdownMenuItem<String>> majorWidgets = [];
+        Set<String> names = {};
+        if (snap.hasData) {
+          var majorData = snap.data!;
+          majorWidgets = majorData
+              .map(
+                (e) => DropdownMenuItem(
+                  value: e.name,
+                  child: Row(
+                    children: [
+                      if (e.icon != null)
+                        MajorImage(
+                          icon: e.icon!,
+                        ),
+                      SizedBox(width: 8),
+                      Text(e.name),
+                    ],
+                  ),
+                ),
+              )
+              .toList();
+          names.addAll(majorData.map((e) => e.name));
+        }
+        var userMajor = names.contains(user.major) ? user.major : null;
+        return DropdownButtonFormField(
+          value: userMajor,
+          items: [
+            DropdownMenuItem(
+              value: '',
+              child: Text('None'),
+            ),
+            ...majorWidgets,
+          ],
+          onChanged: (value) => major = value ?? '',
+          onSaved: (newValue) => major = newValue ?? '',
+          decoration: const InputDecoration(
+            label: Text('Major'),
+          ),
+        );
+      },
     );
     return SizedBox(
       height: double.infinity,
@@ -297,6 +409,8 @@ class _EditProfileState extends State<EditProfile> {
                 mobileNumberField,
                 SizedBox(height: 16),
                 descriptionField,
+                SizedBox(height: 8),
+                generateButtonRow,
                 SizedBox(height: 16),
                 majorField,
                 SizedBox(height: 16),

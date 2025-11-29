@@ -14,14 +14,13 @@ import 'package:hive_flutter/hive_flutter.dart';
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  // await deleteDatabase(join(await getDatabasesPath(), 'talent_bridge.db'));
+  //await deleteDatabase(join(await getDatabasesPath(), 'talent_bridge.db'));
 
   await Hive.initFlutter(); // Initialize Hive for local storage
-
-  // await deleteDatabase(join(await getDatabasesPath(), 'talent_bridge.db'));
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
+
   runApp(ProviderScope(child: const TalentBridge()));
 }
 
@@ -57,7 +56,7 @@ class _TalentBridgeState extends ConsumerState<TalentBridge> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _connectivityService.initialize(this.context);
+      _connectivityService.initialize(context);
     });
     _fb.setupNotifications();
     setUpInteractedMessage();

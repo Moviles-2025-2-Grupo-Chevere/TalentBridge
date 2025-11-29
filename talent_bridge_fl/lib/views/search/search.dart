@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:async';
 import 'package:talent_bridge_fl/domain/user_entity.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
-
-// ---- BQ timer helper (nuevo) ----
+import 'package:talent_bridge_fl/components/user_pfp_cached.dart';
+import 'package:talent_bridge_fl/views//user-profile/user_profile.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:talent_bridge_fl/analytics/analytics_timer.dart';
+import 'package:talent_bridge_fl/services/search_local_cache.dart';
+import 'package:talent_bridge_fl/views/search/search_analytics_debug.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
 
 // ---- Tokens ----
 const kBg = Color(0xFFFEF7E6); // cream
@@ -24,6 +29,8 @@ class _SearchState extends State<Search> {
   // Search state
   final _queryCtrl = TextEditingController();
   final _firebaseService = FirebaseService();
+  final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
+  Timer? _debounce;
 
   // ---- BQ: medir time-to-first-content de People ----
   late final ScreenTimer _tPeople;
@@ -36,6 +43,9 @@ class _SearchState extends State<Search> {
   // Search results
   List<UserEntity> _searchResults = [];
   Map<UserEntity, double> _userScores = {};
+
+  // Resultados cacheados (uid + displayName)
+  List<SearchUserSummary> _cachedResults = [];
 
   // Fake “recent” items for the UI
   final _recents = const <String>[
@@ -54,6 +64,7 @@ class _SearchState extends State<Search> {
     );
 
     _loadUserData();
+    _loadCachedSearchResults();
     // Listen for search bar changes
     _queryCtrl.addListener(_onQueryChanged);
     WidgetsBinding.instance.addPostFrameCallback((_) {});
@@ -78,8 +89,17 @@ class _SearchState extends State<Search> {
     });
   }
 
+  Future<void> _loadCachedSearchResults() async {
+    final cached = await SearchLocalCache.getLastUserResults();
+    if (!mounted) return;
+    setState(() {
+      _cachedResults = cached;
+    });
+  }
+
   @override
   void dispose() {
+    _debounce?.cancel();
     _queryCtrl.removeListener(_onQueryChanged);
     _queryCtrl.dispose();
     super.dispose();
@@ -87,32 +107,47 @@ class _SearchState extends State<Search> {
 
   void _onQueryChanged() {
     final q = _queryCtrl.text.trim().toLowerCase();
+
+    // Cancelamos cualquier timer anterior si el usuario sigue escribiendo
+    _debounce?.cancel();
+
     if (q.isEmpty) {
       setState(() {
         _searchResults = [];
+        _userScores = {};
       });
       return;
     }
+
+    // Debounce: esperamos 200 ms; si en ese tiempo no cambió el texto,
+    // ejecutamos la búsqueda pesada
+    _debounce = Timer(const Duration(milliseconds: 200), () {
+      _runSearch(q);
+    });
+  }
+
+  void _runSearch(String q) {
     final projects = _currentUser?.projects ?? [];
     final skills = projects
         .expand((i) => i.skills)
         .map((j) => j.toLowerCase())
         .toList();
+
     final frequencies = skills.fold<Map<String, int>>(
       {},
       (map, item) => map..update(item, (v) => v + 1, ifAbsent: () => 1),
     );
+
     final weights = frequencies.map(
       (s, i) => MapEntry(s, i / (skills.isEmpty ? 1 : skills.length)),
     );
+
     final filteredUsers = _allUsers
         .where((u) => u.displayName.toLowerCase().contains(q))
         .toList();
 
-    // ---- BQ: primera vez que hay resultados -> dispara evento ----
     if (!_ttfcSent && filteredUsers.isNotEmpty) {
       _ttfcSent = true;
-      // Fuente 'cache' porque la lista sale de memoria local (no pegamos a red aquí)
       _tPeople.endOnce(source: 'cache', itemCount: filteredUsers.length);
     }
 
@@ -125,20 +160,58 @@ class _SearchState extends State<Search> {
       }
       scores[u] = score;
     }
+
     filteredUsers.sort((a, b) => -scores[a]!.compareTo(scores[b]!));
+
     setState(() {
       _userScores = scores;
       _searchResults = filteredUsers;
     });
+
+    // Guardamos los resultados en cache local
+    if (filteredUsers.isNotEmpty) {
+      // ignore: unawaited_futures
+      SearchLocalCache.saveLastUserResults(filteredUsers);
+    }
   }
 
-  void _applySearch() {
+  Future<void> _logSearchAnalytics(String query, int resultsCount) async {
+    try {
+      await FirebaseFirestore.instance.collection('search_logs').add({
+        'query': query.trim().toLowerCase(),
+        'resultsCount': resultsCount,
+        'timestamp': FieldValue.serverTimestamp(),
+        'userId': _currentUser?.id,
+      });
+    } catch (e) {
+      debugPrint('Error logging search: $e');
+    }
+  }
+
+  Future<void> _applySearch() async {
     final q = _queryCtrl.text.trim();
     if (q.isEmpty) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Buscando: "$q"')),
+
+    final resultsCount = _searchResults.length;
+    final isZeroResult = resultsCount == 0;
+
+    // 1) Log en Firestore
+    await _logSearchAnalytics(q, resultsCount);
+
+    // 2) Log en Firebase Analytics
+    await _analytics.logEvent(
+      name: 'search_users',
+      parameters: {
+        'query': q.toLowerCase(),
+        'results_count': resultsCount,
+        'zero_result': isZeroResult,
+      },
     );
-    // TODO: hook real search here
+
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text('Searching: "$q" ($resultsCount results)')),
+    );
   }
 
   @override
@@ -146,6 +219,12 @@ class _SearchState extends State<Search> {
     final labelStyle = Theme.of(
       context,
     ).textTheme.bodyMedium?.copyWith(color: kAmber);
+
+    final queryText = _queryCtrl.text.trim().toLowerCase();
+
+    final fallbackResults = _cachedResults
+        .where((s) => s.displayName.toLowerCase().contains(queryText))
+        .toList();
 
     return SafeArea(
       child: Column(
@@ -171,13 +250,12 @@ class _SearchState extends State<Search> {
                             inputFormatters: [
                               LengthLimitingTextInputFormatter(100),
                             ],
-                            decoration: _pillInput(), // sin icono de lupa
+                            decoration: _pillInput(),
                           ),
                         ),
                       ),
                       const SizedBox(width: 8),
 
-                      // Botón redondo de filtros
                       _shadowWrap(
                         Material(
                           color: Colors.white,
@@ -202,7 +280,6 @@ class _SearchState extends State<Search> {
 
                   const SizedBox(height: 24),
 
-                  // Search results
                   if (_searchResults.isNotEmpty) ...[
                     Text('Results', style: labelStyle),
                     const SizedBox(height: 12),
@@ -210,7 +287,58 @@ class _SearchState extends State<Search> {
                       (user) => SearchCard(
                         title: user.displayName,
                         score: _userScores[user],
+                        leading: UserPfpCached(
+                          uid: user.id,
+                          radius: 18,
+                        ),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => UserProfile(
+                                userId: user.id,
+                              ),
+                            ),
+                          );
+                        },
                       ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+
+                  if (_searchResults.isEmpty &&
+                      queryText.isNotEmpty &&
+                      fallbackResults.isNotEmpty) ...[
+                    Text('Last results (cached)', style: labelStyle),
+                    const SizedBox(height: 12),
+                    ...fallbackResults.map(
+                      (summary) => SearchCard(
+                        title: summary.displayName,
+                        leading: UserPfpCached(
+                          uid: summary.uid,
+                          radius: 18,
+                        ),
+                        onTap: () {
+                          Navigator.of(context).push(
+                            MaterialPageRoute(
+                              builder: (_) => UserProfile(
+                                userId: summary.uid,
+                              ),
+                            ),
+                          );
+                        },
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                  ],
+
+                  if (_searchResults.isEmpty &&
+                      queryText.isNotEmpty &&
+                      fallbackResults.isEmpty) ...[
+                    Text('No results found', style: labelStyle),
+                    const SizedBox(height: 8),
+                    const Text(
+                      'Try searching for another name or check the spelling.',
+                      style: TextStyle(fontSize: 12),
                     ),
                     const SizedBox(height: 24),
                   ],
@@ -222,6 +350,23 @@ class _SearchState extends State<Search> {
                     (title) => SearchCard(
                       title: title,
                       isRecent: true,
+                    ),
+                  ),
+                  // Botón debug para ver analytics de búsqueda
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const SearchAnalyticsDebugPage(),
+                          ),
+                        );
+                      },
+                      child: const Text(
+                        'Open search analytics (debug)',
+                        style: TextStyle(fontSize: 12),
+                      ),
                     ),
                   ),
                 ],
@@ -240,11 +385,17 @@ class SearchCard extends StatelessWidget {
     required this.title,
     this.score,
     this.isRecent = false,
+    this.leading,
+    this.onTap,
   });
 
   final String title;
   final bool isRecent;
   final double? score;
+
+  final Widget? leading;
+
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -258,7 +409,7 @@ class SearchCard extends StatelessWidget {
               Icons.access_time,
               color: Colors.black45,
             ),
-          const SizedBox(width: 8),
+          if (isRecent) const SizedBox(width: 8),
           Expanded(
             child: Material(
               color: Colors.white,
@@ -267,11 +418,13 @@ class SearchCard extends StatelessWidget {
               borderRadius: BorderRadius.circular(12),
               child: InkWell(
                 borderRadius: BorderRadius.circular(12),
-                onTap: () => ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Abrir "$title"'),
-                  ),
-                ),
+                onTap:
+                    onTap ??
+                    () => ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Opening "$title"'),
+                      ),
+                    ),
                 child: Padding(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 12,
@@ -279,15 +432,16 @@ class SearchCard extends StatelessWidget {
                   ),
                   child: Row(
                     children: [
-                      CircleAvatar(
-                        radius: 16,
-                        backgroundColor: Colors.purple.shade200,
-                        child: const Icon(
-                          Icons.blur_on,
-                          size: 18,
-                          color: Colors.white,
-                        ),
-                      ),
+                      leading ??
+                          CircleAvatar(
+                            radius: 16,
+                            backgroundColor: Colors.purple.shade200,
+                            child: const Icon(
+                              Icons.blur_on,
+                              size: 18,
+                              color: Colors.white,
+                            ),
+                          ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
@@ -300,7 +454,12 @@ class SearchCard extends StatelessWidget {
                         ),
                       ),
                       if (score != null)
-                        Expanded(child: Text(score!.toStringAsPrecision(3))),
+                        Expanded(
+                          child: Text(
+                            score!.toStringAsPrecision(3),
+                            textAlign: TextAlign.end,
+                          ),
+                        ),
                     ],
                   ),
                 ),

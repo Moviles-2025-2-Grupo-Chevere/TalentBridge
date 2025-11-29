@@ -8,15 +8,18 @@ import 'package:firebase_auth/firebase_auth.dart' as firebase_core;
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
+import 'package:talent_bridge_fl/domain/member_entity.dart';
 import 'package:talent_bridge_fl/domain/project_entity.dart';
 import 'package:talent_bridge_fl/domain/update_user_dto.dart';
 import 'package:talent_bridge_fl/domain/user_entity.dart' hide Source;
+import 'package:talent_bridge_fl/services/member_local_cache.dart';
 
 class FirebaseService {
   final _auth = FirebaseAuth.instance;
   final _db = FirebaseFirestore.instance;
   final _storage = FirebaseStorage.instance;
   final _analytics = FirebaseAnalytics.instance;
+  final _memberCache = MemberCacheService();
 
   String? currentUid() => _auth.currentUser?.uid;
 
@@ -69,6 +72,16 @@ class FirebaseService {
     final uid = currentUid();
     if (uid == null) return null;
     return _db.collection('users').doc(uid).snapshots();
+  }
+
+  Stream<UserEntity> userStreamById(String uid) {
+    return _db.collection('users').doc(uid).snapshots().map((snap) {
+      final data = snap.data() ?? <String, dynamic>{};
+      return UserEntity.fromMap({
+        ...data,
+        'id': snap.id,
+      });
+    });
   }
 
   Future<UserEntity?> getCurrentUserEntity(bool? useOnline) async {
@@ -129,7 +142,7 @@ class FirebaseService {
 
       return allProjects;
     } catch (e) {
-      print("Error mapping projects: " + e.toString());
+      print("Error mapping projects: $e");
       rethrow;
     }
   }
@@ -140,11 +153,11 @@ class FirebaseService {
     required String projectId,
   }) async {
     final docRef = _db.collection('users').doc(userId);
-    await docRef.update({
+    await docRef.set({
       'applications': FieldValue.arrayUnion([
         {"projectId": projectId, "createdById": createdById},
       ]),
-    });
+    }, SetOptions(merge: true));
 
     // Get user major
     final userEntity = await getCurrentUserEntity(false);
@@ -153,7 +166,8 @@ class FirebaseService {
 
     // Use a composite ID: userId_projectId to prevent duplicates
     final applicationId = '${userId}_$projectId';
-
+    debugPrint('Application ID: $applicationId');
+    debugPrint('Project ID: $projectId');
     // Use .set() with merge instead of .add()
     await _db.collection('projectApplications').doc(applicationId).set({
       'appliedDate': FieldValue.serverTimestamp(),
@@ -179,22 +193,42 @@ class FirebaseService {
     required String projectId,
   }) async {
     try {
-      // Query for users where applications array contains the projectId
+      debugPrint('Getting applicants for project $projectId');
+
+      // Query the projectApplications collection instead
       final querySnapshot = await _db
-          .collection('users')
-          .where('applications', arrayContains: projectId)
+          .collection('projectApplications')
+          .where('project_id', isEqualTo: projectId)
           .get();
 
-      // Map results to a list of user IDs and names
+      debugPrint('Query returned ${querySnapshot.docs.length} documents');
+
       List<Map<String, String>> applicants = [];
 
       for (var doc in querySnapshot.docs) {
-        final userData = doc.data();
-        applicants.add({
-          'id': doc.id,
-          'name': userData['displayName'] ?? 'Unnamed User',
-        });
+        final appData = doc.data();
+        final userId = appData['user_id'] as String?;
+
+        if (userId != null) {
+          // Fetch user details
+          try {
+            final userDoc = await _db.collection('users').doc(userId).get();
+            if (userDoc.exists) {
+              final userData = userDoc.data()!;
+              applicants.add({
+                'id': userId,
+                'name': userData['displayName'] ?? 'Unnamed User',
+              });
+            }
+          } catch (e) {
+            debugPrint('Error fetching user $userId: $e');
+          }
+        }
       }
+
+      debugPrint(
+        'Found ${applicants.length} applicants for project $projectId',
+      );
 
       return applicants;
     } catch (e) {
@@ -506,6 +540,17 @@ class FirebaseService {
     }
   }
 
+  Future<String?> getPfpUrlByUid(String uid) async {
+    try {
+      final ref = _storage.ref().child('profile_pictures/$uid');
+      return await ref.getDownloadURL();
+    } on FirebaseException catch (e) {
+      if (e.code == 'object-not-found') return null;
+      if (e.code == 'unauthorized') return null;
+      rethrow;
+    }
+  }
+
   Future<void> updateUserProfile(UpdateUserDto data) async {
     final uid = currentUid();
     if (uid == null) throw Exception("Uid not set");
@@ -516,6 +561,66 @@ class FirebaseService {
       debugPrint(e.code);
       rethrow;
     } catch (e) {
+      rethrow;
+    }
+  }
+
+  //------------------ CREDITS ----------------
+  Future<List<MemberEntity>> getAllMembers() async {
+    try {
+      // Check connectivity
+      final connection = await Connectivity().checkConnectivity();
+      final hasConnection = connection[0] != ConnectivityResult.none;
+
+      // Try to get cached members first
+      final cachedMembers = await _memberCache.getCachedMembers();
+
+      if (!hasConnection) {
+        // If offline, return cached data or empty list
+        debugPrint('Offline: Using cached members');
+        return cachedMembers ?? [];
+      }
+
+      // If online, fetch fresh data
+      debugPrint('Online: Fetching fresh member data');
+      final querySnapshot = await _db.collection('credits').get();
+
+      List<MemberEntity> allMembers = [];
+
+      for (var doc in querySnapshot.docs) {
+        final memberData = doc.data();
+        final MemberEntity memberEntity = MemberEntity.fromMap(memberData);
+        allMembers.add(memberEntity);
+      }
+
+      // Sort by name alphabetically
+      allMembers.sort((a, b) => a.name.compareTo(b.name));
+
+      // Cache the fresh data
+      await _memberCache.cacheMembers(allMembers);
+
+      return allMembers;
+    } catch (e) {
+      debugPrint("Error getting all members: $e");
+
+      // On error, try to return cached data
+      final cachedMembers = await _memberCache.getCachedMembers();
+      if (cachedMembers != null) {
+        debugPrint('Error occurred, returning cached members');
+        return cachedMembers;
+      }
+
+      rethrow;
+    }
+  }
+
+  Future<String?> getMemberUrlByUid(String uid) async {
+    try {
+      final ref = _storage.ref().child('credits_pictures/$uid.jpg');
+      return await ref.getDownloadURL();
+    } on FirebaseException catch (e) {
+      if (e.code == 'object-not-found') return null;
+      if (e.code == 'unauthorized') return null;
       rethrow;
     }
   }

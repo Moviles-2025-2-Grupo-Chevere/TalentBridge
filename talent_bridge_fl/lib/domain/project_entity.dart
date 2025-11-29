@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:talent_bridge_fl/domain/user_entity.dart';
 import 'package:uuid/uuid.dart';
 
@@ -99,8 +100,12 @@ class ProjectEntity {
   }
 
   Map<String, dynamic> toLocalDbMap(bool isFavorite) {
+    final auth = FirebaseAuth.instance;
+    final uid = auth.currentUser?.uid;
+    if (uid == null) throw Exception('Invalid auth state');
     return {
       'id': id,
+      'saved_by': uid,
       'created_at': createdAt?.toIso8601String(),
       'created_by_id': createdById,
       'title': title,

@@ -1,3 +1,4 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:sqflite/sqflite.dart' as sql;
 import 'package:sqflite/sqlite_api.dart';
 import 'package:path/path.dart' as path;
@@ -16,14 +17,16 @@ class DbService {
     await db.execute(
       '''
         CREATE TABLE projects (
-        id TEXT PRIMARY KEY,
+        id TEXT,
+        saved_by TEXT,
         created_at TEXT,              -- ISO-8601 string (e.g., '2025-10-19T23:55:00Z')
         created_by_id TEXT NOT NULL,
         title TEXT NOT NULL,
         description TEXT NOT NULL,
         skills TEXT NOT NULL,         -- JSON-encoded array of strings
         img_url TEXT,                 -- Nullable image URL
-        is_favorite INTEGER DEFAULT 0 -- 0 = false, 1 = true (optional local flag)
+        is_favorite INTEGER DEFAULT 0, -- 0 = false, 1 = true (optional local flag)
+        PRIMARY KEY(id, saved_by)
       ); 
         
       ''',
@@ -55,12 +58,12 @@ class DbService {
     return db;
   }
 
-  Future<void> insertSavedProject(ProjectEntity p) async {
+  Future<void> insertSavedProject(ProjectEntity p, bool favorite) async {
     final db = await _getDB();
     try {
       await db.insert(
         projectTable,
-        p.toLocalDbMap(true),
+        p.toLocalDbMap(favorite),
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
     } catch (e) {
@@ -87,9 +90,14 @@ class DbService {
   }
 
   Future<List<ProjectEntity>> getSavedProjects() async {
+    final uid = FirebaseAuth.instance.currentUser!.uid;
     final db = await _getDB();
     try {
-      return (await db.query(projectTable, where: "is_favorite = 1"))
+      return (await db.query(
+            projectTable,
+            where: "is_favorite = 1 AND saved_by = ?",
+            whereArgs: [uid],
+          ))
           .map(
             (e) => ProjectEntity.fromLocalDbMap(e),
           )
@@ -108,7 +116,7 @@ class DbService {
         conflictAlgorithm: ConflictAlgorithm.replace,
       );
       for (var p in u.projects ?? []) {
-        insertSavedProject(p);
+        insertSavedProject(p, false);
       }
     } catch (e) {
       rethrow;

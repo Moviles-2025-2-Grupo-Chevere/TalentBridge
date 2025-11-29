@@ -3,7 +3,7 @@ import 'package:talent_bridge_fl/components/add_element_widget.dart';
 import 'package:talent_bridge_fl/components/text_box_widget.dart';
 
 class OrgProfile extends StatelessWidget {
-  const OrgProfile({Key? key}) : super(key: key);
+  const OrgProfile({super.key});
 
   @override
   Widget build(BuildContext context) {

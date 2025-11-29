@@ -1,0 +1,233 @@
+[
+    {
+        "label": "GitHub"
+    },
+    {
+        "label": "GitLab"
+    },
+    {
+        "label": "Bitbucket"
+    },
+    {
+        "label": "Personal Website"
+    },
+    {
+        "label": "Portfolio Website Builder (e.g., Wix, Squarespace)"
+    },
+    {
+        "label": "LinkedIn Portfolio"
+    },
+    {
+        "label": "Behance"
+    },
+    {
+        "label": "Dribbble"
+    },
+    {
+        "label": "Figma Community Portfolio"
+    },
+    {
+        "label": "Adobe Portfolio"
+    },
+    {
+        "label": "Coroflot"
+    },
+    {
+        "label": "ArtStation"
+    },
+    {
+        "label": "DeviantArt Gallery"
+    },
+    {
+        "label": "Instagram Art/Photography Portfolio"
+    },
+    {
+        "label": "500px Photography Portfolio"
+    },
+    {
+        "label": "Flickr Portfolio"
+    },
+    {
+        "label": "Vimeo Video Portfolio"
+    },
+    {
+        "label": "YouTube Channel (Video Portfolio)"
+    },
+    {
+        "label": "SoundCloud Audio Portfolio"
+    },
+    {
+        "label": "Bandcamp Music Portfolio"
+    },
+    {
+        "label": "Spotify Artist Page"
+    },
+    {
+        "label": "Medium Writing Portfolio"
+    },
+    {
+        "label": "Substack Newsletter Archive"
+    },
+    {
+        "label": "WordPress Blog Portfolio"
+    },
+    {
+        "label": "Notion Portfolio"
+    },
+    {
+        "label": "Canva Portfolio"
+    },
+    {
+        "label": "Miro Showcase"
+    },
+    {
+        "label": "Animation/3D Portfolio (Sketchfab)"
+    },
+    {
+        "label": "3D Modeling Portfolio (CGTrader)"
+    },
+    {
+        "label": "Game Development Portfolio (itch.io)"
+    },
+    {
+        "label": "Unity Play Showcase"
+    },
+    {
+        "label": "Unreal Engine Showcase"
+    },
+    {
+        "label": "App Store / Google Play Developer Page"
+    },
+    {
+        "label": "ResearchGate Academic Portfolio"
+    },
+    {
+        "label": "Google Scholar Page"
+    },
+    {
+        "label": "Academia.edu Profile"
+    },
+    {
+        "label": "Kaggle Data Science Portfolio"
+    },
+    {
+        "label": "Tableau Public Dashboard Portfolio"
+    },
+    {
+        "label": "Power BI Showcase Portfolio"
+    },
+    {
+        "label": "UX Case Studies Deck (PDF, Google Slides)"
+    },
+    {
+        "label": "Business/Marketing Case Studies Webpage"
+    },
+    {
+        "label": "Copywriting Portfolio (JournoPortfolio)"
+    },
+    {
+        "label": "Writing Portfolio (Clippings.me)"
+    },
+    {
+        "label": "Journalism Portfolio (Muck Rack)"
+    },
+    {
+        "label": "Photography Portfolio Website (SmugMug)"
+    },
+    {
+        "label": "Architecture Portfolio (Issuu)"
+    },
+    {
+        "label": "Interior Design Portfolio (Houzz)"
+    },
+    {
+        "label": "Modeling Portfolio (ModelMayhem)"
+    },
+    {
+        "label": "Actor Portfolio (Backstage)"
+    },
+    {
+        "label": "Voice Acting Portfolio (Voices.com)"
+    },
+    {
+        "label": "Freelancer Portfolio (Upwork)"
+    },
+    {
+        "label": "Fiverr Gig Portfolio"
+    },
+    {
+        "label": "Engineering Project Portfolio (GrabCAD)"
+    },
+    {
+        "label": "Maker/Hardware Portfolio (Instructables)"
+    },
+    {
+        "label": "Product Management Portfolio (Case Study Site)"
+    },
+    {
+        "label": "Project Management Portfolio (Notion/Confluence)"
+    },
+    {
+        "label": "Teaching Portfolio (Google Sites / Teaching ePortfolio)"
+    },
+    {
+        "label": "Curriculum Developer Portfolio"
+    },
+    {
+        "label": "Public Speaking/Keynote Portfolio (SpeakerHub)"
+    },
+    {
+        "label": "NGO/Volunteer Work Portfolio"
+    },
+    {
+        "label": "Entrepreneurship Portfolio (Pitch Deck Library)"
+    },
+    {
+        "label": "Sales Portfolio (Case Studies + Metrics Website)"
+    },
+    {
+        "label": "Real Estate Portfolio (Agent Website)"
+    },
+    {
+        "label": "Consultant Portfolio (PDF or Website)"
+    },
+    {
+        "label": "Chef Culinary Portfolio (Food Instagram / Website)"
+    },
+    {
+        "label": "Tattoo Artist Portfolio"
+    },
+    {
+        "label": "Fashion Design Portfolio (Lookbook)"
+    },
+    {
+        "label": "Musician/Composer Reel"
+    },
+    {
+        "label": "Film/Director Reel"
+    },
+    {
+        "label": "Motion Graphics Reel (Vimeo, Adobe Behance)"
+    },
+    {
+        "label": "DevOps/Cloud Portfolio (Terraform modules, infra repos)"
+    },
+    {
+        "label": "Robotics Portfolio (Videos + GitHub Projects)"
+    },
+    {
+        "label": "Math Portfolio (Overleaf + GitHub Mix)"
+    },
+    {
+        "label": "Research Portfolio (Published Papers Archive)"
+    },
+    {
+        "label": "Teacher Lesson Plan Showcase"
+    },
+    {
+        "label": "Coach/Trainer Portfolio (Certifications + Client Stories)"
+    },
+    {
+        "label": "Sports Portfolio (Highlight Videos)"
+    }
+]
