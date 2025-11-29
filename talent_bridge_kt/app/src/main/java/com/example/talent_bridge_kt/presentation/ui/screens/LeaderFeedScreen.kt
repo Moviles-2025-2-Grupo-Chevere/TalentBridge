@@ -21,6 +21,9 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.Checkbox
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -86,12 +89,96 @@ fun LeaderFeedScreen(
     val user = FirebaseAuth.getInstance().currentUser
     val currentUserId = FirebaseAuth.getInstance().currentUser?.uid
 
+    var filterExpanded by remember { mutableStateOf(false) }
+    var selectedSkills by remember { mutableStateOf<Set<String>>(emptySet()) }
+
+    val allSkills = remember(students) {
+        students
+            .flatMap { it.skillsOrTopics }
+            .map { it.trim() }
+            .filter { it.isNotEmpty() }
+            .distinct()
+            .sorted()
+    }
+
+    val filteredStudents = remember(students, selectedSkills) {
+        if (selectedSkills.isEmpty()) {
+            students
+        } else {
+            students.filter { item ->
+                item.skillsOrTopics.any { it in selectedSkills }
+            }
+        }
+    }
 
 
     Surface(color = Color.White, modifier = Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
 
             TopBarCustom(height = 100.dp, onBack = onBack, onMenu = onOpenMenu, onDrawer = onOpenDrawer)
+
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                contentAlignment = Alignment.CenterEnd
+            ) {
+                OutlinedButton(
+                    onClick = { filterExpanded = !filterExpanded },
+                    shape = RoundedCornerShape(20.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = Color.White,
+                        contentColor = TitleGreen
+                    )
+                ) {
+                    Text(
+                        text = if (selectedSkills.isEmpty()) "Filter by skills" else "Skills (${selectedSkills.size})",
+                        fontSize = 12.sp
+                    )
+                }
+
+                DropdownMenu(
+                    expanded = filterExpanded,
+                    onDismissRequest = { filterExpanded = false }
+                ) {
+                    if (allSkills.isEmpty()) {
+                        DropdownMenuItem(
+                            text = { Text("No skills available") },
+                            onClick = { }
+                        )
+                    } else {
+                        allSkills.forEach { skill ->
+                            val checked = selectedSkills.contains(skill)
+                            DropdownMenuItem(
+                                text = {
+                                    Row(verticalAlignment = Alignment.CenterVertically) {
+                                        Checkbox(
+                                            checked = checked,
+                                            onCheckedChange = null
+                                        )
+                                        Spacer(Modifier.width(8.dp))
+                                        Text(skill)
+                                    }
+                                },
+                                onClick = {
+                                    selectedSkills = if (checked) {
+                                        selectedSkills - skill
+                                    } else {
+                                        selectedSkills + skill
+                                    }
+                                }
+                            )
+                        }
+
+                        if (selectedSkills.isNotEmpty()) {
+                            DropdownMenuItem(
+                                text = { Text("Clear filters") },
+                                onClick = { selectedSkills = emptySet() }
+                            )
+                        }
+                    }
+                }
+            }
 
             LazyColumn(
                 modifier = Modifier
@@ -107,7 +194,7 @@ fun LeaderFeedScreen(
                     item { Text(error ?: "", color = Color.Red) }
                 }
 
-                items(students, key = { it.uid }) { s ->
+                items(filteredStudents, key = { it.uid }) { s ->
                     StudentCard(
                         item = s,
                         onClick = { onStudentClick(s.uid) }
