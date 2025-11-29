@@ -465,7 +465,17 @@ fun StudentProfileScreen(
                         )
                         Spacer(Modifier.height(8.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            IconButton(onClick = { isEditing = !isEditing }) {
+                            IconButton(onClick = { 
+                                val wasEditing = isEditing
+                                isEditing = !isEditing
+                                // Trackear cuando se inicia la edición (cambia de false a true)
+                                if (!wasEditing && isEditing) {
+                                    com.example.talent_bridge_kt.data.firebase.analytics.ProfileEditConversionAnalytics.logProfileEditStarted()
+                                } else if (wasEditing && !isEditing) {
+                                    // Si estaba editando y ahora no, podría ser cancelación
+                                    // Pero no trackeamos aquí porque podría ser después de guardar
+                                }
+                            }) {
                                 Icon(
                                     if (isEditing) Icons.Filled.Close else Icons.Filled.Edit,
                                     contentDescription = null, tint = TitleGreen
@@ -1061,12 +1071,28 @@ fun StudentProfileScreen(
                             Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
-                            OutlinedButton(onClick = { isEditing = false }, modifier = Modifier.weight(1f)) {
+                            OutlinedButton(
+                                onClick = { 
+                                    com.example.talent_bridge_kt.data.firebase.analytics.ProfileEditConversionAnalytics.logProfileEditCancelled()
+                                    isEditing = false 
+                                }, 
+                                modifier = Modifier.weight(1f)
+                            ) {
                                 Text("Cancel")
                             }
                             Button(
                                 onClick = {
                                     val cur = (uiState as? ProfileUiState.Ready)?.profile ?: return@Button
+                                    
+                                    // Detectar si hubo cambios
+                                    val hasChanges = email != cur.email ||
+                                        linkedin != (cur.linkedin ?: "") ||
+                                        number != cur.phone ||
+                                        bio != (cur.bio ?: "")
+                                    
+                                    // Trackear intento de guardar
+                                    com.example.talent_bridge_kt.data.firebase.analytics.ProfileEditConversionAnalytics.logProfileSaveAttempted(hasChanges)
+                                    
                                     vm.update(
                                         cur.copy(
                                             email = email,
