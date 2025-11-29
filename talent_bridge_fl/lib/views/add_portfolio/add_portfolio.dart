@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import 'package:flutter/material.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
 
@@ -24,11 +25,17 @@ class _AddPortfolioState extends State<AddPortfolio> {
 
   final _urlController = TextEditingController();
 
+  String portfolioType = "";
+
   final picker = ImagePicker();
 
   final fb = FirebaseService();
 
   final store = FirebaseFirestore.instance;
+
+  final hiveBoxName = "portfolio_types";
+  final hiveKey = "labels";
+  List<String> portfolioTypeLabels = [];
 
   bool isValidUrl(String value) {
     final uri = Uri.tryParse(value);
@@ -117,6 +124,27 @@ class _AddPortfolioState extends State<AddPortfolio> {
     _connSuscription = suscription;
   }
 
+  Future<List<String>> getPortfolioLabels() async {
+    final box = await Hive.openBox(hiveBoxName);
+    final labels = box.get(hiveKey);
+    if (labels is List) {
+      print("Got data from hive");
+      print(labels);
+      return labels as List<String>;
+    } else {
+      print("no data");
+      final docs = (await store.collection("portfolioTypes").get()).docs;
+      final labels =
+          docs.map((e) => e.data()["label"]).toList() as List<String>;
+      print("obtained data");
+      print(labels);
+      if (labels.isEmpty) return [];
+      await box.put(hiveKey, labels);
+      await box.close();
+      return portfolioTypeLabels = labels;
+    }
+  }
+
   @override
   void dispose() {
     super.dispose();
@@ -135,6 +163,36 @@ class _AddPortfolioState extends State<AddPortfolio> {
       controller: _urlController,
       enabled: _connected,
       decoration: const InputDecoration(label: Text("Url of portfolio")),
+    );
+
+    var portfolioTypeMenu = FutureBuilder(
+      future: getPortfolioLabels(),
+      builder: (context, snapshot) {
+        List<DropdownMenuItem<String>> items = [];
+        if (snapshot.hasData) {
+          var labels = snapshot.data;
+          print("got labels");
+          print(labels);
+          items = labels!
+              .map(
+                (e) => DropdownMenuItem(value: e, child: Text(e)),
+              )
+              .toList();
+        }
+        return DropdownButtonFormField(
+          decoration: const InputDecoration(label: Text("Portfolio Type")),
+          items: [
+            DropdownMenuItem(
+              value: '',
+              child: Text('None'),
+            ),
+            ...items,
+          ],
+          onChanged: (value) {
+            portfolioType = value ?? '';
+          },
+        );
+      },
     );
 
     var optionalImageButton = OutlinedButton.icon(
@@ -200,7 +258,8 @@ class _AddPortfolioState extends State<AddPortfolio> {
               SizedBox(
                 height: 16,
               ),
-              optionalImageButton,
+              portfolioTypeMenu,
+              // optionalImageButton,
               SizedBox(
                 height: 16,
               ),
