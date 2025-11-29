@@ -89,6 +89,7 @@ fun StudentFeedScreen(
     val error by vm.error.collectAsState()
     val savedList by vm.savedProjects.collectAsState()
     val savedIds = remember(savedList) { savedList.map { it.id }.toSet() }
+    val appliedIds by vm.appliedProjectIds.collectAsState()
 
     var showSubmitted by remember { mutableStateOf(false) }
     var showAlreadyApplied by remember { mutableStateOf(false) }
@@ -102,6 +103,24 @@ fun StudentFeedScreen(
         appEvent?.let {
             infoMessage = it
             showInfo = true
+        }
+    }
+
+    val projectCards = remember(projects, savedIds, appliedIds) {
+        projects.map { project ->
+            ProjectCardUi(
+                id = project.id,
+                time = project.createdAt?.let { prettySince(it.toDate().time) } ?: "—",
+                title = project.title,
+                subtitle = project.subtitle.orEmpty(),
+                description = project.description,
+                tags = project.skills,
+                imageUrl = project.imgUrl,
+                saved = savedIds.contains(project.id),
+                applied = appliedIds.contains(project.id),
+                creatorId = project.createdById,
+                project = project
+            )
         }
     }
 
@@ -163,34 +182,31 @@ fun StudentFeedScreen(
                 }
 
                 if (!loading && error == null) {
-                    items(projects, key = { it.id }) { p ->
-                        val isSaved = savedIds.contains(p.id)
-                        val isApplied = vm.appliedProjectIds.collectAsState().value.contains(p.id)
-
+                    items(projectCards, key = { it.id }) { card ->
                         ProjectCardSimple(
-                            time = p.createdAt?.let { prettySince(it.toDate().time) } ?: "—",
-                            title = p.title,
-                            subtitle = p.subtitle ?: "",
-                            description = p.description,
-                            tags = p.skills,
-                            imageUrl = p.imgUrl,
-                            saved = isSaved,
-                            applied = isApplied,
-                            onSaveClick = { vm.toggleFavorite(p) },
+                            time = card.time,
+                            title = card.title,
+                            subtitle = card.subtitle,
+                            description = card.description,
+                            tags = card.tags,
+                            imageUrl = card.imageUrl,
+                            saved = card.saved,
+                            applied = card.applied,
+                            onSaveClick = { vm.toggleFavorite(card.project) },
                             onApplyClick = {
                                 vm.toggleApplication(
-                                    p,
+                                    card.project,
                                     onApplied = { showSubmitted = true; applyError = null },
                                     onUnapplied = { /* optional feedback */ },
                                     onError = { msg -> applyError = msg },
                                     onQueuedOffline = { applyError = null }
                                 )
                             },
-                            onSomeOneElseProfile = { onSomeOneElseProfile(p.createdById) }
+                            onSomeOneElseProfile = { onSomeOneElseProfile(card.creatorId) }
                         )
                     }
 
-                    if (projects.isEmpty()) {
+                    if (projectCards.isEmpty()) {
                         item {
                             Box(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
                                 Text("No projects yet.")
@@ -250,6 +266,20 @@ private fun prettySince(thenMs: Long): String {
 }
 
 /* ============================ COMPONENTES ============================ */
+
+private data class ProjectCardUi(
+    val id: String,
+    val time: String,
+    val title: String,
+    val subtitle: String,
+    val description: String,
+    val tags: List<String>,
+    val imageUrl: String?,
+    val saved: Boolean,
+    val applied: Boolean,
+    val creatorId: String,
+    val project: com.example.talent_bridge_kt.domain.model.Project
+)
 
 @Composable
 private fun AlreadyAppliedDialog(onOk: () -> Unit) {
