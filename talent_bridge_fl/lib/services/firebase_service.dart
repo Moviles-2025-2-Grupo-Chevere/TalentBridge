@@ -153,11 +153,11 @@ class FirebaseService {
     required String projectId,
   }) async {
     final docRef = _db.collection('users').doc(userId);
-    await docRef.update({
+    await docRef.set({
       'applications': FieldValue.arrayUnion([
         {"projectId": projectId, "createdById": createdById},
       ]),
-    });
+    }, SetOptions(merge: true));
 
     // Get user major
     final userEntity = await getCurrentUserEntity(false);
@@ -166,7 +166,8 @@ class FirebaseService {
 
     // Use a composite ID: userId_projectId to prevent duplicates
     final applicationId = '${userId}_$projectId';
-
+    debugPrint('Application ID: $applicationId');
+    debugPrint('Project ID: $projectId');
     // Use .set() with merge instead of .add()
     await _db.collection('projectApplications').doc(applicationId).set({
       'appliedDate': FieldValue.serverTimestamp(),
@@ -192,22 +193,42 @@ class FirebaseService {
     required String projectId,
   }) async {
     try {
-      // Query for users where applications array contains the projectId
+      debugPrint('Getting applicants for project $projectId');
+
+      // Query the projectApplications collection instead
       final querySnapshot = await _db
-          .collection('users')
-          .where('applications', arrayContains: projectId)
+          .collection('projectApplications')
+          .where('project_id', isEqualTo: projectId)
           .get();
 
-      // Map results to a list of user IDs and names
+      debugPrint('Query returned ${querySnapshot.docs.length} documents');
+
       List<Map<String, String>> applicants = [];
 
       for (var doc in querySnapshot.docs) {
-        final userData = doc.data();
-        applicants.add({
-          'id': doc.id,
-          'name': userData['displayName'] ?? 'Unnamed User',
-        });
+        final appData = doc.data();
+        final userId = appData['user_id'] as String?;
+
+        if (userId != null) {
+          // Fetch user details
+          try {
+            final userDoc = await _db.collection('users').doc(userId).get();
+            if (userDoc.exists) {
+              final userData = userDoc.data()!;
+              applicants.add({
+                'id': userId,
+                'name': userData['displayName'] ?? 'Unnamed User',
+              });
+            }
+          } catch (e) {
+            debugPrint('Error fetching user $userId: $e');
+          }
+        }
       }
+
+      debugPrint(
+        'Found ${applicants.length} applicants for project $projectId',
+      );
 
       return applicants;
     } catch (e) {
