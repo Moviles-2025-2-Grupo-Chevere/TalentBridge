@@ -29,6 +29,10 @@ class SearchViewModel(
     private val feedStudentDao: FeedStudentDao
 ) : ViewModel() {
 
+    companion object {
+        private val CSV_SPLIT_PATTERN = Regex("[, ]+|,+")
+    }
+
     var uiState by mutableStateOf(SearchUiState())
         private set
 
@@ -36,10 +40,26 @@ class SearchViewModel(
     private var onlineJob: Job? = null
 
     fun onSkillsInput(csv: String) {
-        val chips = csv
-            .split(Regex("[, ]+|,+"))
-            .map { it.trim() }
-            .filter { it.isNotEmpty() }
+        val chips = ArrayList<String>()
+        var start = 0
+        for (i in csv.indices) {
+            val c = csv[i]
+            if (c == ',' || c == ' ') {
+                if (i > start) {
+                    val trimmed = csv.substring(start, i).trim()
+                    if (trimmed.isNotEmpty()) {
+                        chips.add(trimmed)
+                    }
+                }
+                start = i + 1
+            }
+        }
+        if (start < csv.length) {
+            val trimmed = csv.substring(start).trim()
+            if (trimmed.isNotEmpty()) {
+                chips.add(trimmed)
+            }
+        }
         uiState = uiState.copy(querySkills = chips)
     }
 
@@ -129,7 +149,7 @@ class SearchViewModel(
                 isLoading = false,
                 results = cached,
                 error = if (cached.isEmpty()) {
-                    "No hay perfiles en cache. Abre 'Explore Students' cuando tengas internet."
+                    "No update."
                 } else null
             )
         }
@@ -154,7 +174,7 @@ class SearchViewModel(
             } catch (e: Exception) {
 
                 uiState = uiState.copy(
-                    error = e.message ?: "No se pudieron actualizar los perfiles desde la nube."
+                    error = e.message ?: "No update."
                 )
             }
         }
@@ -170,31 +190,69 @@ class SearchViewModel(
 
 
         if (queryCsv.isBlank()) {
-            return cachedEntities.map { it.toUser() }
+            val users = ArrayList<User>(cachedEntities.size)
+            for (entity in cachedEntities) {
+                users.add(entity.toUser())
+            }
+            return users
         }
 
 
-        val terms = queryCsv
-            .split(Regex("[, ]+"))
-            .map { it.trim().lowercase() }
-            .filter { it.isNotEmpty() }
+        val terms = ArrayList<String>()
+        var start = 0
+        val csvLower = queryCsv.lowercase()
+        for (i in csvLower.indices) {
+            val c = csvLower[i]
+            if (c == ',' || c == ' ') {
+                if (i > start) {
+                    val trimmed = csvLower.substring(start, i).trim()
+                    if (trimmed.isNotEmpty()) {
+                        terms.add(trimmed)
+                    }
+                }
+                start = i + 1
+            }
+        }
+        if (start < csvLower.length) {
+            val trimmed = csvLower.substring(start).trim()
+            if (trimmed.isNotEmpty()) {
+                terms.add(trimmed)
+            }
+        }
 
-        val users = cachedEntities.map { it.toUser() }
+        val users = ArrayList<User>(cachedEntities.size)
+        for (entity in cachedEntities) {
+            users.add(entity.toUser())
+        }
 
         return if (mode.equals("any", ignoreCase = true)) {
-            users.asSequence()
-                .map { user ->
-                    val matches = terms.count { term ->
-                        user.displayName.lowercase().contains(term) ||
-                                user.skills.any { sk -> sk.lowercase().contains(term) }
+            val ranked = ArrayList<Ranked>(users.size)
+            for (user in users) {
+                var matches = 0
+                val displayNameLower = user.displayName.lowercase()
+                for (term in terms) {
+                    if (displayNameLower.contains(term)) {
+                        matches++
+                    } else {
+                        for (skill in user.skills) {
+                            if (skill.lowercase().contains(term)) {
+                                matches++
+                                break
+                            }
+                        }
                     }
-                    Ranked(user, matches)
                 }
-                .filter { it.matches > 0 }
-                .sortedByDescending { it.matches }
-                .map { it.user }
-                .take(20)
-                .toList()
+                if (matches > 0) {
+                    ranked.add(Ranked(user, matches))
+                }
+            }
+            ranked.sortWith(compareByDescending<Ranked> { it.matches })
+            val resultSize = 20.coerceAtMost(ranked.size)
+            val result = ArrayList<User>(resultSize)
+            for (i in 0 until resultSize) {
+                result.add(ranked[i].user)
+            }
+            result
         } else {
 
             users.asSequence()
@@ -216,7 +274,27 @@ private fun com.example.talent_bridge_kt.data.local.entities.FeedStudentEntity.t
     val skillsList = if (skillsCsv.isNullOrBlank()) {
         emptyList()
     } else {
-        skillsCsv.split(",").map { it.trim() }.filter { it.isNotEmpty() }
+        val list = ArrayList<String>()
+        var start = 0
+        val csv = skillsCsv
+        for (i in csv.indices) {
+            if (csv[i] == ',') {
+                if (i > start) {
+                    val trimmed = csv.substring(start, i).trim()
+                    if (trimmed.isNotEmpty()) {
+                        list.add(trimmed)
+                    }
+                }
+                start = i + 1
+            }
+        }
+        if (start < csv.length) {
+            val trimmed = csv.substring(start).trim()
+            if (trimmed.isNotEmpty()) {
+                list.add(trimmed)
+            }
+        }
+        list
     }
 
     return User(
