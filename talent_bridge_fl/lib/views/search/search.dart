@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:async';
 import 'package:talent_bridge_fl/domain/user_entity.dart';
 import 'package:talent_bridge_fl/services/firebase_service.dart';
 import 'package:talent_bridge_fl/components/user_pfp_cached.dart';
@@ -29,6 +30,7 @@ class _SearchState extends State<Search> {
   final _queryCtrl = TextEditingController();
   final _firebaseService = FirebaseService();
   final FirebaseAnalytics _analytics = FirebaseAnalytics.instance;
+  Timer? _debounce;
 
   // ---- BQ: medir time-to-first-content de People ----
   late final ScreenTimer _tPeople;
@@ -97,6 +99,7 @@ class _SearchState extends State<Search> {
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _queryCtrl.removeListener(_onQueryChanged);
     _queryCtrl.dispose();
     super.dispose();
@@ -104,13 +107,26 @@ class _SearchState extends State<Search> {
 
   void _onQueryChanged() {
     final q = _queryCtrl.text.trim().toLowerCase();
+
+    // Cancelamos cualquier timer anterior si el usuario sigue escribiendo
+    _debounce?.cancel();
+
     if (q.isEmpty) {
       setState(() {
         _searchResults = [];
+        _userScores = {};
       });
       return;
     }
 
+    // Debounce: esperamos 200 ms; si en ese tiempo no cambió el texto,
+    // ejecutamos la búsqueda pesada
+    _debounce = Timer(const Duration(milliseconds: 200), () {
+      _runSearch(q);
+    });
+  }
+
+  void _runSearch(String q) {
     final projects = _currentUser?.projects ?? [];
     final skills = projects
         .expand((i) => i.skills)
@@ -146,6 +162,7 @@ class _SearchState extends State<Search> {
     }
 
     filteredUsers.sort((a, b) => -scores[a]!.compareTo(scores[b]!));
+
     setState(() {
       _userScores = scores;
       _searchResults = filteredUsers;
